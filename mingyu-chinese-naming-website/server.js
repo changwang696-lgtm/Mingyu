@@ -42,12 +42,107 @@ const branches = [
   { char: "申", element: "金", range: "15:00-17:00" }, { char: "酉", element: "金", range: "17:00-19:00" },
   { char: "戌", element: "土", range: "19:00-21:00" }, { char: "亥", element: "水", range: "21:00-23:00" }
 ];
+const chinaTimeZone = "Asia/Shanghai";
+const placeTimeZones = [
+  { keywords: ["new york", "nyc", "boston", "philadelphia", "washington", "miami", "atlanta", "orlando", "montreal", "toronto"], timeZone: "America/New_York" },
+  { keywords: ["chicago", "houston", "dallas", "austin", "minneapolis", "mexico city"], timeZone: "America/Chicago" },
+  { keywords: ["denver", "phoenix", "salt lake city"], timeZone: "America/Denver" },
+  { keywords: ["los angeles", "san francisco", "seattle", "vancouver", "las vegas", "san diego", "california"], timeZone: "America/Los_Angeles" },
+  { keywords: ["london", "manchester", "dublin", "ireland", "united kingdom", "uk", "england", "portugal", "lisbon"], timeZone: "Europe/London" },
+  { keywords: ["paris", "france", "berlin", "germany", "rome", "italy", "madrid", "spain", "amsterdam", "netherlands", "brussels", "belgium", "vienna", "austria", "copenhagen", "denmark", "oslo", "norway", "stockholm", "sweden", "warsaw", "poland", "prague", "czech", "switzerland", "zurich"], timeZone: "Europe/Paris" },
+  { keywords: ["athens", "greece", "helsinki", "finland", "bucharest", "romania", "sofia", "bulgaria", "riga", "latvia", "vilnius", "lithuania", "tallinn", "estonia", "kyiv", "kiev", "ukraine"], timeZone: "Europe/Athens" },
+  { keywords: ["istanbul", "turkey"], timeZone: "Europe/Istanbul" },
+  { keywords: ["beijing", "shanghai", "guangzhou", "shenzhen", "china", "hong kong", "macau", "taipei", "taiwan", "singapore", "kuala lumpur"], timeZone: chinaTimeZone }
+];
+
+function pad(number) {
+  return String(number).padStart(2, "0");
+}
+
+function inferTimeZoneFromPlace(place) {
+  const source = String(place || "").trim().toLowerCase();
+  if (!source) return { timeZone: chinaTimeZone, inferred: false };
+  const match = placeTimeZones.find(entry => entry.keywords.some(keyword => source.includes(keyword)));
+  return match ? { timeZone: match.timeZone, inferred: true } : { timeZone: chinaTimeZone, inferred: false };
+}
+
+function parseBirthInput(input) {
+  const match = String(input || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!match) return null;
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+    hour: Number(match[4]),
+    minute: Number(match[5]),
+    second: 0
+  };
+}
+
+function getTimeZoneParts(date, timeZone) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+  const parts = Object.fromEntries(formatter.formatToParts(date).filter(part => part.type !== "literal").map(part => [part.type, part.value]));
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    hour: Number(parts.hour),
+    minute: Number(parts.minute),
+    second: Number(parts.second)
+  };
+}
+
+function getTimeZoneOffsetMinutes(date, timeZone) {
+  const zoned = getTimeZoneParts(date, timeZone);
+  const utcTime = Date.UTC(zoned.year, zoned.month - 1, zoned.day, zoned.hour, zoned.minute, zoned.second);
+  return (utcTime - date.getTime()) / 60000;
+}
+
+function zonedDateTimeToUtc(parts, timeZone) {
+  const utcGuess = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second || 0);
+  const firstOffset = getTimeZoneOffsetMinutes(new Date(utcGuess), timeZone);
+  let timestamp = utcGuess - firstOffset * 60000;
+  const finalOffset = getTimeZoneOffsetMinutes(new Date(timestamp), timeZone);
+  if (finalOffset !== firstOffset) timestamp = utcGuess - finalOffset * 60000;
+  return new Date(timestamp);
+}
+
+function formatDateTimeLabel(parts) {
+  return `${parts.year}.${pad(parts.month)}.${pad(parts.day)} ${pad(parts.hour)}:${pad(parts.minute)}`;
+}
+
+function resolveBirthContext(body) {
+  const birthParts = parseBirthInput(body.birth);
+  if (!birthParts) return null;
+  const source = inferTimeZoneFromPlace(body.place);
+  const utcDate = zonedDateTimeToUtc(birthParts, source.timeZone);
+  const chinaParts = getTimeZoneParts(utcDate, chinaTimeZone);
+  return {
+    utcDate,
+    sourceTimeZone: source.timeZone,
+    sourceInferred: source.inferred,
+    originalParts: birthParts,
+    chinaParts,
+    chinaLabel: formatDateTimeLabel(chinaParts),
+    originalLabel: formatDateTimeLabel(birthParts)
+  };
+}
 
 function traditionalCulture(body) {
-  const birth = new Date(body.birth);
-  const calendarYear = birth.getFullYear();
-  const month = birth.getMonth() + 1;
-  const day = birth.getDate();
+  const birthContext = resolveBirthContext(body);
+  const birth = birthContext?.chinaParts || parseBirthInput(body.birth);
+  const calendarYear = birth.year;
+  const month = birth.month;
+  const day = birth.day;
   const traditionalYear = month < 2 || (month === 2 && day < 4) ? calendarYear - 1 : calendarYear;
   const cycleIndex = ((traditionalYear - 1984) % 60 + 60) % 60;
   const stem = stems[cycleIndex % 10];
@@ -55,8 +150,14 @@ function traditionalCulture(body) {
   const branch = branches[branchIndex];
   const [zodiac, zodiacEn] = signs[branchIndex];
   const zodiacProfile = zodiacProfiles[branchIndex];
-  const hour = birth.getHours();
+  const hour = birth.hour;
   const hourBranch = branches[Math.floor(((hour + 1) % 24) / 2)];
+  const timeNoteZh = birthContext
+    ? `出生时间已根据出生地“${body.place || "未填写"}”推断时区，并换算为北京时间 ${birthContext.chinaLabel} 后计算年柱与时辰。`
+    : "出生时间按北京时间理解后计算年柱与时辰。";
+  const timeNoteEn = birthContext
+    ? `The birth time is interpreted in the timezone inferred from "${body.place || "the provided birthplace"}" and converted to China Standard Time (${birthContext.chinaLabel}) before calculating the year pillar and birth hour.`
+    : "The birth time is interpreted in China Standard Time before calculating the year pillar and birth hour.";
   return {
     basisYear: traditionalYear,
     pillar: `${stem.char}${branch.char}`,
@@ -65,8 +166,11 @@ function traditionalCulture(body) {
     branch: { ...branch, zodiac, zodiacEn },
     hourBranch,
     zodiacProfile,
-    note: "年柱以公历约 2 月 4 日立春为界作文化计算；精确交节时刻、月柱、日柱与时干需结合出生地时区和专业万年历复核。当前结果不构成完整八字排盘，也不据此判断五行喜忌。",
-    noteEn: "The year pillar uses approximately February 4 (Start of Spring) as its boundary. Exact solar-term timing and the month, day and hour stems require timezone-aware calendrical calculation. This is not a complete BaZi chart and does not claim an elemental deficiency."
+    originalBirthLabel: birthContext?.originalLabel || null,
+    chinaBirthLabel: birthContext?.chinaLabel || formatDateTimeLabel(birth),
+    sourceTimeZone: birthContext?.sourceTimeZone || chinaTimeZone,
+    note: `${timeNoteZh} 年柱以公历约 2 月 4 日立春为界作文化计算；精确交节时刻、月柱、日柱与时干需结合出生地时区和专业万年历复核。当前结果不构成完整八字排盘，也不据此判断五行喜忌。`,
+    noteEn: `${timeNoteEn} The year pillar uses approximately February 4 (Start of Spring) as its boundary. Exact solar-term timing and the month, day and hour stems require timezone-aware calendrical calculation. This is not a complete BaZi chart and does not claim an elemental deficiency.`
   };
 }
 
