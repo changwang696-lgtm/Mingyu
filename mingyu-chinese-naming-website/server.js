@@ -180,6 +180,56 @@ async function fetchJson(url, options, errorMessage) {
   }
 }
 
+function readDeepSeekContent(json) {
+  const message = json.choices?.[0]?.message;
+  const content = message?.content;
+  if (typeof content === "string" && content.trim()) return content.trim();
+
+  if (Array.isArray(content)) {
+    const text = content
+      .map(item => item?.text || item?.content || "")
+      .join("")
+      .trim();
+    if (text) return text;
+  }
+
+  const fallback = json.output_text || message?.reasoning_content || "";
+  return typeof fallback === "string" ? fallback.trim() : "";
+}
+
+async function requestDeepSeekJson(config, prompt, maxTokens, allowRetry = true) {
+  const json = await fetchJson(config.url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: config.model,
+      max_tokens: maxTokens,
+      temperature: 0.7,
+      stream: false,
+      thinking: { type: "disabled" },
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: "You are a careful bilingual Chinese naming consultant. Return valid JSON only with no markdown fences."
+        },
+        { role: "user", content: prompt }
+      ]
+    })
+  }, "DeepSeek request failed");
+
+  const output = readDeepSeekContent(json);
+  if (output) return JSON.parse(output);
+
+  if (!allowRetry) throw new Error("DeepSeek returned empty content");
+
+  const retryPrompt = `${prompt}\nIf you cannot comply, still return the required JSON shape with concise placeholder-safe values.`;
+  return requestDeepSeekJson(config, retryPrompt, Math.max(maxTokens, 1000), false);
+}
+
 async function requestAiResult(body, culture) {
   const config = getAiConfig();
   if (!config) return demoResult(body);
@@ -188,28 +238,7 @@ async function requestAiResult(body, culture) {
   const maxTokens = tier === "simple" ? 700 : 1200;
 
   if (config.provider === "deepseek") {
-    const json = await fetchJson(config.url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: config.model,
-        max_tokens: maxTokens,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content: "You are a careful bilingual Chinese naming consultant. Return valid JSON only with no markdown fences."
-          },
-          { role: "user", content: prompt }
-        ]
-      })
-    }, "DeepSeek request failed");
-    const output = json.choices?.[0]?.message?.content;
-    if (!output) throw new Error("DeepSeek returned empty content");
-    return JSON.parse(output);
+    return requestDeepSeekJson(config, prompt, maxTokens);
   }
 
   const json = await fetchJson(config.url, {
