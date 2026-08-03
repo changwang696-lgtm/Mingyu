@@ -150,7 +150,7 @@ function render(data) {
   renderCulture(data.traditionalCulture, en);
   $("#nameList").innerHTML = data.names.map((name, index) => `
     <article class="name-card">
-      <div><small>0${index + 1}</small><div class="hanzi">${esc(name.hanzi)}</div><div class="pinyin">${esc(name.pinyin)}</div></div>
+      <div><small>${en ? `NAME 0${index + 1}` : `候选 0${index + 1}`}</small><div class="hanzi">${esc(name.hanzi)}</div><div class="pinyin">${esc(name.pinyin)}</div></div>
       <div class="name-detail"><p>${esc(en ? name.meaningEn : name.meaning)}</p><span class="tone">${esc(name.tone)}</span></div>
       <div class="seal">${esc(name.seal)}</div>
     </article>`).join("");
@@ -162,7 +162,8 @@ function renderZodiacProfile(culture, en) {
   const profile = culture?.zodiacProfile;
   if (!profile) return;
   const traits = en ? profile.personalityEn : profile.personality;
-  $("#profileTraits").innerHTML = traits.map((trait, index) => `<span><b>0${index + 1}</b>${esc(trait)}</span>`).join("");
+  const icons = ["✦", "❖", "✧"];
+  $("#profileTraits").innerHTML = traits.map((trait, index) => `<span><b>0${index + 1}</b><i aria-hidden="true">${icons[index % icons.length]}</i><em>${esc(trait)}</em></span>`).join("");
   $("#zodiacSymbolism").textContent = en ? profile.symbolismEn : profile.symbolism;
 }
 
@@ -178,7 +179,7 @@ function renderCulture(culture, en) {
   $("#stemDetail").textContent = en ? `${culture.stem.char} · ${polarities[culture.stem.polarity]} ${elements[culture.stem.element]}` : `${culture.stem.char} · ${culture.stem.polarity}${culture.stem.element}`;
   $("#branchDetail").textContent = en ? `${culture.branch.char} · ${elements[culture.branch.element]} · ${culture.branch.zodiacEn}` : `${culture.branch.char} · ${culture.branch.element} · ${culture.branch.zodiac}`;
   $("#hourDetail").textContent = en ? `${branchNames[culture.hourBranch.char]} hour · ${elements[culture.hourBranch.element]}` : `${culture.hourBranch.char}时 · ${culture.hourBranch.element}`;
-  $("#hourRange").textContent = culture.hourBranch.range;
+  $("#hourRange").textContent = en ? `${culture.hourBranch.range} · China time ${culture.chinaBirthLabel}` : `${culture.hourBranch.range} · 北京时间 ${culture.chinaBirthLabel}`;
   $("#cultureNote").textContent = en ? culture.noteEn : culture.note;
   const present = new Set([culture.stem.element, culture.branch.element, culture.hourBranch.element]);
   document.querySelectorAll(".element-flow span").forEach(element => {
