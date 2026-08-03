@@ -1,43 +1,56 @@
 * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 body { margin: 0; background: #fff; }
 .topbar, .hero, .intro, .zodiac-atlas, .ritual, .craft, footer, .result-top .text-button, .report-cta, dialog, .loading { display: none !important; }
-.result { display: block !important; padding: 16mm 17mm; background: #fff; color: #30251d; }
-.result-top { display: block; padding-bottom: 7mm; border-bottom: 1px solid #d8a84e; }
-.result-top h2 { margin: 3mm 0 0; font-size: 28px; }
+.result, .result::before, .result::after { background: #fff !important; box-shadow: none !important; }
+.result { display: block !important; padding: 10mm 12mm 8mm; background: #fff; color: #30251d; border-top: 0; }
+.result-top { display: block; margin-bottom: 3mm; padding-bottom: 4mm; border-bottom: 1px solid #d8a84e; }
+.result-top::after { width: 70mm; height: 2px; bottom: -1px; }
+.result-top h2 { margin: 2mm 0 0; font-size: 22px; }
 .demo-badge, .edition-badge { display: none !important; }
-.zodiac { grid-template-columns: 36mm 1fr; gap: 10mm; padding: 9mm 0; break-inside: avoid; }
-.zodiac-glyph { width: 34mm; height: 34mm; box-shadow: 0 0 0 2mm #fff, 0 0 0 2.4mm #d8a84e; }
-.zodiac-glyph span { width: 11mm; height: 11mm; font-size: 18px; }
-.zodiac h3 { font-size: 25px; }
-.zodiac p:last-child { font-size: 12px; line-height: 1.65; }
-.zodiac-profile { margin: 2mm 0 7mm; break-inside: avoid; }
-.profile-heading { padding: 3mm 0; }
-.profile-heading h3 { font-size: 19px; }
-.profile-grid { grid-template-columns: 42% 58%; }
-.profile-grid article { padding: 5mm; }
-.profile-grid h4 { margin: 2mm 0 3mm; font-size: 16px; }
-.profile-traits { gap: 1.5mm; }
-.profile-traits span { min-height: 8mm; font-size: 11px; }
+.zodiac { grid-template-columns: 31mm 1fr; gap: 7mm; padding: 5mm 0 4mm; break-inside: avoid; }
+.zodiac::before { inset: 4mm 0; }
+.zodiac-glyph { width: 28mm; height: 28mm; box-shadow: 0 0 0 1.4mm #fff, 0 0 0 1.8mm #d8a84e; }
+.zodiac-glyph span { width: 9mm; height: 9mm; font-size: 14px; }
+.zodiac-copy h3, .zodiac h3 { margin: 1mm 0 2mm; font-size: 19px; }
+.traits { gap: 1.5mm; margin-bottom: 3mm; }
+.traits span { padding: 1.4mm 2.6mm; font-size: 8px; }
+.zodiac p:last-child { font-size: 10px; line-height: 1.45; }
+.zodiac-profile { margin: 2mm 0 5mm; padding: 1mm 4mm 4mm; break-inside: avoid; }
+.profile-heading { padding: 2mm 0 2.5mm; }
+.profile-heading h3 { font-size: 16px; }
+.profile-grid { grid-template-columns: 41% 59%; gap: 3mm; padding-top: 2.5mm; }
+.profile-grid article { padding: 3.5mm; }
+.panel-title { gap: 2.5mm; margin: 1.5mm 0 3mm; }
+.panel-icon { width: 8mm; height: 8mm; font-size: 11px; }
+.profile-grid h4 { font-size: 13px; }
+.profile-traits { gap: 1.2mm; }
+.profile-traits span { min-height: 7mm; font-size: 9px; grid-template-columns: 7mm 5mm 1fr; }
 .profile-traits b { font-size: 8px; }
-.personality-panel > p { margin-top: 3mm; font-size: 8px; line-height: 1.45; }
-.symbolism-panel > p { font-size: 10px; line-height: 1.75; }
-.symbolism-panel::after { font-size: 72px; }
-.tradition { margin: 7mm 0 9mm; padding: 7mm; break-inside: avoid; box-shadow: inset 0 0 0 2mm #071c31, inset 0 0 0 2.2mm rgba(216,168,78,.3); }
-.tradition-head { padding-bottom: 4mm; }
-.tradition-head h3 { font-size: 22px; }
-.pillar-seal { grid-template-columns: repeat(2, 12mm); }
-.pillar-seal span { height: 13mm; font-size: 22px; }
-.culture-grid { grid-template-columns: repeat(4, 1fr); margin-top: 5mm; }
-.culture-grid article { padding: 4mm 3mm; }
-.culture-grid strong { margin: 2mm 0; font-size: 16px; }
-.culture-grid p { font-size: 9px; }
-.element-flow { grid-template-columns: 10mm 1fr 10mm 1fr 10mm 1fr 10mm 1fr 10mm; margin: 5mm auto; }
-.element-flow span { width: 10mm; height: 10mm; font-size: 14px; }
-.calculation-note { padding: 3mm 4mm; font-size: 9px; }
-.calculation-note p { font-size: 9px; line-height: 1.55; }
-.name-list { margin-top: 7mm; }
-.name-card { grid-template-columns: 38mm 1fr 18mm; gap: 7mm; padding: 7mm 0; break-inside: avoid; }
-.name-card .hanzi { font-size: 32px; }
-.name-card p { font-size: 11px; line-height: 1.65; }
-.culture-note { margin: 7mm 0 0; padding: 4mm; break-inside: avoid; font-size: 10px; }
+.profile-traits i { font-size: 9px; }
+.profile-traits em { padding-right: 2mm; }
+.personality-panel > p { margin-top: 2mm; font-size: 7px; line-height: 1.35; }
+.symbolism-panel > p { font-size: 9px; line-height: 1.55; }
+.symbolism-panel::after { font-size: 52px; right: 10px; bottom: -15px; }
+.tradition { margin: 4mm 0 5mm; padding: 5mm; break-inside: avoid; box-shadow: inset 0 0 0 1.2mm #071c31, inset 0 0 0 1.5mm rgba(216,168,78,.3); }
+.tradition-head { padding-bottom: 3mm; }
+.tradition-head h3 { font-size: 18px; }
+.pillar-seal { grid-template-columns: repeat(2, 10mm); }
+.pillar-seal span { height: 10mm; font-size: 17px; }
+.culture-grid { grid-template-columns: repeat(4, 1fr); margin-top: 3mm; }
+.culture-grid article { padding: 2.4mm 2mm; }
+.culture-grid strong { margin: 1.2mm 0; font-size: 12px; }
+.culture-grid p { min-height: 2.1em; font-size: 7.5px; }
+.element-flow { grid-template-columns: 8mm 1fr 8mm 1fr 8mm 1fr 8mm 1fr 8mm; margin: 3mm auto; }
+.element-flow span { width: 8mm; height: 8mm; font-size: 10px; }
+.calculation-note { gap: 3mm; padding: 2.2mm 2.8mm; font-size: 8px; }
+.calculation-note p { font-size: 8px; line-height: 1.4; }
+.name-list { margin-top: 4mm; gap: 3mm; }
+.name-card { grid-template-columns: 31mm 1fr 14mm; gap: 4mm; padding: 3.8mm 0; break-inside: avoid; }
+.name-card::before { inset: 2.5mm; }
+.name-card .hanzi { font-size: 24px; }
+.name-card .pinyin { font-size: 8px; }
+.name-card p { font-size: 9px; line-height: 1.45; }
+.name-card .tone { margin-top: 1mm; padding: 0.8mm 1.4mm; font-size: 7px; }
+.name-card .seal { width: 12mm; height: 12mm; font-size: 9px; }
+.culture-note { margin: 4mm 0 0; padding: 2.8mm; break-inside: avoid; font-size: 8.5px; }
 @page { size: A4; margin: 0; }
