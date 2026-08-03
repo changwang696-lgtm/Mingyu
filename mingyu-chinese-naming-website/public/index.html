@@ -71,12 +71,20 @@
 
     <section class="result" id="result" hidden>
       <div class="result-top"><div><p class="section-no">叁 / 03</p><h2 id="resultTitle" data-i18n="resultTitle">你的东方名字卷</h2><span class="edition-badge" id="editionBadge">完整版 · $9.90</span><span class="demo-badge" id="demoBadge" hidden data-i18n="demoBadge">文化体验版</span></div><button id="restart" class="text-button" data-i18n="restart">重新填写 ↺</button></div>
-      <article class="zodiac"><div class="zodiac-glyph" id="zodiacGlyph"><img id="zodiacImage" src="/assets/zodiac/horse.jpg" alt="生肖马纹样"><span>马</span></div><div><p class="eyebrow" data-i18n="zodiacTitle">你的生肖意象</p><h3 id="zodiacName">午马 · Horse</h3><div class="traits full-only" id="traits"></div><p class="full-only" id="summary"></p></div></article>
+      <article class="zodiac">
+        <div class="zodiac-glyph" id="zodiacGlyph"><img id="zodiacImage" src="/assets/zodiac/horse.jpg" alt="生肖马纹样"><span>马</span></div>
+        <div class="zodiac-copy">
+          <p class="eyebrow" data-i18n="zodiacTitle">你的生肖意象</p>
+          <h3 id="zodiacName">午马 · Horse</h3>
+          <div class="traits full-only" id="traits"></div>
+          <p class="full-only" id="summary"></p>
+        </div>
+      </article>
       <section class="zodiac-profile full-only" aria-labelledby="zodiacProfileTitle">
         <div class="profile-heading"><p class="section-no">生肖文化 · ZODIAC CULTURE</p><h3 id="zodiacProfileTitle" data-i18n="zodiacProfileTitle">生肖文化详解</h3></div>
         <div class="profile-grid">
-          <article class="personality-panel"><small data-i18n="personalityEyebrow">性格意象 · PERSONALITY</small><h4 data-i18n="personalityTitle">性格特征</h4><div class="profile-traits" id="profileTraits"></div><p data-i18n="personalityNote">源自传统生肖文化的典型特征，仅作文化理解，不代表对个人性格的科学判定。</p></article>
-          <article class="symbolism-panel"><small data-i18n="symbolismEyebrow">文化意象 · SYMBOLISM &amp; MEANING</small><h4 data-i18n="symbolismTitle">象征与寓意</h4><p id="zodiacSymbolism"></p></article>
+          <article class="personality-panel"><small data-i18n="personalityEyebrow">性格意象 · PERSONALITY</small><div class="panel-title"><span class="panel-icon" aria-hidden="true">✦</span><h4 data-i18n="personalityTitle">性格特征</h4></div><div class="profile-traits" id="profileTraits"></div><p data-i18n="personalityNote">源自传统生肖文化的典型特征，仅作文化理解，不代表对个人性格的科学判定。</p></article>
+          <article class="symbolism-panel"><small data-i18n="symbolismEyebrow">文化意象 · SYMBOLISM &amp; MEANING</small><div class="panel-title"><span class="panel-icon" aria-hidden="true">◎</span><h4 data-i18n="symbolismTitle">象征与寓意</h4></div><p id="zodiacSymbolism"></p></article>
         </div>
       </section>
       <section class="tradition full-only" aria-labelledby="traditionTitle">
