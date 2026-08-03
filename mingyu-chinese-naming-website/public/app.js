@@ -96,7 +96,7 @@ $("#nameForm").addEventListener("submit", event => {
     return;
   }
   pendingTier = event.submitter?.value === "complete" ? "complete" : "simple";
-  pendingBody = Object.fromEntries(new FormData(form));
+  pendingBody = { ...Object.fromEntries(new FormData(form)), tier: pendingTier };
   updatePaymentDialog();
   dialog.showModal();
 });
