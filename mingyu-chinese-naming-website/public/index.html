@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="AI-powered Chinese naming rooted in language, symbolism and traditional culture." />
+  <title>名屿 Mingyu · Chinese Naming Studio</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/theme.css" />
+  <link rel="stylesheet" href="/print.css" media="print" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#top"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
+    <nav><a href="#ritual" data-i18n="navNaming">起名</a><a href="#story" data-i18n="navCulture">生肖文化</a><a href="#craft" data-i18n="navCraft">东方好物</a></nav>
+    <button class="lang" id="langBtn" aria-label="Switch language">EN</button>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-art" role="img" aria-label="Dunhuang-inspired Chinese landscape"></div>
+      <div class="hero-emblem" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><img src="/assets/zodiac/dragon.jpg" alt=""><span>辰</span></div>
+      <div class="hero-copy">
+        <p class="eyebrow" data-i18n="eyebrow">以字为舟 · 渡见东方</p>
+        <h1><span data-i18n="heroA">一个名字，</span><br><em data-i18n="heroB">一生的东方寓意</em></h1>
+        <p data-i18n="heroBody">从你的原名、出生时刻与个性出发，寻找一个既自然好听，也经得起文化推敲的中文名字。</p>
+        <a class="primary" href="#ritual"><span data-i18n="begin">开始寻名</span><b>↓</b></a>
+      </div>
+      <div class="hero-side"><span>天 地 人</span><i></i><small>NAME · SOUND · MEANING</small></div>
+    </section>
+
+    <section class="intro" id="story">
+      <div><p class="section-no">壹 / 01</p><h2 data-i18n="introTitle">不是翻译名字，<br>而是重新认识你。</h2></div>
+      <div class="intro-copy"><p data-i18n="introBody">中文名字是声音、字形与意义的共同选择。我们以你的身份为起点，参考生肖的文化意象与汉字传统，提供有出处、有解释、可被真实使用的名字。</p><div class="pill-row"><span>音 SOUND</span><span>形 FORM</span><span>意 MEANING</span></div></div>
+    </section>
+
+    <section class="zodiac-atlas" aria-labelledby="atlasTitle">
+      <div class="atlas-heading"><p class="section-no">十二灵兽 · TWELVE SIGNS</p><h2 id="atlasTitle">以生肖观时序，<br>以汉字见精神。</h2><p>十二生肖不是命运的判词，而是中国文化观察时间、性格与生命节律的一套象征语言。</p></div>
+      <div class="zodiac-grid">
+        <figure><img src="/assets/zodiac/rat.jpg" alt="生肖鼠纹样"><figcaption><b>子鼠</b><span>机智 · 灵敏</span></figcaption></figure>
+        <figure><img src="/assets/zodiac/ox.jpg" alt="生肖牛纹样"><figcaption><b>丑牛</b><span>踏实 · 稳重</span></figcaption></figure>
+        <figure><img src="/assets/zodiac/tiger.jpg" alt="生肖虎纹样"><figcaption><b>寅虎</b><span>勇敢 · 果断</span></figcaption></figure>
+        <figure><img src="/assets/zodiac/rabbit.jpg" alt="生肖兔纹样"><figcaption><b>卯兔</b><span>温和 · 谨慎</span></figcaption></figure>
+        <figure><img src="/assets/zodiac/dragon.jpg" alt="生肖龙纹样"><figcaption><b>辰龙</b><span>尊贵 · 远志</span></figcaption></figure>
+        <figure><img src="/assets/zodiac/snake.jpg" alt="生肖蛇纹样"><figcaption><b>巳蛇</b><span>聪慧 · 洞察</span></figcaption></figure>
+        <figure><img src="/assets/zodiac/horse.jpg" alt="生肖马纹样"><figcaption><b>午马</b><span>自由 · 进取</span></figcaption></figure>
+        <figure><img src="/assets/zodiac/goat.jpg" alt="生肖羊纹样"><figcaption><b>未羊</b><span>温良 · 和谐</span></figcaption></figure>
+        <figure><img src="/assets/zodiac/monkey.jpg" alt="生肖猴纹样"><figcaption><b>申猴</b><span>聪明 · 多变</span></figcaption></figure>
+        <figure><img src="/assets/zodiac/rooster.jpg" alt="生肖鸡纹样"><figcaption><b>酉鸡</b><span>守时 · 果断</span></figcaption></figure>
+        <figure><img src="/assets/zodiac/dog.jpg" alt="生肖狗纹样"><figcaption><b>戌狗</b><span>忠诚 · 勇毅</span></figcaption></figure>
+        <figure><img src="/assets/zodiac/pig.jpg" alt="生肖猪纹样"><figcaption><b>亥猪</b><span>乐观 · 宽厚</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section class="ritual" id="ritual">
+      <div class="form-heading"><p class="section-no">贰 / 02</p><h2 data-i18n="formTitle">告诉我们，你是谁</h2><p data-i18n="formSub">约 1 分钟 · 你的资料仅用于本次生成</p></div>
+      <form id="nameForm">
+        <label class="wide"><span data-i18n="nameLabel">你现在的姓名</span><input id="name" name="name" required placeholder="e.g. Alex Morgan" autocomplete="name"><small data-i18n="nameHint">支持任何语言，我们会理解读音与文化背景</small></label>
+        <fieldset><legend data-i18n="genderLabel">性别表达</legend><div class="segments"><label><input type="radio" name="gender" value="female"><span data-i18n="female">女性</span></label><label><input type="radio" name="gender" value="male"><span data-i18n="male">男性</span></label><label><input type="radio" name="gender" value="neutral" checked><span data-i18n="neutral">中性 / 不限</span></label></div></fieldset>
+        <label><span data-i18n="birthLabel">出生日期与时间</span><input id="birth" name="birth" required type="datetime-local"><small data-i18n="birthHint">越准确，文化解读越细致</small></label>
+        <label><span data-i18n="placeLabel">出生地</span><input id="place" name="place" placeholder="e.g. Paris, France"><small data-i18n="placeHint">用于理解出生时区</small></label>
+        <label class="wide"><span data-i18n="wishLabel">你希望名字传达什么？</span><textarea name="wish" rows="3" placeholder="Wisdom, freedom, warmth..."></textarea></label>
+        <div class="plan-actions">
+          <button class="plan-button simple-plan" type="submit" name="tier" value="simple"><span><small data-i18n="simpleEdition">简约版</small><strong data-i18n="simpleGenerate">生成名字及生肖</strong><em data-i18n="simpleNoPdf">页面查看 · 不含 PDF</em></span><b>$2.99</b></button>
+          <button class="plan-button complete-plan" type="submit" name="tier" value="complete"><span><small data-i18n="completeEdition">完整版</small><strong data-i18n="completeGenerate">生成全部起名结果</strong><em data-i18n="completeWithPdf">完整页面 · 可保存 PDF</em></span><b>$9.90</b></button>
+        </div>
+        <p class="form-message" id="formMessage" role="alert" aria-live="polite"></p>
+      </form>
+      <div class="privacy"><span>✦</span><p><strong data-i18n="humanTitle">以文化为依据，以人为中心</strong><br><small data-i18n="humanBody">结果为传统文化创意解读，不构成命运预测或专业建议。</small></p></div>
+    </section>
+
+    <section class="result" id="result" hidden>
+      <div class="result-top"><div><p class="section-no">叁 / 03</p><h2 id="resultTitle" data-i18n="resultTitle">你的东方名字卷</h2><span class="edition-badge" id="editionBadge">完整版 · $9.90</span><span class="demo-badge" id="demoBadge" hidden data-i18n="demoBadge">文化体验版</span></div><button id="restart" class="text-button" data-i18n="restart">重新填写 ↺</button></div>
+      <article class="zodiac"><div class="zodiac-glyph" id="zodiacGlyph"><img id="zodiacImage" src="/assets/zodiac/horse.jpg" alt="生肖马纹样"><span>马</span></div><div><p class="eyebrow" data-i18n="zodiacTitle">你的生肖意象</p><h3 id="zodiacName">午马 · Horse</h3><div class="traits full-only" id="traits"></div><p class="full-only" id="summary"></p></div></article>
+      <section class="zodiac-profile full-only" aria-labelledby="zodiacProfileTitle">
+        <div class="profile-heading"><p class="section-no">生肖文化 · ZODIAC CULTURE</p><h3 id="zodiacProfileTitle" data-i18n="zodiacProfileTitle">生肖文化详解</h3></div>
+        <div class="profile-grid">
+          <article class="personality-panel"><small data-i18n="personalityEyebrow">性格意象 · PERSONALITY</small><h4 data-i18n="personalityTitle">性格特征</h4><div class="profile-traits" id="profileTraits"></div><p data-i18n="personalityNote">源自传统生肖文化的典型特征，仅作文化理解，不代表对个人性格的科学判定。</p></article>
+          <article class="symbolism-panel"><small data-i18n="symbolismEyebrow">文化意象 · SYMBOLISM &amp; MEANING</small><h4 data-i18n="symbolismTitle">象征与寓意</h4><p id="zodiacSymbolism"></p></article>
+        </div>
+      </section>
+      <section class="tradition full-only" aria-labelledby="traditionTitle">
+        <div class="tradition-head"><div><p class="section-no">干支 · 五行 · 时辰</p><h3 id="traditionTitle" data-i18n="traditionTitle">传统时序文化解读</h3></div><div class="pillar-seal"><span id="pillarStem">甲</span><span id="pillarBranch">子</span></div></div>
+        <div class="culture-grid">
+          <article><small data-i18n="yearPillar">年柱</small><strong id="yearPillar">甲子</strong><p id="cyclePosition">六十甲子 · 第 1 位</p></article>
+          <article><small data-i18n="heavenlyStem">天干</small><strong id="stemDetail">甲 · 阳木</strong><p data-i18n="stemMeaning">体现年柱天干的阴阳与五行属性</p></article>
+          <article><small data-i18n="earthlyBranch">地支与生肖</small><strong id="branchDetail">子 · 水 · 鼠</strong><p data-i18n="branchMeaning">地支与生肖为固定对应关系</p></article>
+          <article><small data-i18n="birthHour">出生时辰</small><strong id="hourDetail">午时 · 火</strong><p id="hourRange">11:00-13:00</p></article>
+        </div>
+        <div class="element-flow" aria-label="五行属性"><span data-element="木">木</span><i></i><span data-element="火">火</span><i></i><span data-element="土">土</span><i></i><span data-element="金">金</span><i></i><span data-element="水">水</span></div>
+        <aside class="calculation-note"><b data-i18n="methodNote">计算说明</b><p id="cultureNote"></p></aside>
+      </section>
+      <div class="name-list" id="nameList"></div>
+      <aside class="culture-note full-only"><b>注 / NOTE</b><p id="culturalNote"></p></aside>
+      <div class="report-cta full-only"><img class="report-preview" src="/assets/zodiac/report-overview.jpg" alt="十二生肖 PDF 报告内页预览"><div><p class="eyebrow" data-i18n="reportEyebrow">珍藏版 · PERSONAL EDITION</p><h3 data-i18n="pdfReadyTitle">完整报告已经生成</h3><p data-i18n="pdfReadyBody">可将当前完整结果保存为精美 A4 PDF，用于珍藏、打印或赠礼。</p></div><div><button id="savePdf" class="primary" data-i18n="savePdf">保存 PDF</button></div></div>
+    </section>
+
+    <section class="craft" id="craft">
+      <div class="craft-head"><div><p class="section-no">肆 / 04</p><h2 data-i18n="craftTitle">一件带着名字的东方礼物</h2></div><p data-i18n="craftSub">来自手艺人的小物，为名字留下可以触摸的纪念。</p></div>
+      <div class="products"><article><div class="product-img seal-img"><span>安</span></div><p>01 / 手工篆刻</p><h3 data-i18n="product1">定制姓名印章</h3><strong>From $39</strong></article><article><div class="product-img fan-img"><span>和</span></div><p>02 / 苏作雅物</p><h3 data-i18n="product2">缂丝团扇</h3><strong>From $68</strong></article><article><div class="product-img paper-img"><span>名</span></div><p>03 / 宣纸手作</p><h3 data-i18n="product3">姓名书法卷</h3><strong>From $29</strong></article></div>
+    </section>
+  </main>
+  <footer><div class="brand"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></div><p>Names rooted in culture, made for the world.</p><small>© 2026 Mingyu Naming Studio</small></footer>
+
+  <dialog id="payment"><button class="close" aria-label="Close">×</button><p class="eyebrow" id="paymentEyebrow">MINGYU EDITION</p><h2 id="paymentTitle">确认生成简约版</h2><div class="preview-sheet"><span>名屿</span><b>名</b><small>CHINESE NAMING EDITION</small></div><ul id="paymentBenefits"></ul><button id="confirmPurchase" class="submit"><span id="confirmPurchaseText">演示支付并生成 · $2.99</span><b>→</b></button><small data-i18n="demoNote">当前为演示结账流程，未接入真实扣款。</small></dialog>
+  <div class="loading" id="loading" hidden role="status" aria-live="polite"><div class="loader-seal">名</div><p data-i18n="loading">正在研读你的名字与时辰...</p></div>
+  <script src="/app.js"></script>
+</body>
+</html>
