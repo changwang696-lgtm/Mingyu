@@ -97,6 +97,21 @@ function send(res, status, data, type = "application/json; charset=utf-8") {
   res.end(type.startsWith("application/json") ? JSON.stringify(data) : data);
 }
 
+function normalizeTier(tier) {
+  return tier === "simple" ? "simple" : "complete";
+}
+
+function compactBody(body) {
+  return {
+    name: String(body.name || "").trim(),
+    gender: body.gender || "neutral",
+    birth: body.birth,
+    place: body.place?.trim() || "",
+    wish: body.wish?.trim() || "",
+    tier: normalizeTier(body.tier)
+  };
+}
+
 function getAiConfig() {
   if (process.env.DEEPSEEK_API_KEY) {
     return {
@@ -119,14 +134,61 @@ function getAiConfig() {
   return null;
 }
 
+function buildPrompt(body, culture) {
+  const tier = normalizeTier(body.tier);
+  const styleGuide = tier === "simple"
+    ? "Keep the result concise. Summary and culturalNote should each stay under 45 words per language. Each name meaning should stay under 28 words per language."
+    : "Keep the writing vivid but still concise. Summary should stay under 85 words per language. culturalNote should stay under 65 words per language. Each name meaning should stay under 45 words per language.";
+
+  const userProfile = compactBody(body);
+  const cultureLine = [
+    `year pillar: ${culture.pillar}`,
+    `cycle number: ${culture.cycleNumber}`,
+    `zodiac zh/en: ${culture.branch.zodiac}/${culture.branch.zodiacEn}`,
+    `stem: ${culture.stem.char} ${culture.stem.polarity}${culture.stem.element}`,
+    `branch: ${culture.branch.char} ${culture.branch.element}`,
+    `hour branch: ${culture.hourBranch.char} ${culture.hourBranch.element} ${culture.hourBranch.range}`
+  ].join("; ");
+
+  return [
+    "Return valid JSON only.",
+    "Required shape:",
+    '{"zodiac":{"animal":"","animalEn":"","years":"","traits":[],"traitsEn":[]},"summary":"","summaryEn":"","names":[{"hanzi":"","pinyin":"","seal":"","meaning":"","meaningEn":"","tone":""},{"hanzi":"","pinyin":"","seal":"","meaning":"","meaningEn":"","tone":""},{"hanzi":"","pinyin":"","seal":"","meaning":"","meaningEn":"","tone":""}],"culturalNote":"","culturalNoteEn":"","inputName":""}',
+    "Task:",
+    "Create three culturally grounded Chinese name options for an international user.",
+    "Do not claim destiny, science, full BaZi accuracy, missing elements, or favorable elements.",
+    "Use bilingual output for all narrative fields.",
+    styleGuide,
+    `User profile: ${JSON.stringify(userProfile)}`,
+    `Deterministic culture context: ${cultureLine}`
+  ].join("\n");
+}
+
+async function fetchJson(url, options, errorMessage) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const json = await response.json();
+    if (!response.ok) throw new Error(json.error?.message || errorMessage);
+    return json;
+  } catch (error) {
+    if (error.name === "AbortError") throw new Error("AI generation timed out. Please try again.");
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function requestAiResult(body, culture) {
   const config = getAiConfig();
   if (!config) return demoResult(body);
-
-  const prompt = `You are a careful bilingual Chinese naming consultant. Return JSON only with keys zodiac (animal, animalEn, years, traits, traitsEn), summary, summaryEn, names (3 objects: hanzi, pinyin, seal, meaning, meaningEn, tone), culturalNote, culturalNoteEn, inputName. Use the deterministic year pillar, zodiac and birth-hour element below as cultural imagery when explaining name choices. Never claim this is a complete BaZi chart, never infer missing or favorable elements, and never present symbolism as certainty or science. User: ${JSON.stringify(body)}. Deterministic culture context: ${JSON.stringify(culture)}`;
+  const tier = normalizeTier(body.tier);
+  const prompt = buildPrompt(body, culture);
+  const maxTokens = tier === "simple" ? 700 : 1200;
 
   if (config.provider === "deepseek") {
-    const api = await fetch(config.url, {
+    const json = await fetchJson(config.url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${config.apiKey}`,
@@ -134,24 +196,23 @@ async function requestAiResult(body, culture) {
       },
       body: JSON.stringify({
         model: config.model,
+        max_tokens: maxTokens,
         response_format: { type: "json_object" },
         messages: [
           {
             role: "system",
-            content: "You are a careful bilingual Chinese naming consultant. Return valid JSON only and do not include markdown fences."
+            content: "You are a careful bilingual Chinese naming consultant. Return valid JSON only with no markdown fences."
           },
           { role: "user", content: prompt }
         ]
       })
-    });
-    const json = await api.json();
-    if (!api.ok) throw new Error(json.error?.message || "DeepSeek request failed");
+    }, "DeepSeek request failed");
     const output = json.choices?.[0]?.message?.content;
     if (!output) throw new Error("DeepSeek returned empty content");
     return JSON.parse(output);
   }
 
-  const api = await fetch(config.url, {
+  const json = await fetchJson(config.url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
@@ -160,11 +221,10 @@ async function requestAiResult(body, culture) {
     body: JSON.stringify({
       model: config.model,
       input: prompt,
+      max_output_tokens: maxTokens,
       text: { format: { type: "json_object" } }
     })
-  });
-  const json = await api.json();
-  if (!api.ok) throw new Error(json.error?.message || "OpenAI request failed");
+  }, "OpenAI request failed");
   const output = json.output_text || json.output?.flatMap(item => item.content || []).find(item => item.type === "output_text")?.text;
   if (!output) throw new Error("OpenAI returned empty content");
   return JSON.parse(output);
