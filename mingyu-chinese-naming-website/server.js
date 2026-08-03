@@ -66,6 +66,15 @@ function inferTimeZoneFromPlace(place) {
   return match ? { timeZone: match.timeZone, inferred: true } : { timeZone: chinaTimeZone, inferred: false };
 }
 
+function isValidTimeZone(timeZone) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone }).format();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function parseBirthInput(input) {
   const match = String(input || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
   if (!match) return null;
@@ -123,7 +132,10 @@ function formatDateTimeLabel(parts) {
 function resolveBirthContext(body) {
   const birthParts = parseBirthInput(body.birth);
   if (!birthParts) return null;
-  const source = inferTimeZoneFromPlace(body.place);
+  const requestedTimeZone = String(body.birthTimeZone || "").trim();
+  const source = requestedTimeZone && isValidTimeZone(requestedTimeZone)
+    ? { timeZone: requestedTimeZone, inferred: false }
+    : inferTimeZoneFromPlace(body.place);
   const utcDate = zonedDateTimeToUtc(birthParts, source.timeZone);
   const chinaParts = getTimeZoneParts(utcDate, chinaTimeZone);
   return {
@@ -372,8 +384,9 @@ function generate(req, res) {
   req.on("end", async () => {
     let body;
     try { body = JSON.parse(raw); } catch { return send(res, 400, { error: "Invalid request" }); }
-    if (!body.name?.trim() || !body.birth) return send(res, 422, { error: "Name and birth date are required" });
+    if (!body.name?.trim() || !body.birth || !body.place?.trim() || !body.birthTimeZone) return send(res, 422, { error: "Name, birth date, birthplace and birthplace time zone are required" });
     if (Number.isNaN(new Date(body.birth).getTime())) return send(res, 422, { error: "Birth date is invalid" });
+    if (!isValidTimeZone(body.birthTimeZone)) return send(res, 422, { error: "Birthplace time zone is invalid" });
 
     const culture = traditionalCulture(body);
     try {
