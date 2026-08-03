@@ -4,7 +4,14 @@ const path = require("path");
 
 const root = path.join(__dirname, "public");
 const port = Number(process.env.PORT) || 4173;
-const types = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".png": "image/png" };
+const types = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg"
+};
 const signs = [["鼠", "Rat"], ["牛", "Ox"], ["虎", "Tiger"], ["兔", "Rabbit"], ["龙", "Dragon"], ["蛇", "Snake"], ["马", "Horse"], ["羊", "Goat"], ["猴", "Monkey"], ["鸡", "Rooster"], ["狗", "Dog"], ["猪", "Pig"]];
 const zodiacProfiles = [
   { personality: ["机智灵敏", "适应力强", "善于交际"], personalityEn: ["Quick-witted", "Adaptable", "Sociable"], symbolism: "鼠对应子支，是十二地支循环的起点。传统意象常联系敏锐、生命力与善于把握细微机会，也寓有新周期萌发、生机延续之意。", symbolismEn: "The Rat corresponds to Zi, the opening branch of the twelve-part cycle. It traditionally evokes alertness, vitality and an ability to notice small opportunities, while suggesting the beginning and renewal of a new cycle." },
@@ -90,6 +97,79 @@ function send(res, status, data, type = "application/json; charset=utf-8") {
   res.end(type.startsWith("application/json") ? JSON.stringify(data) : data);
 }
 
+function getAiConfig() {
+  if (process.env.DEEPSEEK_API_KEY) {
+    return {
+      provider: "deepseek",
+      apiKey: process.env.DEEPSEEK_API_KEY,
+      model: process.env.DEEPSEEK_MODEL || "deepseek-v4-flash",
+      url: "https://api.deepseek.com/chat/completions"
+    };
+  }
+
+  if (process.env.OPENAI_API_KEY) {
+    return {
+      provider: "openai",
+      apiKey: process.env.OPENAI_API_KEY,
+      model: process.env.OPENAI_MODEL || "gpt-5.2",
+      url: "https://api.openai.com/v1/responses"
+    };
+  }
+
+  return null;
+}
+
+async function requestAiResult(body, culture) {
+  const config = getAiConfig();
+  if (!config) return demoResult(body);
+
+  const prompt = `You are a careful bilingual Chinese naming consultant. Return JSON only with keys zodiac (animal, animalEn, years, traits, traitsEn), summary, summaryEn, names (3 objects: hanzi, pinyin, seal, meaning, meaningEn, tone), culturalNote, culturalNoteEn, inputName. Use the deterministic year pillar, zodiac and birth-hour element below as cultural imagery when explaining name choices. Never claim this is a complete BaZi chart, never infer missing or favorable elements, and never present symbolism as certainty or science. User: ${JSON.stringify(body)}. Deterministic culture context: ${JSON.stringify(culture)}`;
+
+  if (config.provider === "deepseek") {
+    const api = await fetch(config.url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: config.model,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: "You are a careful bilingual Chinese naming consultant. Return valid JSON only and do not include markdown fences."
+          },
+          { role: "user", content: prompt }
+        ]
+      })
+    });
+    const json = await api.json();
+    if (!api.ok) throw new Error(json.error?.message || "DeepSeek request failed");
+    const output = json.choices?.[0]?.message?.content;
+    if (!output) throw new Error("DeepSeek returned empty content");
+    return JSON.parse(output);
+  }
+
+  const api = await fetch(config.url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: config.model,
+      input: prompt,
+      text: { format: { type: "json_object" } }
+    })
+  });
+  const json = await api.json();
+  if (!api.ok) throw new Error(json.error?.message || "OpenAI request failed");
+  const output = json.output_text || json.output?.flatMap(item => item.content || []).find(item => item.type === "output_text")?.text;
+  if (!output) throw new Error("OpenAI returned empty content");
+  return JSON.parse(output);
+}
+
 function generate(req, res) {
   let raw = "";
   req.on("data", chunk => {
@@ -101,16 +181,10 @@ function generate(req, res) {
     try { body = JSON.parse(raw); } catch { return send(res, 400, { error: "Invalid request" }); }
     if (!body.name?.trim() || !body.birth) return send(res, 422, { error: "Name and birth date are required" });
     if (Number.isNaN(new Date(body.birth).getTime())) return send(res, 422, { error: "Birth date is invalid" });
-    if (!process.env.OPENAI_API_KEY) return send(res, 200, demoResult(body));
 
     const culture = traditionalCulture(body);
-    const prompt = `You are a careful bilingual Chinese naming consultant. Return JSON only with keys zodiac (animal, animalEn, years, traits, traitsEn), summary, summaryEn, names (3 objects: hanzi, pinyin, seal, meaning, meaningEn, tone), culturalNote, culturalNoteEn, inputName. Use the deterministic year pillar, zodiac and birth-hour element below as cultural imagery when explaining name choices. Never claim this is a complete BaZi chart, never infer missing or favorable elements, and never present symbolism as certainty or science. User: ${JSON.stringify(body)}. Deterministic culture context: ${JSON.stringify(culture)}`;
     try {
-      const api = await fetch("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({ model: process.env.OPENAI_MODEL || "gpt-5.2", input: prompt, text: { format: { type: "json_object" } } }) });
-      const json = await api.json();
-      if (!api.ok) throw new Error(json.error?.message || "OpenAI request failed");
-      const output = json.output_text || json.output?.flatMap(item => item.content || []).find(item => item.type === "output_text")?.text;
-      const result = JSON.parse(output);
+      const result = await requestAiResult(body, culture);
       result.traditionalCulture = culture;
       result.zodiac = { ...result.zodiac, animal: culture.branch.zodiac, animalEn: culture.branch.zodiacEn, years: String(culture.basisYear), traits: culture.zodiacProfile.personality, traitsEn: culture.zodiacProfile.personalityEn };
       send(res, 200, result);
