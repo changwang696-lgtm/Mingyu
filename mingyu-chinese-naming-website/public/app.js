@@ -9,7 +9,7 @@ const translations = {
     nameLabel: "Your current name", nameHint: "Any language is welcome. We consider pronunciation and context.",
     genderLabel: "Gender expression", female: "Female", male: "Male", neutral: "Neutral / Any",
     birthLabel: "Date and time of birth", birthHint: "The more accurate, the more nuanced the cultural reading.",
-    placeLabel: "Place of birth", placeHint: "Used to understand your birth time zone.", wishLabel: "What should your name convey?",
+    placeLabel: "Place of birth", placeHint: "Enter the city and country of birth.", timezoneLabel: "Birthplace time zone", timezonePlaceholder: "Select the birthplace time zone", timezoneHint: "Daylight saving is applied before conversion to China Standard Time (UTC+8).", wishLabel: "What should your name convey?",
     simpleEdition: "SIMPLE EDITION", simpleGenerate: "Names and zodiac", simpleNoPdf: "View online · No PDF",
     completeEdition: "COMPLETE EDITION", completeGenerate: "Complete naming result", completeWithPdf: "Full result · Save as PDF",
     humanTitle: "Culture-led, human-centred", humanBody: "This is a creative cultural interpretation, not fortune-telling or professional advice.",
@@ -33,7 +33,7 @@ const translations = {
     introBody: "中文名字是声音、字形与意义的共同选择。我们以你的身份为起点，参考生肖的文化意象与汉字传统，提供有出处、有解释、可被真实使用的名字。",
     formTitle: "告诉我们，你是谁", formSub: "约 1 分钟 · 填写资料后选择生成版本", nameLabel: "你现在的姓名",
     nameHint: "支持任何语言，我们会理解读音与文化背景", genderLabel: "性别表达", female: "女性", male: "男性", neutral: "中性 / 不限",
-    birthLabel: "出生日期与时间", birthHint: "越准确，文化解读越细致", placeLabel: "出生地", placeHint: "用于理解出生时区", wishLabel: "你希望名字传达什么？",
+    birthLabel: "出生日期与时间", birthHint: "越准确，文化解读越细致", placeLabel: "出生地", placeHint: "请填写出生城市与国家", timezoneLabel: "出生地时区", timezonePlaceholder: "请选择出生地对应时区", timezoneHint: "系统会处理夏令时，并换算为中国标准时间（UTC+8）", wishLabel: "你希望名字传达什么？",
     simpleEdition: "简约版", simpleGenerate: "生成名字及生肖", simpleNoPdf: "页面查看 · 不含 PDF",
     completeEdition: "完整版", completeGenerate: "生成全部起名结果", completeWithPdf: "完整页面 · 可保存 PDF",
     humanTitle: "以文化为依据，以人为中心", humanBody: "结果为传统文化创意解读，不构成命运预测或专业建议。",
@@ -162,7 +162,7 @@ function renderZodiacProfile(culture, en) {
   const profile = culture?.zodiacProfile;
   if (!profile) return;
   const traits = en ? profile.personalityEn : profile.personality;
-  const icons = ["✦", "❖", "✧"];
+  const icons = ["志", "心", "行"];
   $("#profileTraits").innerHTML = traits.map((trait, index) => `<span><b>0${index + 1}</b><i aria-hidden="true">${icons[index % icons.length]}</i><em>${esc(trait)}</em></span>`).join("");
   $("#zodiacSymbolism").textContent = en ? profile.symbolismEn : profile.symbolism;
 }
