@@ -244,7 +244,12 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
 }
-.name-card .seal { color: var(--gold-light); background: var(--cinnabar); border-color: var(--cinnabar); }
+.name-card .seal { position: relative; display: grid; place-items: center; gap: 3px; color: var(--gold-light); background: var(--cinnabar); border: 2px double var(--gold-light); box-shadow: inset 0 0 0 3px rgba(255,236,184,.12), 0 4px 10px rgba(48,37,29,.16); writing-mode: vertical-rl; text-orientation: upright; }
+.name-card .seal::before, .name-card .seal::after { content: ""; position: absolute; width: 8px; height: 8px; border-color: rgba(255,236,184,.68); border-style: solid; }
+.name-card .seal::before { left: 4px; top: 4px; border-width: 1px 0 0 1px; }
+.name-card .seal::after { right: 4px; bottom: 4px; border-width: 0 1px 1px 0; }
+.seal-mark { color: rgba(255,236,184,.72); font-family: "STKaiti", "KaiTi", serif; font-size: 11px; line-height: 1; }
+.seal-text { color: var(--gold-light); font-family: "STKaiti", "KaiTi", "Noto Serif SC", serif; font-size: 17px; line-height: 1.1; }
 .culture-note {
   margin-top: 28px;
   background: linear-gradient(135deg, rgba(216,168,78,.18), rgba(255,255,255,.48));
@@ -339,7 +344,7 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 .name-card > * { position: relative; z-index: 1; }
 .name-card .hanzi { font-size: 54px; letter-spacing: 2px; }
 .name-card .tone { display: inline-block; margin-top: 10px; padding: 4px 10px; background: rgba(216,168,78,.14); color: var(--cinnabar); }
-.name-card .seal { color: var(--gold-light); background: var(--cinnabar); border-color: var(--cinnabar); }
+.name-card .seal { color: var(--gold-light); background: var(--cinnabar); border-color: var(--gold-light); }
 .culture-note { background: rgba(216,168,78,.15); border-color: var(--teal); }
 
 .zodiac-profile { margin: 24px 0 54px; border-top: 1px solid rgba(48,37,29,.25); border-bottom: 1px solid rgba(48,37,29,.25); }
@@ -351,8 +356,10 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 .profile-grid small { color: var(--cinnabar); font: 10px Arial,sans-serif; letter-spacing: 1.4px; }
 .profile-grid h4 { margin: 9px 0 22px; color: var(--ink); font-size: 23px; font-weight: 400; }
 .profile-traits { display: grid; gap: 10px; }
-.profile-traits span { display: grid; grid-template-columns: 38px 1fr; align-items: center; min-height: 46px; color: var(--paper); background: var(--teal); }
+.profile-traits span { display: grid; grid-template-columns: 38px 28px minmax(0, 1fr); align-items: center; min-height: 46px; color: var(--paper); background: var(--teal); }
 .profile-traits b { height: 100%; display: grid; place-items: center; border-right: 1px solid rgba(242,207,131,.35); color: var(--gold-light); font: 10px Arial,sans-serif; }
+.profile-traits i { display: grid; place-items: center; color: var(--gold-light); font-style: normal; }
+.profile-traits em { min-width: 0; padding: 0 14px; font-style: normal; white-space: normal; overflow-wrap: anywhere; }
 .personality-panel > p { margin: 18px 0 0; color: #756c61; font-size: 11px; line-height: 1.65; }
 .symbolism-panel { position: relative; overflow: hidden; background: rgba(216,168,78,.11); }
 .symbolism-panel::after { content: "寓"; position: absolute; right: 22px; bottom: -22px; color: rgba(167,58,43,.07); font-size: 126px; line-height: 1; pointer-events: none; }
