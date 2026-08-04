@@ -5,14 +5,14 @@ const translations = {
     heroBody: "From your original name, birth moment and personality, discover a Chinese name that sounds natural and carries cultural depth.",
     begin: "Find my name", introTitle: "Not a translation, but a new way to see you.",
     introBody: "A Chinese name is a choice of sound, form and meaning. Starting from your identity, we interpret zodiac symbolism and character traditions to create names that are thoughtful, explained and usable in real life.",
-    formTitle: "Tell us who you are", formSub: "About 1 minute · Choose the edition after entering your details",
+    formTitle: "Tell us who you are", formSub: "Your name, birth date and birthplace are not retained. If you prefer, enter only your surname; results remain about 90% as effective.",
     nameLabel: "Your current name", nameHint: "Any language is welcome. We consider pronunciation and context.",
     genderLabel: "Gender expression", female: "Female", male: "Male", neutral: "Neutral / Any",
     birthLabel: "Date and time of birth", birthHint: "The more accurate, the more nuanced the cultural reading.",
-    placeLabel: "Place of birth", placeHint: "Enter the city and country of birth.", timezoneLabel: "Birthplace time zone", timezonePlaceholder: "Select the birthplace time zone", timezoneHint: "Daylight saving is applied before conversion to China Standard Time (UTC+8).", wishLabel: "What should your name convey?",
+    timezoneLabel: "Birthplace time zone", timezonePlaceholder: "Select the birthplace time zone", timezoneHint: "Daylight saving is applied before conversion to China Standard Time (UTC+8).", wishLabel: "What should your name convey?",
     simpleEdition: "SIMPLE EDITION", simpleGenerate: "Names and zodiac", simpleNoPdf: "View online · No PDF",
     completeEdition: "COMPLETE EDITION", completeGenerate: "Complete naming result", completeWithPdf: "Full result · Save as PDF",
-    humanTitle: "Culture-led, human-centred", humanBody: "This is a creative cultural interpretation, not fortune-telling or professional advice.",
+    humanTitle: "Privacy first · No profile is kept", humanBody: "We do not retain your name, birth date or birthplace. Use only your surname if you prefer. This is a cultural interpretation, not fortune-telling or professional advice.",
     resultTitle: "Your Chinese name folio", simpleResultTitle: "Your names and zodiac", restart: "Start again ↺",
     zodiacTitle: "Your zodiac imagery", traditionTitle: "Traditional time & element reading", yearPillar: "Year pillar",
     heavenlyStem: "Heavenly stem", earthlyBranch: "Earthly branch & zodiac", birthHour: "Birth hour",
@@ -31,12 +31,13 @@ const translations = {
     heroA: "一个名字，", heroB: "一生的东方寓意", heroBody: "从你的原名、出生时刻与个性出发，寻找一个既自然好听，也经得起文化推敲的中文名字。",
     begin: "开始寻名", introTitle: "不是翻译名字，而是重新认识你。",
     introBody: "中文名字是声音、字形与意义的共同选择。我们以你的身份为起点，参考生肖的文化意象与汉字传统，提供有出处、有解释、可被真实使用的名字。",
-    formTitle: "告诉我们，你是谁", formSub: "约 1 分钟 · 填写资料后选择生成版本", nameLabel: "你现在的姓名",
+    formTitle: "告诉我们，你是谁", formSub: "您填写的姓名、出生日期和出生地不会被本网站保留。若有顾虑，可只输入您的姓氏，生成效果仍约有 90%。",
+    nameLabel: "你现在的姓名",
     nameHint: "支持任何语言，我们会理解读音与文化背景", genderLabel: "性别表达", female: "女性", male: "男性", neutral: "中性 / 不限",
-    birthLabel: "出生日期与时间", birthHint: "越准确，文化解读越细致", placeLabel: "出生地", placeHint: "请填写出生城市与国家", timezoneLabel: "出生地时区", timezonePlaceholder: "请选择出生地对应时区", timezoneHint: "系统会处理夏令时，并换算为中国标准时间（UTC+8）", wishLabel: "你希望名字传达什么？",
+    birthLabel: "出生日期与时间", birthHint: "越准确，文化解读越细致", timezoneLabel: "出生地时区", timezonePlaceholder: "请选择出生地对应时区", timezoneHint: "系统会处理夏令时，并换算为中国标准时间（UTC+8）", wishLabel: "你希望名字传达什么？",
     simpleEdition: "简约版", simpleGenerate: "生成名字及生肖", simpleNoPdf: "页面查看 · 不含 PDF",
     completeEdition: "完整版", completeGenerate: "生成全部起名结果", completeWithPdf: "完整页面 · 可保存 PDF",
-    humanTitle: "以文化为依据，以人为中心", humanBody: "结果为传统文化创意解读，不构成命运预测或专业建议。",
+    humanTitle: "隐私优先 · 不建立个人档案", humanBody: "我们不会保留您的姓名、出生日期或出生地；如有顾虑可只输入姓氏。结果为传统文化创意解读，不构成命运预测或专业建议。",
     resultTitle: "你的东方名字卷", simpleResultTitle: "你的名字与生肖", restart: "重新填写 ↺", zodiacTitle: "你的生肖意象",
     traditionTitle: "传统时序文化解读", yearPillar: "年柱", heavenlyStem: "天干", earthlyBranch: "地支与生肖", birthHour: "出生时辰",
     stemMeaning: "体现年柱天干的阴阳与五行属性", branchMeaning: "地支与生肖为固定对应关系", methodNote: "计算说明",
@@ -152,7 +153,7 @@ function render(data) {
     <article class="name-card">
       <div><small>${en ? `NAME 0${index + 1}` : `候选 0${index + 1}`}</small><div class="hanzi">${esc(name.hanzi)}</div><div class="pinyin">${esc(name.pinyin)}</div></div>
       <div class="name-detail"><p>${esc(en ? name.meaningEn : name.meaning)}</p><span class="tone">${esc(name.tone)}</span></div>
-      <div class="seal">${esc(name.seal)}</div>
+      <div class="seal"><span class="seal-mark" aria-hidden="true">印</span><span class="seal-text">${esc(name.seal)}</span></div>
     </article>`).join("");
   $("#demoBadge").hidden = !data.demo;
   $("#demoBadge").textContent = en ? "Cultural preview" : "文化体验版";
