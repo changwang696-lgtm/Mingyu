@@ -384,7 +384,7 @@ function generate(req, res) {
   req.on("end", async () => {
     let body;
     try { body = JSON.parse(raw); } catch { return send(res, 400, { error: "Invalid request" }); }
-    if (!body.name?.trim() || !body.birth || !body.place?.trim() || !body.birthTimeZone) return send(res, 422, { error: "Name, birth date, birthplace and birthplace time zone are required" });
+    if (!body.name?.trim() || !body.birth || !body.birthTimeZone) return send(res, 422, { error: "Name, birth date and birthplace time zone are required" });
     if (Number.isNaN(new Date(body.birth).getTime())) return send(res, 422, { error: "Birth date is invalid" });
     if (!isValidTimeZone(body.birthTimeZone)) return send(res, 422, { error: "Birthplace time zone is invalid" });
 
