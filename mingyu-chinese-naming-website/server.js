@@ -4,6 +4,11 @@ const path = require("path");
 
 const root = path.join(__dirname, "public");
 const port = Number(process.env.PORT) || 4173;
+const orderStore = new Map();
+const tierPricing = {
+  simple: { value: "2.99", label: "Simple Edition" },
+  complete: { value: "9.90", label: "Complete Edition" }
+};
 const types = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -164,11 +169,12 @@ function traditionalCulture(body) {
   const zodiacProfile = zodiacProfiles[branchIndex];
   const hour = birth.hour;
   const hourBranch = branches[Math.floor(((hour + 1) % 24) / 2)];
+  const sourceLabel = birthContext?.sourceTimeZone || chinaTimeZone;
   const timeNoteZh = birthContext
-    ? `出生时间已根据出生地“${body.place || "未填写"}”推断时区，并换算为北京时间 ${birthContext.chinaLabel} 后计算年柱与时辰。`
+    ? `出生时间已按所选时区 ${sourceLabel} 换算为北京时间 ${birthContext.chinaLabel} 后计算年柱与时辰。`
     : "出生时间按北京时间理解后计算年柱与时辰。";
   const timeNoteEn = birthContext
-    ? `The birth time is interpreted in the timezone inferred from "${body.place || "the provided birthplace"}" and converted to China Standard Time (${birthContext.chinaLabel}) before calculating the year pillar and birth hour.`
+    ? `The birth time is interpreted in the selected timezone ${sourceLabel} and converted to China Standard Time (${birthContext.chinaLabel}) before calculating the year pillar and birth hour.`
     : "The birth time is interpreted in China Standard Time before calculating the year pillar and birth hour.";
   return {
     basisYear: traditionalYear,
@@ -222,10 +228,39 @@ function compactBody(body) {
     name: String(body.name || "").trim(),
     gender: body.gender || "neutral",
     birth: body.birth,
+    birthTimeZone: String(body.birthTimeZone || "").trim(),
     place: body.place?.trim() || "",
     wish: body.wish?.trim() || "",
     tier: normalizeTier(body.tier)
   };
+}
+
+function readJsonBody(req, res) {
+  return new Promise(resolve => {
+    let raw = "";
+    req.on("data", chunk => {
+      raw += chunk;
+      if (raw.length > 100000) {
+        send(res, 413, { error: "Request too large" });
+        req.destroy();
+      }
+    });
+    req.on("end", () => {
+      try {
+        resolve(JSON.parse(raw || "{}"));
+      } catch {
+        send(res, 400, { error: "Invalid request" });
+        resolve(null);
+      }
+    });
+  });
+}
+
+function validateGenerationBody(body) {
+  if (!body.name?.trim() || !body.birth || !body.birthTimeZone) return "Name, birth date and birthplace time zone are required";
+  if (Number.isNaN(new Date(body.birth).getTime())) return "Birth date is invalid";
+  if (!isValidTimeZone(body.birthTimeZone)) return "Birthplace time zone is invalid";
+  return null;
 }
 
 function getAiConfig() {
@@ -248,6 +283,53 @@ function getAiConfig() {
   }
 
   return null;
+}
+
+function getPayPalConfig() {
+  if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) return null;
+  const mode = process.env.PAYPAL_ENV === "live" ? "live" : "sandbox";
+  return {
+    clientId: process.env.PAYPAL_CLIENT_ID,
+    clientSecret: process.env.PAYPAL_CLIENT_SECRET,
+    mode,
+    baseUrl: mode === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com"
+  };
+}
+
+function cleanupOrders() {
+  const cutoff = Date.now() - 1000 * 60 * 60 * 6;
+  for (const [orderId, value] of orderStore.entries()) {
+    if (value.createdAt < cutoff) orderStore.delete(orderId);
+  }
+}
+
+async function fetchPayPalAccessToken(config) {
+  const response = await fetch(`${config.baseUrl}/v1/oauth2/token`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${config.clientId}:${config.clientSecret}`).toString("base64")}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: "grant_type=client_credentials"
+  });
+  const json = await response.json();
+  if (!response.ok || !json.access_token) throw new Error(json.error_description || "PayPal authentication failed");
+  return json.access_token;
+}
+
+async function fetchPayPalJson(config, pathname, options, errorMessage) {
+  const accessToken = await fetchPayPalAccessToken(config);
+  const response = await fetch(`${config.baseUrl}${pathname}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      ...(options?.headers || {})
+    }
+  });
+  const json = await response.json();
+  if (!response.ok) throw new Error(json?.message || json?.details?.[0]?.description || errorMessage);
+  return json;
 }
 
 function buildPrompt(body, culture) {
@@ -375,31 +457,104 @@ async function requestAiResult(body, culture) {
   return JSON.parse(output);
 }
 
-function generate(req, res) {
-  let raw = "";
-  req.on("data", chunk => {
-    raw += chunk;
-    if (raw.length > 100000) req.destroy();
-  });
-  req.on("end", async () => {
-    let body;
-    try { body = JSON.parse(raw); } catch { return send(res, 400, { error: "Invalid request" }); }
-    if (!body.name?.trim() || !body.birth || !body.birthTimeZone) return send(res, 422, { error: "Name, birth date and birthplace time zone are required" });
-    if (Number.isNaN(new Date(body.birth).getTime())) return send(res, 422, { error: "Birth date is invalid" });
-    if (!isValidTimeZone(body.birthTimeZone)) return send(res, 422, { error: "Birthplace time zone is invalid" });
+async function handleGenerate(req, res) {
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  const validationError = validateGenerationBody(body);
+  if (validationError) return send(res, 422, { error: validationError });
+  if (getPayPalConfig() && process.env.ALLOW_UNPAID_GENERATION !== "true") {
+    return send(res, 402, { error: "Payment required. Please use the PayPal checkout flow." });
+  }
 
-    const culture = traditionalCulture(body);
-    try {
-      const result = await requestAiResult(body, culture);
-      result.traditionalCulture = culture;
-      result.zodiac = { ...result.zodiac, animal: culture.branch.zodiac, animalEn: culture.branch.zodiacEn, years: String(culture.basisYear), traits: culture.zodiacProfile.personality, traitsEn: culture.zodiacProfile.personalityEn };
-      send(res, 200, result);
-    } catch (error) { send(res, 502, { error: error.message }); }
-  });
+  const culture = traditionalCulture(body);
+  try {
+    const result = await requestAiResult(body, culture);
+    result.traditionalCulture = culture;
+    result.zodiac = { ...result.zodiac, animal: culture.branch.zodiac, animalEn: culture.branch.zodiacEn, years: String(culture.basisYear), traits: culture.zodiacProfile.personality, traitsEn: culture.zodiacProfile.personalityEn };
+    send(res, 200, result);
+  } catch (error) {
+    send(res, 502, { error: error.message });
+  }
+}
+
+async function handlePayPalConfig(req, res) {
+  const config = getPayPalConfig();
+  send(res, 200, { enabled: Boolean(config), clientId: config?.clientId || null, currency: "USD", mode: config?.mode || null });
+}
+
+async function handleCreatePayPalOrder(req, res) {
+  const config = getPayPalConfig();
+  if (!config) return send(res, 503, { error: "PayPal is not configured yet." });
+
+  const rawBody = await readJsonBody(req, res);
+  if (!rawBody) return;
+  const body = compactBody(rawBody);
+  const validationError = validateGenerationBody(body);
+  if (validationError) return send(res, 422, { error: validationError });
+
+  cleanupOrders();
+  const tier = normalizeTier(body.tier);
+  const pricing = tierPricing[tier];
+  try {
+    const order = await fetchPayPalJson(config, "/v2/checkout/orders", {
+      method: "POST",
+      body: JSON.stringify({
+        intent: "CAPTURE",
+        purchase_units: [{
+          description: `Mingyu Chinese Naming - ${pricing.label}`,
+          amount: { currency_code: "USD", value: pricing.value }
+        }]
+      })
+    }, "PayPal order creation failed");
+    orderStore.set(order.id, { body, tier, createdAt: Date.now(), status: "CREATED" });
+    send(res, 200, { id: order.id });
+  } catch (error) {
+    send(res, 502, { error: error.message });
+  }
+}
+
+async function buildPaidResult(body) {
+  const culture = traditionalCulture(body);
+  const result = await requestAiResult(body, culture);
+  result.traditionalCulture = culture;
+  result.zodiac = { ...result.zodiac, animal: culture.branch.zodiac, animalEn: culture.branch.zodiacEn, years: String(culture.basisYear), traits: culture.zodiacProfile.personality, traitsEn: culture.zodiacProfile.personalityEn };
+  return result;
+}
+
+async function handleCapturePayPalOrder(req, res) {
+  const config = getPayPalConfig();
+  if (!config) return send(res, 503, { error: "PayPal is not configured yet." });
+
+  const body = await readJsonBody(req, res);
+  if (!body?.orderID) return send(res, 422, { error: "PayPal order ID is required." });
+
+  const stored = orderStore.get(body.orderID);
+  if (!stored) return send(res, 404, { error: "PayPal order not found. Please restart checkout." });
+  if (stored.status === "COMPLETED" && stored.result) return send(res, 200, stored.result);
+
+  try {
+    const capture = await fetchPayPalJson(config, `/v2/checkout/orders/${body.orderID}/capture`, {
+      method: "POST",
+      body: JSON.stringify({})
+    }, "PayPal capture failed");
+    const captureStatus = capture.purchase_units?.[0]?.payments?.captures?.[0]?.status || capture.status;
+    if (captureStatus !== "COMPLETED") return send(res, 402, { error: "PayPal payment is not completed yet." });
+
+    const result = await buildPaidResult(stored.body);
+    stored.status = "COMPLETED";
+    stored.result = result;
+    orderStore.set(body.orderID, stored);
+    send(res, 200, result);
+  } catch (error) {
+    send(res, 502, { error: error.message });
+  }
 }
 
 http.createServer((req, res) => {
-  if (req.method === "POST" && req.url === "/api/generate") return generate(req, res);
+  if (req.method === "GET" && req.url === "/api/paypal-config") return handlePayPalConfig(req, res);
+  if (req.method === "POST" && req.url === "/api/paypal/create-order") return handleCreatePayPalOrder(req, res);
+  if (req.method === "POST" && req.url === "/api/paypal/capture-order") return handleCapturePayPalOrder(req, res);
+  if (req.method === "POST" && req.url === "/api/generate") return handleGenerate(req, res);
   const safeUrl = req.url === "/" ? "/index.html" : req.url.split("?")[0];
   const file = path.normalize(path.join(root, safeUrl));
   if (!file.startsWith(root)) return send(res, 403, "Forbidden", "text/plain; charset=utf-8");
