@@ -57,6 +57,9 @@ let latest = null;
 let activeTier = "complete";
 let pendingTier = "simple";
 let pendingBody = null;
+let paypalConfig = { enabled: false, clientId: null, currency: "USD" };
+let paypalSdkPromise = null;
+let paypalButtonsInstance = null;
 const $ = selector => document.querySelector(selector);
 const dialog = $("#payment");
 
@@ -108,9 +111,16 @@ function updatePaymentDialog() {
   $("#paymentEyebrow").textContent = copy.eyebrow;
   $("#paymentBenefits").innerHTML = copy.benefits.map(item => `<li>${esc(item)}</li>`).join("");
   $("#confirmPurchaseText").textContent = copy.button;
+  $("#paymentNote").textContent = paypalConfig.enabled
+    ? (lang === "zh" ? "支付将由 PayPal 安全处理，付款完成后立即生成结果。" : "Payment will be processed securely by PayPal. Your result will generate immediately after capture.")
+    : translations[lang].demoNote;
+  $("#confirmPurchase").hidden = paypalConfig.enabled;
+  $("#paypalButtons").hidden = !paypalConfig.enabled;
+  if (paypalConfig.enabled) renderPayPalButtons();
 }
 
 $("#confirmPurchase").onclick = async () => {
+  if (paypalConfig.enabled) return;
   dialog.close();
   $("#loading").hidden = false;
   try {
@@ -159,6 +169,79 @@ function render(data) {
   $("#demoBadge").textContent = en ? "Cultural preview" : "文化体验版";
 }
 
+function loadPayPalSdk() {
+  if (!paypalConfig.enabled || !paypalConfig.clientId) return Promise.reject(new Error("PayPal is not configured."));
+  if (window.paypal) return Promise.resolve(window.paypal);
+  if (paypalSdkPromise) return paypalSdkPromise;
+  paypalSdkPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(paypalConfig.clientId)}&currency=${encodeURIComponent(paypalConfig.currency)}&intent=capture`;
+    script.async = true;
+    script.onload = () => resolve(window.paypal);
+    script.onerror = () => reject(new Error("Failed to load PayPal SDK."));
+    document.head.appendChild(script);
+  });
+  return paypalSdkPromise;
+}
+
+async function renderPayPalButtons() {
+  const container = $("#paypalButtons");
+  container.hidden = false;
+  container.innerHTML = "";
+  try {
+    const paypal = await loadPayPalSdk();
+    if (paypalButtonsInstance?.close) paypalButtonsInstance.close();
+    paypalButtonsInstance = paypal.Buttons({
+      style: { layout: "vertical", color: "gold", shape: "rect", label: "paypal" },
+      createOrder: async () => {
+        const response = await fetch("/api/paypal/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(pendingBody)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Unable to create PayPal order.");
+        return data.id;
+      },
+      onApprove: async data => {
+        dialog.close();
+        $("#loading").hidden = false;
+        try {
+          const response = await fetch("/api/paypal/capture-order", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderID: data.orderID })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || "Unable to capture PayPal order.");
+          activeTier = pendingTier;
+          latest = result;
+          render(result);
+          $("#result").hidden = false;
+          $("#result").scrollIntoView({ behavior: "smooth" });
+        } catch (error) {
+          alert((lang === "zh" ? "支付后生成失败：" : "Generation failed after payment: ") + error.message);
+        } finally {
+          $("#loading").hidden = true;
+        }
+      },
+      onCancel: () => {
+        $("#paymentNote").textContent = lang === "zh" ? "你已取消 PayPal 支付，可再次点击完成购买。" : "You cancelled the PayPal checkout. You can try again when ready.";
+      },
+      onError: error => {
+        alert((lang === "zh" ? "PayPal 支付失败：" : "PayPal checkout failed: ") + error.message);
+      }
+    });
+    await paypalButtonsInstance.render("#paypalButtons");
+  } catch (error) {
+    container.hidden = true;
+    $("#confirmPurchase").hidden = paypalConfig.enabled;
+    $("#paymentNote").textContent = paypalConfig.enabled
+      ? (lang === "zh" ? "PayPal 初始化失败，请刷新页面后重试，或检查浏览器是否拦截了 PayPal 脚本。" : "PayPal failed to initialize. Please refresh the page and make sure your browser is not blocking the PayPal script.")
+      : (lang === "zh" ? "PayPal 未配置，当前显示演示流程。" : "PayPal is not configured, so the demo flow is shown.");
+  }
+}
+
 function renderZodiacProfile(culture, en) {
   const profile = culture?.zodiacProfile;
   if (!profile) return;
@@ -204,5 +287,13 @@ $("#savePdf").onclick = () => {
   window.print();
   setTimeout(() => document.body.classList.remove("printing"), 500);
 };
+
+fetch("/api/paypal-config")
+  .then(response => response.json())
+  .then(config => {
+    paypalConfig = { ...paypalConfig, ...config };
+    if (dialog.open) updatePaymentDialog();
+  })
+  .catch(() => {});
 
 applyLanguage();
