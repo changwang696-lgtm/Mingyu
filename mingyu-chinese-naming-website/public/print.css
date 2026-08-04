@@ -58,6 +58,8 @@ body { margin: 0; background: #fff; }
 .name-card .pinyin { font-size: 8px; }
 .name-card p { font-size: 9px; line-height: 1.45; }
 .name-card .tone { margin-top: 1mm; padding: 0.8mm 1.4mm; font-size: 7px; }
-.name-card .seal { width: 12mm; height: 12mm; font-size: 9px; }
+.name-card .seal { width: 14mm; height: 14mm; font-size: 9px; }
+.seal-mark { font-size: 6px; }
+.seal-text { font-size: 9px; }
 .culture-note { margin: 4mm 0 0; padding: 2.8mm; break-inside: avoid; font-size: 8.5px; }
 @page { size: A4; margin: 0; }
