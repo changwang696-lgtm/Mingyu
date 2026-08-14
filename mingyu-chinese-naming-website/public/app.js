@@ -65,7 +65,10 @@ const translations = {
     demoNote: "This is a demonstration checkout. No real charge will be made.", loading: "Reading the sound, meaning and moment of your name...",
     paypalInlineTitle: "Pay with PayPal directly",
     paypalInlineBody: "Complete the form above, then use PayPal to pay and generate your result right away.",
-    paypalValidation: "Please complete the required form fields before starting PayPal checkout."
+    paypalValidation: "Please complete the required form fields before starting PayPal checkout.",
+    paypalHostedNote: "This checkout uses PayPal Hosted Checkout. Payment opens in a new tab and is processed on PayPal.",
+    paypalHostedDialogNote: "This payment opens the official PayPal checkout in a new tab. After payment, return to the site to continue.",
+    paypalHostedOpen: "Open PayPal checkout"
   },
   zh: {
     navPlans: "会员套餐", navNaming: "起名", navCulture: "生肖文化", navCraft: "东方好物", accountLinkGuest: "注册 / 登录", eyebrow: "以字为舟 · 渡见东方",
@@ -130,7 +133,10 @@ const translations = {
     demoNote: "当前为演示结账流程，未接入真实扣款。", loading: "正在研读你的名字与时辰...",
     paypalInlineTitle: "使用 PayPal 直接付款",
     paypalInlineBody: "填写上方信息后，可直接使用 PayPal 支付并生成结果。",
-    paypalValidation: "请先完整填写必填信息，再使用 PayPal 付款。"
+    paypalValidation: "请先完整填写必填信息，再使用 PayPal 付款。",
+    paypalHostedNote: "当前使用 PayPal Hosted Checkout 收款。付款将在新窗口打开，并由 PayPal 官方页面完成支付。",
+    paypalHostedDialogNote: "当前将打开 PayPal 官方结账页进行付款。付款完成后，请返回网站继续操作。",
+    paypalHostedOpen: "打开 PayPal 付款页"
   }
 };
 
@@ -144,6 +150,10 @@ let paypalConfig = { enabled: false, clientId: null, currency: "USD" };
 let paypalSdkPromise = null;
 let paypalButtonsInstance = null;
 let inlinePayPalRendered = false;
+const hostedPayPalLinks = {
+  simple: "https://www.paypal.com/ncp/payment/8WAQLCHG3A5S4",
+  complete: "https://www.paypal.com/ncp/payment/V3QNJF7PLKKRW"
+};
 const $ = selector => document.querySelector(selector);
 const dialog = $("#payment");
 const creditCosts = { simple: 1, complete: 3 };
@@ -207,6 +217,8 @@ function applyLanguage() {
   });
   if ($("#paypalInlineTitle")) $("#paypalInlineTitle").textContent = translations[lang].paypalInlineTitle;
   if ($("#paypalInlineBody")) $("#paypalInlineBody").textContent = translations[lang].paypalInlineBody;
+  if ($("#paypalHostedNote")) $("#paypalHostedNote").textContent = translations[lang].paypalHostedNote;
+  if ($("#dialogHostedLink")) $("#dialogHostedLink").textContent = translations[lang].paypalHostedOpen;
   $("#langBtn").textContent = lang === "zh" ? "EN" : "中文";
   updateMemberExperience();
   if (dialog.open) updatePaymentDialog();
@@ -238,15 +250,21 @@ $("#nameForm").addEventListener("submit", event => {
 
 function updatePaymentDialog() {
   const copy = tierCopy[pendingTier][lang];
+  const hasHostedCheckout = Boolean(hostedPayPalLinks[pendingTier]);
   $("#paymentTitle").textContent = copy.title;
   $("#paymentEyebrow").textContent = copy.eyebrow;
   $("#paymentBenefits").innerHTML = copy.benefits.map(item => `<li>${esc(item)}</li>`).join("");
   $("#confirmPurchaseText").textContent = copy.button;
-  $("#paymentNote").textContent = paypalConfig.enabled
+  $("#paymentNote").textContent = hasHostedCheckout
+    ? translations[lang].paypalHostedDialogNote
+    : paypalConfig.enabled
     ? (lang === "zh" ? "支付将由 PayPal 安全处理，付款完成后立即生成结果。" : "Payment will be processed securely by PayPal. Your result will generate immediately after capture.")
     : translations[lang].demoNote;
-  $("#confirmPurchase").hidden = paypalConfig.enabled;
-  $("#paypalButtons").hidden = !paypalConfig.enabled;
+  $("#confirmPurchase").hidden = paypalConfig.enabled || hasHostedCheckout;
+  $("#paypalButtons").hidden = hasHostedCheckout || !paypalConfig.enabled;
+  $("#hostedCheckout").hidden = !hasHostedCheckout;
+  if (hasHostedCheckout && $("#dialogHostedLink")) $("#dialogHostedLink").href = hostedPayPalLinks[pendingTier];
+  if (hasHostedCheckout) return;
   if (paypalConfig.enabled) renderPayPalButtons();
 }
 
@@ -327,6 +345,30 @@ function collectFormBody(tier, requireValid = true) {
   }
   $("#formMessage").textContent = "";
   return { ...Object.fromEntries(new FormData(form)), tier };
+}
+
+function prepareHostedCheckout(tier) {
+  pendingTier = tier;
+  pendingBody = collectFormBody(tier, true);
+  sessionStorage.setItem("mingyu_pending_checkout", JSON.stringify({
+    tier,
+    body: pendingBody,
+    createdAt: Date.now()
+  }));
+}
+
+function bindHostedCheckoutLink(selector, tier) {
+  const link = $(selector);
+  if (!link) return;
+  link.href = hostedPayPalLinks[tier];
+  link.addEventListener("click", event => {
+    try {
+      prepareHostedCheckout(tier);
+      $("#formMessage").textContent = "";
+    } catch (error) {
+      event.preventDefault();
+    }
+  });
 }
 
 async function capturePayPalOrder(orderID, tier) {
@@ -450,7 +492,7 @@ async function renderPayPalButtons() {
 }
 
 async function renderInlinePayPalButtons() {
-  if (!paypalConfig.enabled || inlinePayPalRendered) return;
+  if (inlinePayPalRendered) return;
   if (!$("#paypalInline")) return;
   const paypal = await loadPayPalSdk();
   $("#paypalInline").hidden = false;
@@ -477,6 +519,14 @@ async function renderInlinePayPalButtons() {
 
   await renderOne("#paypalSimpleButton", "simple");
   await renderOne("#paypalCompleteButton", "complete");
+  inlinePayPalRendered = true;
+}
+
+function renderHostedCheckoutLinks() {
+  if (!$("#paypalInline")) return;
+  $("#paypalInline").hidden = false;
+  bindHostedCheckoutLink("#hostedSimpleLink", "simple");
+  bindHostedCheckoutLink("#hostedCompleteLink", "complete");
   inlinePayPalRendered = true;
 }
 
@@ -530,10 +580,16 @@ fetch("/api/paypal-config")
   .then(response => response.json())
   .then(config => {
     paypalConfig = { ...paypalConfig, ...config };
-    if (paypalConfig.enabled) renderInlinePayPalButtons().catch(() => {});
+    if (hostedPayPalLinks.simple && hostedPayPalLinks.complete) {
+      renderHostedCheckoutLinks();
+    } else if (paypalConfig.enabled) {
+      renderInlinePayPalButtons().catch(() => {});
+    }
     if (dialog.open) updatePaymentDialog();
   })
-  .catch(() => {});
+  .catch(() => {
+    if (hostedPayPalLinks.simple && hostedPayPalLinks.complete) renderHostedCheckoutLinks();
+  });
 
 applyLanguage();
 refreshSession();

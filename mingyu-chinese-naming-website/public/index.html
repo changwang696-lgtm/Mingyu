@@ -145,6 +145,24 @@
         </div>
         <p class="form-message" id="formMessage" role="alert" aria-live="polite"></p>
       </form>
+      <section class="paypal-inline" id="paypalInline">
+        <div class="paypal-inline-head">
+          <p class="eyebrow">PAYPAL HOSTED CHECKOUT</p>
+          <h3 id="paypalInlineTitle">使用 PayPal 直接付款</h3>
+          <p id="paypalInlineBody">填写上方信息后，可直接使用 PayPal 支付并生成结果。</p>
+        </div>
+        <div class="paypal-inline-grid">
+          <article class="paypal-option">
+            <small>Simple Edition · $2.99</small>
+            <a class="primary paypal-hosted-link" id="hostedSimpleLink" href="https://www.paypal.com/ncp/payment/8WAQLCHG3A5S4" target="_blank" rel="noreferrer noopener">PayPal Checkout</a>
+          </article>
+          <article class="paypal-option">
+            <small>Complete Edition · $9.90</small>
+            <a class="primary paypal-hosted-link" id="hostedCompleteLink" href="https://www.paypal.com/ncp/payment/V3QNJF7PLKKRW" target="_blank" rel="noreferrer noopener">PayPal Checkout</a>
+          </article>
+        </div>
+        <p class="paypal-hosted-note" id="paypalHostedNote">当前为 PayPal Hosted Checkout 测试接入。付款将在新窗口打开；回站后的自动验单与自动发放 credits 将在下一阶段完成。</p>
+      </section>
       <div class="privacy"><span>✦</span><p><strong data-i18n="humanTitle">隐私优先 · 不建立个人档案</strong><br><small data-i18n="humanBody">我们不会保留您的姓名、出生日期或出生地；如有顾虑可只输入姓氏。结果为传统文化创意解读，不构成命运预测或专业建议。</small></p></div>
       <div class="launch-note">
         <strong data-i18n="launchTitle">当前站点状态</strong>
@@ -204,7 +222,7 @@
     <small>© 2026 Mingyu Naming Studio</small>
   </footer>
 
-  <dialog id="payment"><button class="close" aria-label="Close">×</button><p class="eyebrow" id="paymentEyebrow">MINGYU EDITION</p><h2 id="paymentTitle">确认生成简约版</h2><div class="preview-sheet"><span>名屿</span><b>名</b><small>CHINESE NAMING EDITION</small></div><ul id="paymentBenefits"></ul><div id="paypalButtons" hidden></div><button id="confirmPurchase" class="submit"><span id="confirmPurchaseText">演示支付并生成 · $2.99</span><b>→</b></button><small id="paymentNote" data-i18n="demoNote">当前为演示结账流程，未接入真实扣款。</small><small class="legal-note">By purchasing, you agree to our <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>, <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>, <a href="/refund.html" target="_blank" rel="noreferrer">Refund Policy</a>, and <a href="/cancellation.html" target="_blank" rel="noreferrer">Cancellation Policy</a>.</small></dialog>
+  <dialog id="payment"><button class="close" aria-label="Close">×</button><p class="eyebrow" id="paymentEyebrow">MINGYU EDITION</p><h2 id="paymentTitle">确认生成简约版</h2><div class="preview-sheet"><span>名屿</span><b>名</b><small>CHINESE NAMING EDITION</small></div><ul id="paymentBenefits"></ul><div id="paypalButtons" hidden></div><div class="paypal-hosted-dialog" id="hostedCheckout" hidden><a class="primary paypal-hosted-link" id="dialogHostedLink" href="https://www.paypal.com/ncp/payment/8WAQLCHG3A5S4" target="_blank" rel="noreferrer noopener">PayPal Checkout</a></div><button id="confirmPurchase" class="submit"><span id="confirmPurchaseText">演示支付并生成 · $2.99</span><b>→</b></button><small id="paymentNote" data-i18n="demoNote">当前为演示结账流程，未接入真实扣款。</small><small class="legal-note">By purchasing, you agree to our <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>, <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>, <a href="/refund.html" target="_blank" rel="noreferrer">Refund Policy</a>, and <a href="/cancellation.html" target="_blank" rel="noreferrer">Cancellation Policy</a>.</small></dialog>
   <div class="loading" id="loading" hidden role="status" aria-live="polite"><div class="loader-seal">名</div><p data-i18n="loading">正在研读你的名字与时辰...</p></div>
   <script src="/app.js"></script>
 </body>

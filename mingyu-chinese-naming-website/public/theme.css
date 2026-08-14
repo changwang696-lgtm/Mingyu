@@ -675,6 +675,7 @@ dialog #paymentTitle { margin-bottom: 10px; font-size: 30px; font-weight: 400; }
 dialog #paymentBenefits { margin: 20px 0; padding-left: 20px; line-height: 1.9; }
 dialog #confirmPurchase { width: 100%; margin: 10px 0 14px; }
 dialog #paypalButtons { margin: 10px 0 14px; }
+dialog .paypal-hosted-dialog { margin: 10px 0 14px; }
 dialog #paymentNote { display: block; color: #756c61; line-height: 1.65; }
 dialog .legal-note { display: block; margin-top: 10px; color: #756c61; line-height: 1.65; }
 dialog .legal-note a { color: var(--cinnabar); }
@@ -709,6 +710,8 @@ dialog { color: #30251d; background: var(--paper); border-top: 8px solid var(--c
 .paypal-inline-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
 .paypal-option { padding: 16px; border: 1px solid rgba(7,22,38,.08); background: rgba(255,255,255,.92); }
 .paypal-option small { display: block; margin-bottom: 12px; color: var(--ink); font: 12px Arial,sans-serif; letter-spacing: .9px; text-transform: uppercase; }
+.paypal-hosted-link { width: 100%; justify-content: center; text-decoration: none; box-sizing: border-box; }
+.paypal-hosted-note { margin: 16px 0 0; color: #756c61; line-height: 1.7; }
 
 @media (max-width: 1050px) {
   .membership-grid { grid-template-columns: 1fr; }
