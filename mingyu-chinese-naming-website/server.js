@@ -6,6 +6,10 @@ const crypto = require("crypto");
 const root = path.join(__dirname, "public");
 const dataDir = path.join(__dirname, "data");
 const databaseFile = path.join(dataDir, "membership-db.json");
+const supabaseUrl = process.env.SUPABASE_URL || "";
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "";
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const useSupabase = Boolean(supabaseUrl && supabaseServiceRoleKey);
 const port = Number(process.env.PORT) || 4173;
 const orderStore = new Map();
 const sessionCookieName = "mingyu_session";
@@ -123,6 +127,55 @@ function saveDatabase() {
   fs.writeFileSync(databaseFile, JSON.stringify(database, null, 2));
 }
 
+function getSupabaseHeaders(extraHeaders = {}) {
+  return {
+    apikey: supabaseAnonKey || supabaseServiceRoleKey,
+    Authorization: `Bearer ${supabaseServiceRoleKey}`,
+    ...extraHeaders
+  };
+}
+
+function buildSupabaseUrl(resource, searchParams = {}) {
+  const url = new URL(`/rest/v1/${resource}`, supabaseUrl);
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
+  }
+  return url;
+}
+
+async function supabaseRequest(resource, { method = "GET", searchParams = {}, body, headers = {}, allowEmpty = false } = {}) {
+  const response = await fetch(buildSupabaseUrl(resource, searchParams), {
+    method,
+    headers: getSupabaseHeaders({
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+      ...headers
+    }),
+    body: body === undefined ? undefined : JSON.stringify(body)
+  });
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+  if (!response.ok) {
+    throw new Error(payload?.message || payload?.details || payload?.hint || `Supabase request failed for ${resource}`);
+  }
+  return allowEmpty ? payload : payload || [];
+}
+
+async function supabaseRpc(name, args = {}) {
+  const response = await fetch(new URL(`/rest/v1/rpc/${name}`, supabaseUrl), {
+    method: "POST",
+    headers: getSupabaseHeaders({
+      "Content-Type": "application/json",
+      Prefer: "return=representation"
+    }),
+    body: JSON.stringify(args)
+  });
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+  if (!response.ok) throw new Error(payload?.message || payload?.details || payload?.hint || `Supabase RPC failed for ${name}`);
+  return payload;
+}
+
 function nextId(prefix) {
   return `${prefix}${crypto.randomUUID().replace(/-/g, "")}`;
 }
@@ -189,6 +242,45 @@ function sanitizeUserRecord(user) {
     membership: sanitizeMembership(user.membership),
     ledger: Array.isArray(user.ledger) ? user.ledger : [],
     reportIds: Array.isArray(user.reportIds) ? user.reportIds : []
+  };
+}
+
+function mapUserRow(row, ledger = [], reportIds = []) {
+  return sanitizeUserRecord({
+    id: row.id,
+    email: row.email,
+    displayName: row.display_name,
+    passwordHash: row.password_hash,
+    passwordSalt: row.password_salt,
+    createdAt: row.created_at,
+    creditsBalance: Number(row.credits_balance) || 0,
+    membership: row.membership || {},
+    ledger,
+    reportIds
+  });
+}
+
+function mapLedgerRow(row) {
+  return {
+    id: row.id,
+    type: row.entry_type,
+    source: row.source,
+    description: row.description,
+    creditsDelta: row.credits_delta,
+    creditsBalanceAfter: row.credits_balance_after,
+    referenceId: row.reference_id,
+    createdAt: row.created_at
+  };
+}
+
+function mapReportSummaryRow(row) {
+  return {
+    id: row.id,
+    tier: row.tier,
+    inputName: row.input_name,
+    createdAt: row.created_at,
+    zodiac: row.zodiac,
+    previewNames: Array.isArray(row.preview_names) ? row.preview_names : []
   };
 }
 
@@ -259,8 +351,64 @@ function createUserRecord(email, password, displayName) {
   return user;
 }
 
-function findUserByEmail(email) {
-  return database.users.find(user => user.email === normalizeEmail(email));
+async function findUserByEmail(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!useSupabase) return database.users.find(user => user.email === normalizedEmail) || null;
+  const rows = await supabaseRequest("app_users", {
+    searchParams: {
+      select: "*",
+      email: `eq.${normalizedEmail}`,
+      limit: 1
+    }
+  });
+  return rows[0] ? mapUserRow(rows[0]) : null;
+}
+
+async function getUserById(userId) {
+  if (!useSupabase) {
+    const user = database.users.find(item => item.id === userId);
+    return user ? sanitizeUserRecord(user) : null;
+  }
+  const rows = await supabaseRequest("app_users", {
+    searchParams: {
+      select: "*",
+      id: `eq.${userId}`,
+      limit: 1
+    }
+  });
+  return rows[0] ? mapUserRow(rows[0]) : null;
+}
+
+async function getUserLedger(userId, limit = 20) {
+  if (!useSupabase) {
+    const user = database.users.find(item => item.id === userId);
+    return user?.ledger?.slice(0, limit) || [];
+  }
+  const rows = await supabaseRequest("credit_ledger", {
+    searchParams: {
+      select: "*",
+      user_id: `eq.${userId}`,
+      order: "created_at.desc",
+      limit
+    }
+  });
+  return rows.map(mapLedgerRow);
+}
+
+async function getUserReportSummaries(userId, limit = 12) {
+  if (!useSupabase) {
+    const user = database.users.find(item => item.id === userId);
+    return user ? listUserReports(user) : [];
+  }
+  const rows = await supabaseRequest("naming_reports", {
+    searchParams: {
+      select: "id,tier,input_name,created_at,zodiac,preview_names",
+      user_id: `eq.${userId}`,
+      order: "created_at.desc",
+      limit
+    }
+  });
+  return rows.map(mapReportSummaryRow);
 }
 
 function parseCookies(req) {
@@ -290,43 +438,82 @@ function buildSessionCookie(value, maxAgeSeconds) {
   return parts.join("; ");
 }
 
-function cleanupSessions() {
-  const now = Date.now();
-  database.sessions = database.sessions.filter(session => {
-    const expiresAt = new Date(session.expiresAt).getTime();
-    return Number.isFinite(expiresAt) && expiresAt > now;
+async function cleanupSessions() {
+  if (!useSupabase) {
+    const now = Date.now();
+    database.sessions = database.sessions.filter(session => {
+      const expiresAt = new Date(session.expiresAt).getTime();
+      return Number.isFinite(expiresAt) && expiresAt > now;
+    });
+    return;
+  }
+  await supabaseRequest("app_sessions", {
+    method: "DELETE",
+    searchParams: { expires_at: `lt.${nowIso()}` },
+    allowEmpty: true
   });
 }
 
-function createSession(userId) {
-  cleanupSessions();
+async function createSession(userId) {
+  await cleanupSessions();
   const token = nextId("sess_");
-  database.sessions.push({
+  const sessionRow = {
     id: token,
-    userId,
-    createdAt: nowIso(),
-    expiresAt: new Date(Date.now() + sessionLifetimeSeconds * 1000).toISOString()
+    user_id: userId,
+    created_at: nowIso(),
+    expires_at: new Date(Date.now() + sessionLifetimeSeconds * 1000).toISOString()
+  };
+  if (!useSupabase) {
+    database.sessions.push({
+      id: token,
+      userId,
+      createdAt: sessionRow.created_at,
+      expiresAt: sessionRow.expires_at
+    });
+    saveDatabase();
+    return token;
+  }
+  await supabaseRequest("app_sessions", {
+    method: "POST",
+    body: sessionRow
   });
-  saveDatabase();
   return token;
 }
 
-function destroySession(req) {
+async function destroySession(req) {
   const token = parseCookies(req)[sessionCookieName];
   if (!token) return;
-  database.sessions = database.sessions.filter(session => session.id !== token);
-  saveDatabase();
+  if (!useSupabase) {
+    database.sessions = database.sessions.filter(session => session.id !== token);
+    saveDatabase();
+    return;
+  }
+  await supabaseRequest("app_sessions", {
+    method: "DELETE",
+    searchParams: { id: `eq.${token}` },
+    allowEmpty: true
+  });
 }
 
-function getAuthenticatedUser(req) {
-  cleanupSessions();
+async function getAuthenticatedUser(req) {
+  await cleanupSessions();
   const token = parseCookies(req)[sessionCookieName];
   if (!token) return null;
-  const session = database.sessions.find(item => item.id === token);
-  if (!session) return null;
-  const user = database.users.find(item => item.id === session.userId);
-  if (!user) return null;
-  return sanitizeUserRecord(user);
+  if (!useSupabase) {
+    const session = database.sessions.find(item => item.id === token);
+    if (!session) return null;
+    const user = database.users.find(item => item.id === session.userId);
+    return user ? sanitizeUserRecord(user) : null;
+  }
+  const sessions = await supabaseRequest("app_sessions", {
+    searchParams: {
+      select: "id,user_id,expires_at",
+      id: `eq.${token}`,
+      limit: 1
+    }
+  });
+  if (!sessions[0]) return null;
+  return getUserById(sessions[0].user_id);
 }
 
 function listUserReports(user) {
@@ -827,12 +1014,23 @@ async function handleRegister(req, res) {
   const displayName = String(body.displayName || "").trim() || email.split("@")[0] || "Member";
   if (!validateEmail(email)) return send(res, 422, { error: "A valid email address is required." });
   if (password.length < 8) return send(res, 422, { error: "Password must be at least 8 characters." });
-  if (findUserByEmail(email)) return send(res, 409, { error: "An account with this email already exists." });
+  if (await findUserByEmail(email)) return send(res, 409, { error: "An account with this email already exists." });
 
   const user = createUserRecord(email, password, displayName);
-  database.users.push(user);
-  const sessionToken = createSession(user.id);
-  saveDatabase();
+  if (!useSupabase) {
+    database.users.push(user);
+    saveDatabase();
+  } else {
+    await supabaseRpc("app_register_user", {
+      p_user_id: user.id,
+      p_email: user.email,
+      p_display_name: user.displayName,
+      p_password_hash: user.passwordHash,
+      p_password_salt: user.passwordSalt,
+      p_welcome_credits: welcomeCredits
+    });
+  }
+  const sessionToken = await createSession(user.id);
   send(res, 201, {
     user: publicUser(user),
     catalog: getPublicCatalog(),
@@ -845,12 +1043,12 @@ async function handleLogin(req, res) {
   if (!body) return;
   const email = normalizeEmail(body.email);
   const password = String(body.password || "");
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
   if (!user || !verifyPassword(password, user.passwordHash, user.passwordSalt)) {
     return send(res, 401, { error: "Incorrect email or password." });
   }
 
-  const sessionToken = createSession(user.id);
+  const sessionToken = await createSession(user.id);
   send(res, 200, {
     user: publicUser(user),
     catalog: getPublicCatalog()
@@ -858,12 +1056,12 @@ async function handleLogin(req, res) {
 }
 
 async function handleLogout(req, res) {
-  destroySession(req);
+  await destroySession(req);
   send(res, 200, { ok: true }, "application/json; charset=utf-8", { "Set-Cookie": buildSessionCookie("", 0) });
 }
 
 async function handleSession(req, res) {
-  const user = getAuthenticatedUser(req);
+  const user = await getAuthenticatedUser(req);
   send(res, 200, {
     loggedIn: Boolean(user),
     user: user ? publicUser(user) : null,
@@ -872,19 +1070,19 @@ async function handleSession(req, res) {
 }
 
 async function handleMemberOverview(req, res) {
-  const user = getAuthenticatedUser(req);
+  const user = await getAuthenticatedUser(req);
   if (!user) return send(res, 401, { error: "Please sign in first." });
 
   send(res, 200, {
     user: publicUser(user),
     catalog: getPublicCatalog(),
-    ledger: user.ledger.slice(0, 20),
-    reports: listUserReports(user)
+    ledger: await getUserLedger(user.id, 20),
+    reports: await getUserReportSummaries(user.id, 12)
   });
 }
 
 async function handleMemberGenerate(req, res) {
-  const user = getAuthenticatedUser(req);
+  const user = await getAuthenticatedUser(req);
   if (!user) return send(res, 401, { error: "Please sign in to use member credits." });
 
   const rawBody = await readJsonBody(req, res);
@@ -901,36 +1099,54 @@ async function handleMemberGenerate(req, res) {
 
   try {
     const result = await buildPaidResult(body);
-    const liveUser = database.users.find(item => item.id === user.id);
-    if (!liveUser) return send(res, 404, { error: "Account not found." });
+    let remainingCredits;
+    let reportId;
+    if (!useSupabase) {
+      const liveUser = database.users.find(item => item.id === user.id);
+      if (!liveUser) return send(res, 404, { error: "Account not found." });
 
-    addLedgerEntry(liveUser, {
-      type: "usage",
-      source: "generation",
-      description: `Used ${creditCost} credits for ${tier} generation`,
-      creditsDelta: -creditCost
-    });
+      addLedgerEntry(liveUser, {
+        type: "usage",
+        source: "generation",
+        description: `Used ${creditCost} credits for ${tier} generation`,
+        creditsDelta: -creditCost
+      });
 
-    const reportRecord = {
-      id: nextId("report_"),
-      userId: liveUser.id,
-      tier,
-      inputName: body.name,
-      createdAt: nowIso(),
-      zodiac: `${result.zodiac.animal} · ${result.zodiac.animalEn}`,
-      previewNames: result.names.map(item => item.hanzi),
-      result
-    };
-    database.reports.push(reportRecord);
-    liveUser.reportIds = Array.isArray(liveUser.reportIds) ? liveUser.reportIds : [];
-    liveUser.reportIds.unshift(reportRecord.id);
-    liveUser.reportIds = liveUser.reportIds.slice(0, 50);
-    saveDatabase();
+      const reportRecord = {
+        id: nextId("report_"),
+        userId: liveUser.id,
+        tier,
+        inputName: body.name,
+        createdAt: nowIso(),
+        zodiac: `${result.zodiac.animal} · ${result.zodiac.animalEn}`,
+        previewNames: result.names.map(item => item.hanzi),
+        result
+      };
+      database.reports.push(reportRecord);
+      liveUser.reportIds = Array.isArray(liveUser.reportIds) ? liveUser.reportIds : [];
+      liveUser.reportIds.unshift(reportRecord.id);
+      liveUser.reportIds = liveUser.reportIds.slice(0, 50);
+      saveDatabase();
+      remainingCredits = liveUser.creditsBalance;
+      reportId = reportRecord.id;
+    } else {
+      const consumeResult = await supabaseRpc("app_consume_credits_and_store_report", {
+        p_user_id: user.id,
+        p_cost: creditCost,
+        p_tier: tier,
+        p_input_name: body.name,
+        p_zodiac: `${result.zodiac.animal} · ${result.zodiac.animalEn}`,
+        p_preview_names: result.names.map(item => item.hanzi),
+        p_result: result
+      });
+      remainingCredits = consumeResult.remaining_credits;
+      reportId = consumeResult.report_id;
+    }
 
     result.membership = {
       consumedCredits: creditCost,
-      remainingCredits: liveUser.creditsBalance,
-      reportId: reportRecord.id
+      remainingCredits,
+      reportId
     };
     send(res, 200, result);
   } catch (error) {
@@ -939,42 +1155,60 @@ async function handleMemberGenerate(req, res) {
 }
 
 async function handleMemberReport(req, res, url) {
-  const user = getAuthenticatedUser(req);
+  const user = await getAuthenticatedUser(req);
   if (!user) return send(res, 401, { error: "Please sign in first." });
   const reportId = url.searchParams.get("id");
   if (!reportId) return send(res, 422, { error: "Report ID is required." });
 
-  const report = database.reports.find(item => item.id === reportId && item.userId === user.id);
-  if (!report) return send(res, 404, { error: "Report not found." });
-  send(res, 200, report.result);
+  if (!useSupabase) {
+    const report = database.reports.find(item => item.id === reportId && item.userId === user.id);
+    if (!report) return send(res, 404, { error: "Report not found." });
+    send(res, 200, report.result);
+    return;
+  }
+  const rows = await supabaseRequest("naming_reports", {
+    searchParams: {
+      select: "result",
+      id: `eq.${reportId}`,
+      user_id: `eq.${user.id}`,
+      limit: 1
+    }
+  });
+  if (!rows[0]) return send(res, 404, { error: "Report not found." });
+  send(res, 200, rows[0].result);
 }
-
-cleanupSessions();
-saveDatabase();
 
 http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const pathname = url.pathname;
 
-  if (req.method === "GET" && pathname === "/api/paypal-config") return handlePayPalConfig(req, res);
-  if (req.method === "POST" && pathname === "/api/paypal/create-order") return handleCreatePayPalOrder(req, res);
-  if (req.method === "POST" && pathname === "/api/paypal/capture-order") return handleCapturePayPalOrder(req, res);
-  if (req.method === "POST" && pathname === "/api/generate") return handleGenerate(req, res);
+  const task = (() => {
+    if (req.method === "GET" && pathname === "/api/paypal-config") return handlePayPalConfig(req, res);
+    if (req.method === "POST" && pathname === "/api/paypal/create-order") return handleCreatePayPalOrder(req, res);
+    if (req.method === "POST" && pathname === "/api/paypal/capture-order") return handleCapturePayPalOrder(req, res);
+    if (req.method === "POST" && pathname === "/api/generate") return handleGenerate(req, res);
 
-  if (req.method === "POST" && pathname === "/api/auth/register") return handleRegister(req, res);
-  if (req.method === "POST" && pathname === "/api/auth/login") return handleLogin(req, res);
-  if (req.method === "POST" && pathname === "/api/auth/logout") return handleLogout(req, res);
-  if (req.method === "GET" && pathname === "/api/auth/session") return handleSession(req, res);
+    if (req.method === "POST" && pathname === "/api/auth/register") return handleRegister(req, res);
+    if (req.method === "POST" && pathname === "/api/auth/login") return handleLogin(req, res);
+    if (req.method === "POST" && pathname === "/api/auth/logout") return handleLogout(req, res);
+    if (req.method === "GET" && pathname === "/api/auth/session") return handleSession(req, res);
 
-  if (req.method === "GET" && pathname === "/api/member/overview") return handleMemberOverview(req, res);
-  if (req.method === "POST" && pathname === "/api/member/generate") return handleMemberGenerate(req, res);
-  if (req.method === "GET" && pathname === "/api/member/report") return handleMemberReport(req, res, url);
+    if (req.method === "GET" && pathname === "/api/member/overview") return handleMemberOverview(req, res);
+    if (req.method === "POST" && pathname === "/api/member/generate") return handleMemberGenerate(req, res);
+    if (req.method === "GET" && pathname === "/api/member/report") return handleMemberReport(req, res, url);
 
-  const safePath = pathname === "/" ? "/index.html" : pathname;
-  const file = path.normalize(path.join(root, safePath));
-  if (!file.startsWith(root)) return send(res, 403, "Forbidden", "text/plain; charset=utf-8");
-  fs.readFile(file, (error, data) => {
-    if (error) return send(res, 404, "Not found", "text/plain; charset=utf-8");
-    send(res, 200, data, types[path.extname(file)] || "application/octet-stream");
+    const safePath = pathname === "/" ? "/index.html" : pathname;
+    const file = path.normalize(path.join(root, safePath));
+    if (!file.startsWith(root)) return send(res, 403, "Forbidden", "text/plain; charset=utf-8");
+    fs.readFile(file, (error, data) => {
+      if (error) return send(res, 404, "Not found", "text/plain; charset=utf-8");
+      send(res, 200, data, types[path.extname(file)] || "application/octet-stream");
+    });
+    return null;
+  })();
+
+  Promise.resolve(task).catch(error => {
+    console.error(error);
+    if (!res.headersSent) send(res, 500, { error: error.message || "Server error" });
   });
 }).listen(port, () => console.log(`Mingyu is running at http://localhost:${port}`));
