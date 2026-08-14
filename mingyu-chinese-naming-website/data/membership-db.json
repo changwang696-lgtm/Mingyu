@@ -1,0 +1,164 @@
+{
+  "users": [
+    {
+      "id": "user_14f092badd634c6f98ff22b3bb5242bc",
+      "email": "member_test@example.com",
+      "displayName": "Test Member",
+      "passwordHash": "0cfbda6ba07684ecc92c936faefe1aa77061c740ab7a67955157ce428d31d0a9c95db92a76647444574da39e2f79a68326cc20ed4ba3d13e4d492322fc681da9",
+      "passwordSalt": "1e9b6f57c2164fa4545f22b041548a7a",
+      "createdAt": "2026-08-14T02:42:06.731Z",
+      "creditsBalance": 2,
+      "membership": {
+        "planId": null,
+        "planName": "No active membership",
+        "status": "inactive",
+        "renewalAt": null,
+        "cancelAtPeriodEnd": false
+      },
+      "ledger": [
+        {
+          "id": "ledger_32694dad2645471188b20630af14040f",
+          "type": "usage",
+          "source": "generation",
+          "description": "Used 1 credits for simple generation",
+          "creditsDelta": -1,
+          "creditsBalanceAfter": 2,
+          "referenceId": null,
+          "createdAt": "2026-08-14T02:42:09.361Z"
+        },
+        {
+          "id": "ledger_0d5bec46ac9a47908666946ffda89c25",
+          "type": "grant",
+          "source": "welcome",
+          "description": "Welcome credits for new account",
+          "creditsDelta": 3,
+          "creditsBalanceAfter": 3,
+          "referenceId": null,
+          "createdAt": "2026-08-14T02:42:06.732Z"
+        }
+      ],
+      "reportIds": [
+        "report_a4690494ec1e4043b6c072d4911a30c5"
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "id": "sess_18428254d4564fe693230a4deff1b6b4",
+      "userId": "user_14f092badd634c6f98ff22b3bb5242bc",
+      "createdAt": "2026-08-14T02:42:06.732Z",
+      "expiresAt": "2026-09-13T02:42:06.732Z"
+    },
+    {
+      "id": "sess_32c541bd420044c693a8492d4ecb6f5e",
+      "userId": "user_14f092badd634c6f98ff22b3bb5242bc",
+      "createdAt": "2026-08-14T02:42:09.328Z",
+      "expiresAt": "2026-09-13T02:42:09.328Z"
+    }
+  ],
+  "reports": [
+    {
+      "id": "report_a4690494ec1e4043b6c072d4911a30c5",
+      "userId": "user_14f092badd634c6f98ff22b3bb5242bc",
+      "tier": "simple",
+      "inputName": "Alex Morgan",
+      "createdAt": "2026-08-14T02:42:09.361Z",
+      "zodiac": "猪 · Pig",
+      "previewNames": [
+        "林曜安",
+        "沈知远",
+        "苏景和"
+      ],
+      "result": {
+        "zodiac": {
+          "animal": "猪",
+          "animalEn": "Pig",
+          "years": "1995",
+          "traits": [
+            "乐观随和",
+            "知足常乐",
+            "真诚宽厚"
+          ],
+          "traitsEn": [
+            "Optimistic",
+            "Content",
+            "Sincere"
+          ]
+        },
+        "summary": "你的出生时刻呈现出明朗而丰沛的文化意象。名字宜在行动力与沉静感之间取得平衡：既保留原名的个人气质，也以温润的字义承接内在秩序。以下名字不是简单音译，而是结合声音、汉字与文化联想所作的跨文化表达。",
+        "summaryEn": "Your birth moment carries a bright, abundant cultural image. A fitting name balances momentum with composure, preserving the character of your original name while adding calm inner order through meaning, sound and form.",
+        "names": [
+          {
+            "hanzi": "林曜安",
+            "pinyin": "Lin Yao'an",
+            "seal": "曜安",
+            "meaning": "曜，是照耀与清朗；安，是从容与安定。名字寓意在广阔世界中保持明亮，也拥有安顿自我的力量。",
+            "meaningEn": "Yao evokes radiant clarity; An means peace and inner steadiness. Together they suggest a bright presence grounded by quiet confidence.",
+            "tone": "平 · 仄 · 平"
+          },
+          {
+            "hanzi": "沈知远",
+            "pinyin": "Shen Zhiyuan",
+            "seal": "知远",
+            "meaning": "知，代表洞察与求索；远，象征开阔的眼界。名字含有‘知行致远’的文化联想，温雅而坚定。",
+            "meaningEn": "Zhi means insight and learning; Yuan suggests a far-reaching vision. The name feels cultivated, composed and quietly ambitious.",
+            "tone": "仄 · 平 · 仄"
+          },
+          {
+            "hanzi": "苏景和",
+            "pinyin": "Su Jinghe",
+            "seal": "景和",
+            "meaning": "景，是光景与敬慕；和，是和谐与包容。整体意象如春日和光，亲切、明朗且具有国际感。",
+            "meaningEn": "Jing evokes light and admiration; He means harmony and openness. Its image is warm daylight: approachable, lucid and cosmopolitan.",
+            "tone": "平 · 仄 · 平"
+          }
+        ],
+        "culturalNote": "生肖是传统民俗中观察时间与生命节律的一种象征语言，并非对性格与命运的科学判定。猪的意象在这里作为理解时间与文化联想的入口。",
+        "culturalNoteEn": "The zodiac is a symbolic language used in Chinese tradition to reflect on time and life rhythms, not a scientific claim about personality or destiny. Here, the Pig is a starting point for cultural interpretation.",
+        "inputName": "Alex Morgan",
+        "traditionalCulture": {
+          "basisYear": 1995,
+          "pillar": "乙亥",
+          "cycleNumber": 12,
+          "stem": {
+            "char": "乙",
+            "element": "木",
+            "polarity": "阴"
+          },
+          "branch": {
+            "char": "亥",
+            "element": "水",
+            "range": "21:00-23:00",
+            "zodiac": "猪",
+            "zodiacEn": "Pig"
+          },
+          "hourBranch": {
+            "char": "丑",
+            "element": "土",
+            "range": "01:00-03:00"
+          },
+          "zodiacProfile": {
+            "personality": [
+              "乐观随和",
+              "知足常乐",
+              "真诚宽厚"
+            ],
+            "personalityEn": [
+              "Optimistic",
+              "Content",
+              "Sincere"
+            ],
+            "symbolism": "猪与家业、丰收和充足生活相连，传统意象多含福气、安康与富足。它也代表真诚、宽厚，以及懂得珍惜日常生活的朴实智慧。",
+            "symbolismEn": "The Pig is associated with household prosperity, harvest and a well-provided life, carrying meanings of blessing, wellbeing and abundance. It also represents sincerity, generosity and appreciation of everyday contentment."
+          },
+          "originalBirthLabel": "1995.08.15 14:30",
+          "chinaBirthLabel": "1995.08.16 02:30",
+          "sourceTimeZone": "America/New_York",
+          "note": "出生时间已按所选时区 America/New_York 换算为北京时间 1995.08.16 02:30 后计算年柱与时辰。 年柱以公历约 2 月 4 日立春为界作文化计算；精确交节时刻、月柱、日柱与时干需结合出生地时区和专业万年历复核。当前结果不构成完整八字排盘，也不据此判断五行喜忌。",
+          "noteEn": "The birth time is interpreted in the selected timezone America/New_York and converted to China Standard Time (1995.08.16 02:30) before calculating the year pillar and birth hour. The year pillar uses approximately February 4 (Start of Spring) as its boundary. Exact solar-term timing and the month, day and hour stems require timezone-aware calendrical calculation. This is not a complete BaZi chart and does not claim an elemental deficiency."
+        },
+        "demo": true
+      }
+    }
+  ]
+}
