@@ -68,7 +68,8 @@ const translations = {
     paypalValidation: "Please complete the required form fields before starting PayPal checkout.",
     paypalHostedNote: "This checkout uses PayPal Hosted Checkout. Payment opens in a new tab and is processed on PayPal.",
     paypalHostedDialogNote: "This payment opens the official PayPal checkout in a new tab. After payment, return to the site to continue.",
-    paypalHostedOpen: "Open PayPal checkout"
+    paypalHostedOpen: "Open PayPal checkout",
+    paypalHostedOpened: "PayPal checkout has opened in a new tab."
   },
   zh: {
     navPlans: "会员套餐", navNaming: "起名", navCulture: "生肖文化", navCraft: "东方好物", accountLinkGuest: "注册 / 登录", eyebrow: "以字为舟 · 渡见东方",
@@ -136,7 +137,8 @@ const translations = {
     paypalValidation: "请先完整填写必填信息，再使用 PayPal 付款。",
     paypalHostedNote: "当前使用 PayPal Hosted Checkout 收款。付款将在新窗口打开，并由 PayPal 官方页面完成支付。",
     paypalHostedDialogNote: "当前将打开 PayPal 官方结账页进行付款。付款完成后，请返回网站继续操作。",
-    paypalHostedOpen: "打开 PayPal 付款页"
+    paypalHostedOpen: "打开 PayPal 付款页",
+    paypalHostedOpened: "PayPal 付款页已在新窗口打开。"
   }
 };
 
@@ -242,6 +244,16 @@ $("#nameForm").addEventListener("submit", event => {
   if (sessionState.loggedIn && sessionState.user && sessionState.user.creditsBalance >= creditCosts[pendingTier]) {
     startMemberGeneration();
     return;
+  }
+  if (hostedPayPalLinks[pendingTier]) {
+    try {
+      prepareHostedCheckout(pendingTier);
+      window.open(hostedPayPalLinks[pendingTier], "_blank", "noopener,noreferrer");
+      $("#formMessage").textContent = translations[lang].paypalHostedOpened;
+      return;
+    } catch {
+      return;
+    }
   }
   if (sessionState.loggedIn && sessionState.user) $("#formMessage").textContent = translations[lang].memberPaymentFallback;
   updatePaymentDialog();
