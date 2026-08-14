@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="AI-powered Chinese naming rooted in language, symbolism and traditional culture." />
+  <meta name="description" content="AI-powered Chinese naming memberships, credit packs, and personalized naming reports rooted in language, symbolism, and traditional culture." />
   <title>名屿 Mingyu · Chinese Naming Studio</title>
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/theme.css" />
@@ -12,7 +12,7 @@
 <body>
   <header class="topbar">
     <a class="brand" href="#top"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
-    <nav><a href="#ritual" data-i18n="navNaming">起名</a><a href="#story" data-i18n="navCulture">生肖文化</a><a href="#craft" data-i18n="navCraft">东方好物</a></nav>
+    <nav><a href="#pricing" data-i18n="navPlans">会员套餐</a><a href="#ritual" data-i18n="navNaming">起名</a><a href="#story" data-i18n="navCulture">生肖文化</a><a href="#craft" data-i18n="navCraft">东方好物</a></nav>
     <button class="lang" id="langBtn" aria-label="Switch language">EN</button>
   </header>
 
@@ -23,7 +23,7 @@
       <div class="hero-copy">
         <p class="eyebrow" data-i18n="eyebrow">以字为舟 · 渡见东方</p>
         <h1><span data-i18n="heroA">一个名字，</span><br><em data-i18n="heroB">一生的东方寓意</em></h1>
-        <p data-i18n="heroBody">从你的原名、出生时刻与个性出发，寻找一个既自然好听，也经得起文化推敲的中文名字。</p>
+        <p data-i18n="heroBody">从你的原名、出生时刻与个性出发，获得由 AI 驱动的中文起名建议、文化解读与会员制 credits 服务。</p>
         <a class="primary" href="#ritual"><span data-i18n="begin">开始寻名</span><b>↓</b></a>
       </div>
       <div class="hero-side"><span>天 地 人</span><i></i><small>NAME · SOUND · MEANING</small></div>
@@ -32,6 +32,75 @@
     <section class="intro" id="story">
       <div><p class="section-no">壹 / 01</p><h2 data-i18n="introTitle">不是翻译名字，<br>而是重新认识你。</h2></div>
       <div class="intro-copy"><p data-i18n="introBody">中文名字是声音、字形与意义的共同选择。我们以你的身份为起点，参考生肖的文化意象与汉字传统，提供有出处、有解释、可被真实使用的名字。</p><div class="pill-row"><span>音 SOUND</span><span>形 FORM</span><span>意 MEANING</span></div></div>
+    </section>
+
+    <section class="membership-model" id="pricing">
+      <div class="membership-head">
+        <div>
+          <p class="section-no">会员模型 / MEMBERSHIP MODEL</p>
+          <h2 data-i18n="pricingTitle">更适合 AI 产品的收费方式</h2>
+        </div>
+        <p data-i18n="pricingBody">我们不做钱包储值，而是采用更清晰的 AI 会员与 credits 模型：月度套餐包含固定生成额度，一次性购买则以明确的 credits 包形式提供。</p>
+      </div>
+      <div class="membership-grid">
+        <article class="member-card">
+          <p class="member-type" data-i18n="starterType">月度会员</p>
+          <h3 data-i18n="starterTitle">Starter · 30 credits / 月</h3>
+          <strong>$19 <small data-i18n="perMonth">/ 月</small></strong>
+          <ul>
+            <li data-i18n="starterPoint1">每月获得 30 次 AI 起名生成额度</li>
+            <li data-i18n="starterPoint2">适合个人持续试用与收藏</li>
+            <li data-i18n="starterPoint3">支持账单说明、会员身份与客服入口</li>
+          </ul>
+        </article>
+        <article class="member-card featured-card">
+          <p class="member-type" data-i18n="studioType">高阶会员</p>
+          <h3 data-i18n="studioTitle">Studio · 80 credits / 月</h3>
+          <strong>$39 <small data-i18n="perMonth">/ 月</small></strong>
+          <ul>
+            <li data-i18n="studioPoint1">每月获得 80 次 AI 起名与报告额度</li>
+            <li data-i18n="studioPoint2">适合高频生成、对比和打印收藏</li>
+            <li data-i18n="studioPoint3">优先体验完整报告、PDF 与会员支持</li>
+          </ul>
+        </article>
+        <article class="member-card">
+          <p class="member-type" data-i18n="creditType">一次性购买</p>
+          <h3 data-i18n="creditTitle">Credit Pack · 50 credits</h3>
+          <strong>$29 <small data-i18n="oneTime">一次性</small></strong>
+          <ul>
+            <li data-i18n="creditPoint1">一次性购买 50 credits，不自动续费</li>
+            <li data-i18n="creditPoint2">适合节日赠礼、集中生成与短期使用</li>
+            <li data-i18n="creditPoint3">账单上清晰标注 AI naming credits</li>
+          </ul>
+        </article>
+      </div>
+      <aside class="billing-note">
+        <p class="eyebrow">AI PRODUCT · BILLING DISCLOSURE</p>
+        <h3 data-i18n="billingTitle">用户与支付平台都能看懂的账单说明</h3>
+        <ul>
+          <li data-i18n="billingPoint1">1 credit = 1 次 AI 中文起名或报告生成请求</li>
+          <li data-i18n="billingPoint2">月度会员为自动续费，续费周期、价格和取消方式需明确展示</li>
+          <li data-i18n="billingPoint3">一次性 credit pack 不自动续费，不属于钱包余额或现金储值</li>
+          <li data-i18n="billingPoint4">数字服务交付方式为：支付成功后，在网站内生成并显示结果</li>
+        </ul>
+        <p class="billing-actions"><a href="/cancellation.html" target="_blank" rel="noreferrer" data-i18n="billingLink">查看取消订阅与续费说明</a><span>support@chinesenamepro.com</span></p>
+      </aside>
+    </section>
+
+    <section class="member-flow" id="memberFlow">
+      <div class="membership-head">
+        <div>
+          <p class="section-no">账户与交付 / ACCOUNT FLOW</p>
+          <h2 data-i18n="flowTitle">会员与 credits 的完整路径</h2>
+        </div>
+        <p data-i18n="flowBody">这也是 PayPal 与 Stripe 更容易理解的产品形态：先注册，再购买套餐，然后在账户内消耗 credits 并查看交付记录。</p>
+      </div>
+      <div class="flow-grid">
+        <article><small>01</small><h3 data-i18n="flowStep1Title">注册账户</h3><p data-i18n="flowStep1Body">用户用邮箱创建账户，获得会员身份、账单记录与支持入口。</p></article>
+        <article><small>02</small><h3 data-i18n="flowStep2Title">选择套餐</h3><p data-i18n="flowStep2Body">选择月度会员或一次性 credits 包，并在结账页看到明确价格与币种。</p></article>
+        <article><small>03</small><h3 data-i18n="flowStep3Title">消耗 credits</h3><p data-i18n="flowStep3Body">每次提交 AI 起名请求时消耗对应 credits，同时记录生成时间与交付状态。</p></article>
+        <article><small>04</small><h3 data-i18n="flowStep4Title">管理会员</h3><p data-i18n="flowStep4Body">在账户中查看剩余 credits、历史报告、发票、续费时间与取消订阅方式。</p></article>
+      </div>
     </section>
 
     <section class="zodiac-atlas" aria-labelledby="atlasTitle">
@@ -67,6 +136,10 @@
         <p class="form-message" id="formMessage" role="alert" aria-live="polite"></p>
       </form>
       <div class="privacy"><span>✦</span><p><strong data-i18n="humanTitle">隐私优先 · 不建立个人档案</strong><br><small data-i18n="humanBody">我们不会保留您的姓名、出生日期或出生地；如有顾虑可只输入姓氏。结果为传统文化创意解读，不构成命运预测或专业建议。</small></p></div>
+      <div class="launch-note">
+        <strong data-i18n="launchTitle">当前站点状态</strong>
+        <p data-i18n="launchBody">目前站点仍以单次生成页为主；注册、会员中心、credits 台账、发票与自动续费界面将作为下一阶段上线。</p>
+      </div>
     </section>
 
     <section class="result" id="result" hidden>
@@ -116,11 +189,12 @@
       <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>
       <a href="/terms.html" target="_blank" rel="noreferrer">Terms of Service</a>
       <a href="/refund.html" target="_blank" rel="noreferrer">Refund Policy</a>
+        <a href="/cancellation.html" target="_blank" rel="noreferrer">Cancellation Policy</a>
     </nav>
     <small>© 2026 Mingyu Naming Studio</small>
   </footer>
 
-  <dialog id="payment"><button class="close" aria-label="Close">×</button><p class="eyebrow" id="paymentEyebrow">MINGYU EDITION</p><h2 id="paymentTitle">确认生成简约版</h2><div class="preview-sheet"><span>名屿</span><b>名</b><small>CHINESE NAMING EDITION</small></div><ul id="paymentBenefits"></ul><div id="paypalButtons" hidden></div><button id="confirmPurchase" class="submit"><span id="confirmPurchaseText">演示支付并生成 · $2.99</span><b>→</b></button><small id="paymentNote" data-i18n="demoNote">当前为演示结账流程，未接入真实扣款。</small><small class="legal-note">By purchasing, you agree to our <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>, <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>, and <a href="/refund.html" target="_blank" rel="noreferrer">Refund Policy</a>.</small></dialog>
+  <dialog id="payment"><button class="close" aria-label="Close">×</button><p class="eyebrow" id="paymentEyebrow">MINGYU EDITION</p><h2 id="paymentTitle">确认生成简约版</h2><div class="preview-sheet"><span>名屿</span><b>名</b><small>CHINESE NAMING EDITION</small></div><ul id="paymentBenefits"></ul><div id="paypalButtons" hidden></div><button id="confirmPurchase" class="submit"><span id="confirmPurchaseText">演示支付并生成 · $2.99</span><b>→</b></button><small id="paymentNote" data-i18n="demoNote">当前为演示结账流程，未接入真实扣款。</small><small class="legal-note">By purchasing, you agree to our <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>, <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>, <a href="/refund.html" target="_blank" rel="noreferrer">Refund Policy</a>, and <a href="/cancellation.html" target="_blank" rel="noreferrer">Cancellation Policy</a>.</small></dialog>
   <div class="loading" id="loading" hidden role="status" aria-live="polite"><div class="loader-seal">名</div><p data-i18n="loading">正在研读你的名字与时辰...</p></div>
   <script src="/app.js"></script>
 </body>

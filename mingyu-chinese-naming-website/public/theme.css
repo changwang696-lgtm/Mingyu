@@ -125,6 +125,207 @@ body { background: var(--ink); color: var(--paper); }
 .intro .section-no { color: var(--cinnabar); }
 .pill-row span { border-color: rgba(158,57,43,.35); color: var(--cinnabar); background: #fff8e9; }
 
+.membership-model,
+.member-flow {
+  padding: 96px clamp(24px, 7vw, 110px);
+  color: #30251d;
+  background: linear-gradient(180deg, #f6ecd8, #efe2c7);
+  border-top: 1px solid rgba(158,57,43,.14);
+}
+
+.member-flow {
+  background: linear-gradient(180deg, #fff8ea, #f3e5c9);
+  border-top: 1px solid rgba(216,168,78,.35);
+}
+
+.membership-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, .9fr);
+  gap: 26px 7vw;
+  align-items: end;
+  margin-bottom: 34px;
+}
+
+.membership-head h2 {
+  margin: 0;
+  color: #2d241c;
+  font-size: clamp(34px, 4.8vw, 62px);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.membership-head > p:last-child {
+  margin: 0;
+  color: #5b4d41;
+  line-height: 1.9;
+}
+
+.membership-model .section-no,
+.member-flow .section-no {
+  color: var(--cinnabar);
+}
+
+.membership-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.member-card {
+  min-width: 0;
+  padding: 28px;
+  border: 1px solid rgba(48,37,29,.14);
+  background: linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,248,233,.92));
+  box-shadow: 0 16px 32px rgba(48,37,29,.08);
+}
+
+.member-card h3 {
+  margin: 10px 0 18px;
+  color: var(--ink);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.member-card strong {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--cinnabar);
+  font: 38px Georgia, serif;
+}
+
+.member-card strong small {
+  color: #7a6b5f;
+  font: 12px Arial, sans-serif;
+  letter-spacing: .8px;
+}
+
+.member-card ul {
+  margin: 22px 0 0;
+  padding-left: 18px;
+  color: #54463a;
+  line-height: 1.85;
+}
+
+.member-type {
+  display: inline-block;
+  margin: 0;
+  padding: 6px 10px;
+  color: var(--paper);
+  background: var(--teal);
+  font: 10px Arial, sans-serif;
+  letter-spacing: 1px;
+}
+
+.featured-card {
+  position: relative;
+  color: var(--paper);
+  background: linear-gradient(180deg, #0b3150, #09253e);
+  border-color: rgba(216,168,78,.45);
+}
+
+.featured-card::after {
+  content: "RECOMMENDED";
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  padding: 6px 9px;
+  color: var(--ink);
+  background: var(--gold);
+  font: 9px Arial, sans-serif;
+  letter-spacing: 1px;
+}
+
+.featured-card h3,
+.featured-card strong,
+.featured-card ul,
+.featured-card strong small {
+  color: var(--paper);
+}
+
+.featured-card .member-type {
+  color: var(--ink);
+  background: var(--gold);
+}
+
+.billing-note {
+  margin-top: 28px;
+  padding: 26px 28px;
+  border-left: 4px solid var(--cinnabar);
+  background: rgba(255,255,255,.6);
+  box-shadow: inset 0 0 0 1px rgba(158,57,43,.08);
+}
+
+.billing-note h3 {
+  margin: 6px 0 16px;
+  color: var(--ink);
+  font-size: 28px;
+  font-weight: 400;
+}
+
+.billing-note ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #54463a;
+  line-height: 1.9;
+}
+
+.billing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+  margin: 18px 0 0;
+}
+
+.billing-actions a {
+  color: var(--cinnabar);
+  text-decoration: none;
+}
+
+.billing-actions a:hover {
+  text-decoration: underline;
+}
+
+.billing-actions span {
+  color: #6a5b4c;
+  font: 12px Arial, sans-serif;
+  letter-spacing: .8px;
+}
+
+.flow-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.flow-grid article {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid rgba(48,37,29,.16);
+  background: rgba(255,255,255,.78);
+}
+
+.flow-grid small {
+  color: var(--cinnabar);
+  font: 11px Arial, sans-serif;
+  letter-spacing: 1.1px;
+}
+
+.flow-grid h3 {
+  margin: 12px 0 10px;
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 400;
+}
+
+.flow-grid p {
+  margin: 0;
+  color: #5b4d41;
+  line-height: 1.8;
+}
+
 .zodiac-atlas {
   padding: 110px clamp(24px, 7vw, 110px);
   background: var(--ink);
@@ -173,6 +374,24 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 .plan-button b { flex: 0 0 auto; color: var(--gold-light); font: 24px Georgia,serif; }
 .complete-plan { background: var(--cinnabar); border-color: var(--gold); box-shadow: 6px 6px 0 rgba(0,0,0,.2); }
 .complete-plan em { color: #f0dcca; }
+.launch-note {
+  margin-top: 18px;
+  padding: 18px 20px;
+  border-left: 3px solid var(--gold);
+  background: rgba(7,28,49,.48);
+}
+
+.launch-note strong {
+  display: block;
+  color: var(--gold-light);
+  font-size: 14px;
+}
+
+.launch-note p {
+  margin: 8px 0 0;
+  color: #c5c9c2;
+  line-height: 1.75;
+}
 
 .result {
   position: relative;
@@ -444,6 +663,8 @@ dialog { color: #30251d; background: var(--paper); border-top: 8px solid var(--c
 .paypal-option small { display: block; margin-bottom: 12px; color: var(--ink); font: 12px Arial,sans-serif; letter-spacing: .9px; text-transform: uppercase; }
 
 @media (max-width: 1050px) {
+  .membership-grid { grid-template-columns: 1fr; }
+  .flow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .zodiac-grid { grid-template-columns: repeat(4, 1fr); }
   .hero-emblem { right: 2vw; width: 44vw; opacity: .72; }
   .report-cta { grid-template-columns: 150px 1fr; }
@@ -455,6 +676,14 @@ dialog { color: #30251d; background: var(--paper); border-top: 8px solid var(--c
 }
 
 @media (max-width: 760px) {
+  .membership-model,
+  .member-flow { padding: 72px 20px; }
+  .membership-head { grid-template-columns: 1fr; margin-bottom: 24px; }
+  .member-card { padding: 22px 18px; }
+  .member-card h3 { font-size: 24px; }
+  .billing-note { padding: 22px 18px; }
+  .billing-note h3 { font-size: 24px; }
+  .flow-grid { grid-template-columns: 1fr; }
   .hero { min-height: 760px; }
   .hero-copy { top: 53%; }
   .hero h1 { font-size: 49px; }
