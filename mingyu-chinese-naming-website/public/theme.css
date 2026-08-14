@@ -20,6 +20,20 @@ body { background: var(--ink); color: var(--paper); }
 
 .brand-mark, .lang { border-color: var(--gold); color: var(--gold-light); }
 .topbar nav a { color: var(--paper); }
+.topbar-actions { display: flex; align-items: center; gap: 12px; }
+.account-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  color: var(--gold-light);
+  text-decoration: none;
+  border: 1px solid rgba(216,168,78,.65);
+  background: rgba(7,28,49,.38);
+  font: 12px Arial, sans-serif;
+  letter-spacing: .8px;
+}
+.account-link:hover { text-decoration: underline; }
 
 .hero {
   height: min(900px, 96vh);
@@ -392,6 +406,40 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
   color: #c5c9c2;
   line-height: 1.75;
 }
+.member-strip {
+  max-width: 920px;
+  margin: 30px auto 0;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  border: 1px solid rgba(242,207,131,.32);
+  background: rgba(7,28,49,.42);
+}
+
+.member-strip small {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--gold-light);
+  font: 10px Arial, sans-serif;
+  letter-spacing: 1.4px;
+}
+
+.member-strip p {
+  margin: 0;
+  color: #d7d5cf;
+  line-height: 1.7;
+}
+
+.member-strip-link {
+  flex: 0 0 auto;
+  color: var(--gold-light);
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+  font: 12px Arial, sans-serif;
+  letter-spacing: .8px;
+}
 
 .result {
   position: relative;
@@ -676,6 +724,8 @@ dialog { color: #30251d; background: var(--paper); border-top: 8px solid var(--c
 }
 
 @media (max-width: 760px) {
+  .topbar-actions { gap: 8px; }
+  .account-link { padding: 0 10px; font-size: 11px; }
   .membership-model,
   .member-flow { padding: 72px 20px; }
   .membership-head { grid-template-columns: 1fr; margin-bottom: 24px; }
@@ -684,6 +734,8 @@ dialog { color: #30251d; background: var(--paper); border-top: 8px solid var(--c
   .billing-note { padding: 22px 18px; }
   .billing-note h3 { font-size: 24px; }
   .flow-grid { grid-template-columns: 1fr; }
+  .member-strip { display: block; }
+  .member-strip-link { display: inline-block; margin-top: 12px; }
   .hero { min-height: 760px; }
   .hero-copy { top: 53%; }
   .hero h1 { font-size: 49px; }

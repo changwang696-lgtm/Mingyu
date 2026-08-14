@@ -1,6 +1,6 @@
 const translations = {
   en: {
-    navPlans: "Plans", navNaming: "Naming", navCulture: "Zodiac Culture", navCraft: "Crafts",
+    navPlans: "Plans", navNaming: "Naming", navCulture: "Zodiac Culture", navCraft: "Crafts", accountLinkGuest: "Sign in",
     eyebrow: "Words become a vessel · Meet the East", heroA: "One name,", heroB: "a lifetime of meaning",
     heroBody: "From your original name, birth moment and personality, discover AI-powered Chinese naming suggestions, cultural readings, and a membership-based credits model.",
     begin: "Find my name", introTitle: "Not a translation, but a new way to see you.",
@@ -31,6 +31,16 @@ const translations = {
     flowStep2Title: "Choose a plan", flowStep2Body: "Pick a monthly membership or one-time credit pack, with clear price and currency at checkout.",
     flowStep3Title: "Spend credits", flowStep3Body: "Each AI naming request consumes credits and records its generation time and fulfillment status.",
     flowStep4Title: "Manage membership", flowStep4Body: "View remaining credits, saved reports, invoices, renewal timing, and cancellation instructions in the account.",
+    memberStripEyebrow: "MEMBER ACCESS",
+    memberStripGuest: "Create account / Sign in",
+    memberStripLoggedIn: "Open member center",
+    memberStripGuestBody: "Sign in to receive welcome credits, generate with your balance, and keep a saved history in your account.",
+    memberStripLoggedInBody: "Signed in as {name}. You have {credits} credits available and can generate directly with member balance.",
+    simpleCreditCaption: "Use 1 credit when signed in",
+    completeCreditCaption: "Use 3 credits when signed in",
+    memberPaymentFallback: "Not enough credits for this request. Continue with PayPal checkout instead.",
+    creditUsed: "{count} credit used. {remaining} credits remaining.",
+    accountLinkMember: "My account",
     formTitle: "Tell us who you are", formSub: "Your name, birth date and birthplace are not retained. If you prefer, enter only your surname; results remain about 90% as effective.",
     nameLabel: "Your current name", nameHint: "Any language is welcome. We consider pronunciation and context.",
     genderLabel: "Gender expression", female: "Female", male: "Male", neutral: "Neutral / Any",
@@ -58,7 +68,7 @@ const translations = {
     paypalValidation: "Please complete the required form fields before starting PayPal checkout."
   },
   zh: {
-    navPlans: "会员套餐", navNaming: "起名", navCulture: "生肖文化", navCraft: "东方好物", eyebrow: "以字为舟 · 渡见东方",
+    navPlans: "会员套餐", navNaming: "起名", navCulture: "生肖文化", navCraft: "东方好物", accountLinkGuest: "注册 / 登录", eyebrow: "以字为舟 · 渡见东方",
     heroA: "一个名字，", heroB: "一生的东方寓意", heroBody: "从你的原名、出生时刻与个性出发，获得由 AI 驱动的中文起名建议、文化解读与会员制 credits 服务。",
     begin: "开始寻名", introTitle: "不是翻译名字，而是重新认识你。",
     introBody: "中文名字是声音、字形与意义的共同选择。我们以你的身份为起点，参考生肖的文化意象与汉字传统，提供有出处、有解释、可被真实使用的名字。",
@@ -88,6 +98,16 @@ const translations = {
     flowStep2Title: "选择套餐", flowStep2Body: "选择月度会员或一次性 credits 包，并在结账页看到明确价格与币种。",
     flowStep3Title: "消耗 credits", flowStep3Body: "每次提交 AI 起名请求时消耗对应 credits，同时记录生成时间与交付状态。",
     flowStep4Title: "管理会员", flowStep4Body: "在账户中查看剩余 credits、历史报告、发票、续费时间与取消订阅方式。",
+    memberStripEyebrow: "会员入口",
+    memberStripGuest: "前往注册 / 登录",
+    memberStripLoggedIn: "打开会员中心",
+    memberStripGuestBody: "登录后可获得欢迎 credits，直接用余额生成结果，并在会员中心查看历史记录。",
+    memberStripLoggedInBody: "已登录为 {name}，当前剩余 {credits} credits，可直接使用会员余额生成结果。",
+    simpleCreditCaption: "登录后可使用 1 credit",
+    completeCreditCaption: "登录后可使用 3 credits",
+    memberPaymentFallback: "当前 credits 不足，本次将继续使用 PayPal 结账。",
+    creditUsed: "已消耗 {count} credit，当前剩余 {remaining} credits。",
+    accountLinkMember: "会员中心",
     formTitle: "告诉我们，你是谁", formSub: "您填写的姓名、出生日期和出生地不会被本网站保留。若有顾虑，可只输入您的姓氏，生成效果仍约有 90%。",
     nameLabel: "你现在的姓名",
     nameHint: "支持任何语言，我们会理解读音与文化背景", genderLabel: "性别表达", female: "女性", male: "男性", neutral: "中性 / 不限",
@@ -119,12 +139,14 @@ let latest = null;
 let activeTier = "complete";
 let pendingTier = "simple";
 let pendingBody = null;
+let sessionState = { loggedIn: false, user: null, catalog: null };
 let paypalConfig = { enabled: false, clientId: null, currency: "USD" };
 let paypalSdkPromise = null;
 let paypalButtonsInstance = null;
 let inlinePayPalRendered = false;
 const $ = selector => document.querySelector(selector);
 const dialog = $("#payment");
+const creditCosts = { simple: 1, complete: 3 };
 
 const tierCopy = {
   simple: {
@@ -139,6 +161,44 @@ const tierCopy = {
   }
 };
 
+function t(key, replacements = {}) {
+  const template = translations[lang][key] || "";
+  return Object.entries(replacements).reduce((value, [token, replacement]) => value.replaceAll(`{${token}}`, replacement), template);
+}
+
+function updateMemberExperience() {
+  const accountLink = $("#accountLink");
+  const memberStripText = $("#memberStripText");
+  const memberStripLink = $("#memberStripLink");
+  const simplePrice = $("#simplePlanPrice");
+  const completePrice = $("#completePlanPrice");
+  const simpleCaption = $("#simplePlanCaption");
+  const completeCaption = $("#completePlanCaption");
+
+  if (!accountLink || !memberStripText || !memberStripLink || !simplePrice || !completePrice || !simpleCaption || !completeCaption) return;
+
+  if (sessionState.loggedIn && sessionState.user) {
+    accountLink.textContent = translations[lang].accountLinkMember;
+    memberStripText.textContent = t("memberStripLoggedInBody", {
+      name: sessionState.user.displayName || sessionState.user.email,
+      credits: String(sessionState.user.creditsBalance)
+    });
+    memberStripLink.textContent = translations[lang].memberStripLoggedIn;
+    simplePrice.textContent = `${creditCosts.simple} cr`;
+    completePrice.textContent = `${creditCosts.complete} cr`;
+    simpleCaption.textContent = translations[lang].simpleCreditCaption;
+    completeCaption.textContent = translations[lang].completeCreditCaption;
+  } else {
+    accountLink.textContent = translations[lang].accountLinkGuest;
+    memberStripText.textContent = translations[lang].memberStripGuestBody;
+    memberStripLink.textContent = translations[lang].memberStripGuest;
+    simplePrice.textContent = "$2.99";
+    completePrice.textContent = "$9.90";
+    simpleCaption.textContent = translations[lang].simpleNoPdf;
+    completeCaption.textContent = translations[lang].completeWithPdf;
+  }
+}
+
 function applyLanguage() {
   document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
   document.querySelectorAll("[data-i18n]").forEach(element => {
@@ -148,6 +208,7 @@ function applyLanguage() {
   if ($("#paypalInlineTitle")) $("#paypalInlineTitle").textContent = translations[lang].paypalInlineTitle;
   if ($("#paypalInlineBody")) $("#paypalInlineBody").textContent = translations[lang].paypalInlineBody;
   $("#langBtn").textContent = lang === "zh" ? "EN" : "中文";
+  updateMemberExperience();
   if (dialog.open) updatePaymentDialog();
   if (latest) render(latest);
 }
@@ -166,6 +227,11 @@ $("#nameForm").addEventListener("submit", event => {
   }
   pendingTier = event.submitter?.value === "complete" ? "complete" : "simple";
   pendingBody = { ...Object.fromEntries(new FormData(form)), tier: pendingTier };
+  if (sessionState.loggedIn && sessionState.user && sessionState.user.creditsBalance >= creditCosts[pendingTier]) {
+    startMemberGeneration();
+    return;
+  }
+  if (sessionState.loggedIn && sessionState.user) $("#formMessage").textContent = translations[lang].memberPaymentFallback;
   updatePaymentDialog();
   dialog.showModal();
 });
@@ -212,9 +278,12 @@ function render(data) {
   const en = lang === "en";
   const simple = activeTier === "simple";
   const animalKey = data.zodiac.animalEn.toLowerCase();
+  const usedCredits = data.membership?.consumedCredits;
   $("#result").classList.toggle("simple-result", simple);
   $("#resultTitle").textContent = simple ? translations[lang].simpleResultTitle : translations[lang].resultTitle;
-  $("#editionBadge").textContent = simple ? `${en ? "Simple Edition" : "简约版"} · $2.99` : `${en ? "Complete Edition" : "完整版"} · $9.90`;
+  $("#editionBadge").textContent = usedCredits
+    ? `${simple ? (en ? "Simple Edition" : "简约版") : (en ? "Complete Edition" : "完整版")} · ${usedCredits} ${en ? "credits" : "credits"}`
+    : (simple ? `${en ? "Simple Edition" : "简约版"} · $2.99` : `${en ? "Complete Edition" : "完整版"} · $9.90`);
   $("#zodiacGlyph span").textContent = data.zodiac.animal;
   $("#zodiacImage").src = `/assets/zodiac/${animalKey}.jpg`;
   $("#zodiacImage").alt = `${data.zodiac.animal} · ${data.zodiac.animalEn}`;
@@ -273,8 +342,59 @@ async function capturePayPalOrder(orderID, tier) {
     activeTier = tier;
     latest = result;
     render(result);
+    if (result.membership?.remainingCredits != null && sessionState.user) {
+      sessionState.user.creditsBalance = result.membership.remainingCredits;
+      updateMemberExperience();
+    } else {
+      await refreshSession();
+    }
     $("#result").hidden = false;
     $("#result").scrollIntoView({ behavior: "smooth" });
+  } finally {
+    $("#loading").hidden = true;
+  }
+}
+
+async function refreshSession() {
+  try {
+    const response = await fetch("/api/auth/session");
+    const data = await response.json();
+    sessionState = data;
+    updateMemberExperience();
+  } catch {
+    sessionState = { loggedIn: false, user: null, catalog: null };
+    updateMemberExperience();
+  }
+}
+
+async function startMemberGeneration() {
+  $("#loading").hidden = false;
+  $("#formMessage").textContent = "";
+  try {
+    const response = await fetch("/api/member/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(pendingBody)
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Request failed");
+    activeTier = pendingTier;
+    latest = data;
+    render(data);
+    if (sessionState.user && data.membership?.remainingCredits != null) {
+      sessionState.user.creditsBalance = data.membership.remainingCredits;
+      $("#formMessage").textContent = t("creditUsed", {
+        count: String(data.membership.consumedCredits),
+        remaining: String(data.membership.remainingCredits)
+      });
+      updateMemberExperience();
+    } else {
+      await refreshSession();
+    }
+    $("#result").hidden = false;
+    $("#result").scrollIntoView({ behavior: "smooth" });
+  } catch (error) {
+    alert((lang === "zh" ? "生成失败：" : "Generation failed: ") + error.message);
   } finally {
     $("#loading").hidden = true;
   }
@@ -331,6 +451,7 @@ async function renderPayPalButtons() {
 
 async function renderInlinePayPalButtons() {
   if (!paypalConfig.enabled || inlinePayPalRendered) return;
+  if (!$("#paypalInline")) return;
   const paypal = await loadPayPalSdk();
   $("#paypalInline").hidden = false;
 
@@ -415,3 +536,4 @@ fetch("/api/paypal-config")
   .catch(() => {});
 
 applyLanguage();
+refreshSession();

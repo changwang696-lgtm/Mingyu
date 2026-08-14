@@ -1,13 +1,43 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const root = path.join(__dirname, "public");
+const dataDir = path.join(__dirname, "data");
+const databaseFile = path.join(dataDir, "membership-db.json");
 const port = Number(process.env.PORT) || 4173;
 const orderStore = new Map();
+const sessionCookieName = "mingyu_session";
+const welcomeCredits = 3;
+const sessionLifetimeSeconds = 60 * 60 * 24 * 30;
 const tierPricing = {
   simple: { value: "2.99", label: "Simple Edition" },
   complete: { value: "9.90", label: "Complete Edition" }
+};
+const tierCreditCosts = { simple: 1, complete: 3 };
+const memberPlans = {
+  starter: {
+    id: "starter",
+    name: "Starter Membership",
+    price: "$19/month",
+    credits: 30,
+    interval: "month"
+  },
+  studio: {
+    id: "studio",
+    name: "Studio Membership",
+    price: "$39/month",
+    credits: 80,
+    interval: "month"
+  },
+  creditPack: {
+    id: "credit-pack-50",
+    name: "Credit Pack",
+    price: "$29 one-time",
+    credits: 50,
+    interval: "one-time"
+  }
 };
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -15,7 +45,9 @@ const types = {
   ".js": "text/javascript; charset=utf-8",
   ".png": "image/png",
   ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg"
+  ".jpeg": "image/jpeg",
+  ".svg": "image/svg+xml",
+  ".json": "application/json; charset=utf-8"
 };
 const signs = [["鼠", "Rat"], ["牛", "Ox"], ["虎", "Tiger"], ["兔", "Rabbit"], ["龙", "Dragon"], ["蛇", "Snake"], ["马", "Horse"], ["羊", "Goat"], ["猴", "Monkey"], ["鸡", "Rooster"], ["狗", "Dog"], ["猪", "Pig"]];
 const zodiacProfiles = [
@@ -60,8 +92,304 @@ const placeTimeZones = [
   { keywords: ["beijing", "shanghai", "guangzhou", "shenzhen", "china", "hong kong", "macau", "taipei", "taiwan", "singapore", "kuala lumpur"], timeZone: chinaTimeZone }
 ];
 
+function createDefaultDatabase() {
+  return { users: [], sessions: [], reports: [] };
+}
+
+function ensureDatabaseFile() {
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  if (!fs.existsSync(databaseFile)) fs.writeFileSync(databaseFile, JSON.stringify(createDefaultDatabase(), null, 2));
+}
+
+function loadDatabase() {
+  ensureDatabaseFile();
+  try {
+    const parsed = JSON.parse(fs.readFileSync(databaseFile, "utf8"));
+    return {
+      users: Array.isArray(parsed.users) ? parsed.users : [],
+      sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
+      reports: Array.isArray(parsed.reports) ? parsed.reports : []
+    };
+  } catch {
+    const fallback = createDefaultDatabase();
+    fs.writeFileSync(databaseFile, JSON.stringify(fallback, null, 2));
+    return fallback;
+  }
+}
+
+let database = loadDatabase();
+
+function saveDatabase() {
+  fs.writeFileSync(databaseFile, JSON.stringify(database, null, 2));
+}
+
+function nextId(prefix) {
+  return `${prefix}${crypto.randomUUID().replace(/-/g, "")}`;
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
 function pad(number) {
   return String(number).padStart(2, "0");
+}
+
+function normalizeTier(tier) {
+  return tier === "simple" ? "simple" : "complete";
+}
+
+function compactBody(body) {
+  return {
+    name: String(body.name || "").trim(),
+    gender: body.gender || "neutral",
+    birth: body.birth,
+    birthTimeZone: String(body.birthTimeZone || "").trim(),
+    place: body.place?.trim() || "",
+    wish: body.wish?.trim() || "",
+    tier: normalizeTier(body.tier)
+  };
+}
+
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
+  return {
+    salt,
+    hash: crypto.scryptSync(password, salt, 64).toString("hex")
+  };
+}
+
+function verifyPassword(password, hash, salt) {
+  const nextHash = crypto.scryptSync(password, salt, 64);
+  const currentHash = Buffer.from(hash, "hex");
+  return currentHash.length === nextHash.length && crypto.timingSafeEqual(currentHash, nextHash);
+}
+
+function sanitizeMembership(membership = {}) {
+  return {
+    planId: membership.planId || null,
+    planName: membership.planName || "No active membership",
+    status: membership.status || "inactive",
+    renewalAt: membership.renewalAt || null,
+    cancelAtPeriodEnd: Boolean(membership.cancelAtPeriodEnd)
+  };
+}
+
+function sanitizeUserRecord(user) {
+  return {
+    ...user,
+    creditsBalance: Number(user.creditsBalance) || 0,
+    membership: sanitizeMembership(user.membership),
+    ledger: Array.isArray(user.ledger) ? user.ledger : [],
+    reportIds: Array.isArray(user.reportIds) ? user.reportIds : []
+  };
+}
+
+function getPublicCatalog() {
+  return {
+    plans: Object.values(memberPlans),
+    generationCosts: tierCreditCosts,
+    welcomeCredits
+  };
+}
+
+function publicUser(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.displayName,
+    creditsBalance: user.creditsBalance,
+    membership: sanitizeMembership(user.membership),
+    createdAt: user.createdAt
+  };
+}
+
+function addLedgerEntry(user, entry) {
+  user.ledger = Array.isArray(user.ledger) ? user.ledger : [];
+  user.creditsBalance = Number(user.creditsBalance) || 0;
+  user.creditsBalance += entry.creditsDelta;
+  const ledgerItem = {
+    id: nextId("ledger_"),
+    type: entry.type,
+    source: entry.source,
+    description: entry.description,
+    creditsDelta: entry.creditsDelta,
+    creditsBalanceAfter: user.creditsBalance,
+    referenceId: entry.referenceId || null,
+    createdAt: nowIso()
+  };
+  user.ledger.unshift(ledgerItem);
+  user.ledger = user.ledger.slice(0, 100);
+  return ledgerItem;
+}
+
+function createUserRecord(email, password, displayName) {
+  const { salt, hash } = hashPassword(password);
+  const user = sanitizeUserRecord({
+    id: nextId("user_"),
+    email,
+    displayName,
+    passwordHash: hash,
+    passwordSalt: salt,
+    createdAt: nowIso(),
+    creditsBalance: 0,
+    membership: {
+      planId: null,
+      planName: "No active membership",
+      status: "inactive",
+      renewalAt: null,
+      cancelAtPeriodEnd: false
+    },
+    ledger: [],
+    reportIds: []
+  });
+  addLedgerEntry(user, {
+    type: "grant",
+    source: "welcome",
+    description: `Welcome credits for new account`,
+    creditsDelta: welcomeCredits
+  });
+  return user;
+}
+
+function findUserByEmail(email) {
+  return database.users.find(user => user.email === normalizeEmail(email));
+}
+
+function parseCookies(req) {
+  return Object.fromEntries(
+    String(req.headers.cookie || "")
+      .split(";")
+      .map(chunk => chunk.trim())
+      .filter(Boolean)
+      .map(chunk => {
+        const index = chunk.indexOf("=");
+        return index === -1
+          ? [chunk, ""]
+          : [chunk.slice(0, index), decodeURIComponent(chunk.slice(index + 1))];
+      })
+  );
+}
+
+function buildSessionCookie(value, maxAgeSeconds) {
+  const parts = [
+    `${sessionCookieName}=${encodeURIComponent(value)}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    `Max-Age=${maxAgeSeconds}`
+  ];
+  if (process.env.NODE_ENV === "production") parts.push("Secure");
+  return parts.join("; ");
+}
+
+function cleanupSessions() {
+  const now = Date.now();
+  database.sessions = database.sessions.filter(session => {
+    const expiresAt = new Date(session.expiresAt).getTime();
+    return Number.isFinite(expiresAt) && expiresAt > now;
+  });
+}
+
+function createSession(userId) {
+  cleanupSessions();
+  const token = nextId("sess_");
+  database.sessions.push({
+    id: token,
+    userId,
+    createdAt: nowIso(),
+    expiresAt: new Date(Date.now() + sessionLifetimeSeconds * 1000).toISOString()
+  });
+  saveDatabase();
+  return token;
+}
+
+function destroySession(req) {
+  const token = parseCookies(req)[sessionCookieName];
+  if (!token) return;
+  database.sessions = database.sessions.filter(session => session.id !== token);
+  saveDatabase();
+}
+
+function getAuthenticatedUser(req) {
+  cleanupSessions();
+  const token = parseCookies(req)[sessionCookieName];
+  if (!token) return null;
+  const session = database.sessions.find(item => item.id === token);
+  if (!session) return null;
+  const user = database.users.find(item => item.id === session.userId);
+  if (!user) return null;
+  return sanitizeUserRecord(user);
+}
+
+function listUserReports(user) {
+  const reportIds = Array.isArray(user.reportIds) ? user.reportIds : [];
+  return reportIds
+    .map(reportId => database.reports.find(report => report.id === reportId && report.userId === user.id))
+    .filter(Boolean)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 12)
+    .map(report => ({
+      id: report.id,
+      tier: report.tier,
+      inputName: report.inputName,
+      createdAt: report.createdAt,
+      zodiac: report.zodiac,
+      previewNames: report.previewNames
+    }));
+}
+
+function send(res, status, data, type = "application/json; charset=utf-8", extraHeaders = {}) {
+  res.writeHead(status, { "Content-Type": type, "X-Content-Type-Options": "nosniff", ...extraHeaders });
+  res.end(type.startsWith("application/json") ? JSON.stringify(data) : data);
+}
+
+function readJsonBody(req, res) {
+  return new Promise(resolve => {
+    let raw = "";
+    req.on("data", chunk => {
+      raw += chunk;
+      if (raw.length > 100000) {
+        send(res, 413, { error: "Request too large" });
+        req.destroy();
+      }
+    });
+    req.on("end", () => {
+      try {
+        resolve(JSON.parse(raw || "{}"));
+      } catch {
+        send(res, 400, { error: "Invalid request" });
+        resolve(null);
+      }
+    });
+  });
+}
+
+function validateGenerationBody(body) {
+  if (!body.name?.trim() || !body.birth || !body.birthTimeZone) return "Name, birth date and birthplace time zone are required";
+  if (Number.isNaN(new Date(body.birth).getTime())) return "Birth date is invalid";
+  if (!isValidTimeZone(body.birthTimeZone)) return "Birthplace time zone is invalid";
+  return null;
+}
+
+function parseBirthInput(input) {
+  const match = String(input || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!match) return null;
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+    hour: Number(match[4]),
+    minute: Number(match[5]),
+    second: 0
+  };
 }
 
 function inferTimeZoneFromPlace(place) {
@@ -78,19 +406,6 @@ function isValidTimeZone(timeZone) {
   } catch {
     return false;
   }
-}
-
-function parseBirthInput(input) {
-  const match = String(input || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-  if (!match) return null;
-  return {
-    year: Number(match[1]),
-    month: Number(match[2]),
-    day: Number(match[3]),
-    hour: Number(match[4]),
-    minute: Number(match[5]),
-    second: 0
-  };
 }
 
 function getTimeZoneParts(date, timeZone) {
@@ -214,55 +529,6 @@ function demoResult(body) {
   };
 }
 
-function send(res, status, data, type = "application/json; charset=utf-8") {
-  res.writeHead(status, { "Content-Type": type, "X-Content-Type-Options": "nosniff" });
-  res.end(type.startsWith("application/json") ? JSON.stringify(data) : data);
-}
-
-function normalizeTier(tier) {
-  return tier === "simple" ? "simple" : "complete";
-}
-
-function compactBody(body) {
-  return {
-    name: String(body.name || "").trim(),
-    gender: body.gender || "neutral",
-    birth: body.birth,
-    birthTimeZone: String(body.birthTimeZone || "").trim(),
-    place: body.place?.trim() || "",
-    wish: body.wish?.trim() || "",
-    tier: normalizeTier(body.tier)
-  };
-}
-
-function readJsonBody(req, res) {
-  return new Promise(resolve => {
-    let raw = "";
-    req.on("data", chunk => {
-      raw += chunk;
-      if (raw.length > 100000) {
-        send(res, 413, { error: "Request too large" });
-        req.destroy();
-      }
-    });
-    req.on("end", () => {
-      try {
-        resolve(JSON.parse(raw || "{}"));
-      } catch {
-        send(res, 400, { error: "Invalid request" });
-        resolve(null);
-      }
-    });
-  });
-}
-
-function validateGenerationBody(body) {
-  if (!body.name?.trim() || !body.birth || !body.birthTimeZone) return "Name, birth date and birthplace time zone are required";
-  if (Number.isNaN(new Date(body.birth).getTime())) return "Birth date is invalid";
-  if (!isValidTimeZone(body.birthTimeZone)) return "Birthplace time zone is invalid";
-  return null;
-}
-
 function getAiConfig() {
   if (process.env.DEEPSEEK_API_KEY) {
     return {
@@ -303,6 +569,135 @@ function cleanupOrders() {
   }
 }
 
+async function fetchJson(url, options, errorMessage) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const json = await response.json();
+    if (!response.ok) throw new Error(json.error?.message || errorMessage);
+    return json;
+  } catch (error) {
+    if (error.name === "AbortError") throw new Error("AI generation timed out. Please try again.");
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function buildPrompt(body, culture) {
+  const tier = normalizeTier(body.tier);
+  const styleGuide = tier === "simple"
+    ? "Keep the result concise. Summary and culturalNote should each stay under 45 words per language. Each name meaning should stay under 28 words per language."
+    : "Keep the writing vivid but still concise. Summary should stay under 85 words per language. culturalNote should stay under 65 words per language. Each name meaning should stay under 45 words per language.";
+  const userProfile = compactBody(body);
+  const cultureLine = [
+    `year pillar: ${culture.pillar}`,
+    `cycle number: ${culture.cycleNumber}`,
+    `zodiac zh/en: ${culture.branch.zodiac}/${culture.branch.zodiacEn}`,
+    `stem: ${culture.stem.char} ${culture.stem.polarity}${culture.stem.element}`,
+    `branch: ${culture.branch.char} ${culture.branch.element}`,
+    `hour branch: ${culture.hourBranch.char} ${culture.hourBranch.element} ${culture.hourBranch.range}`
+  ].join("; ");
+
+  return [
+    "Return valid JSON only.",
+    "Required shape:",
+    '{"zodiac":{"animal":"","animalEn":"","years":"","traits":[],"traitsEn":[]},"summary":"","summaryEn":"","names":[{"hanzi":"","pinyin":"","seal":"","meaning":"","meaningEn":"","tone":""},{"hanzi":"","pinyin":"","seal":"","meaning":"","meaningEn":"","tone":""},{"hanzi":"","pinyin":"","seal":"","meaning":"","meaningEn":"","tone":""}],"culturalNote":"","culturalNoteEn":"","inputName":""}',
+    "Task:",
+    "Create three culturally grounded Chinese name options for an international user.",
+    "Do not claim destiny, science, full BaZi accuracy, missing elements, or favorable elements.",
+    "Use bilingual output for all narrative fields.",
+    styleGuide,
+    `User profile: ${JSON.stringify(userProfile)}`,
+    `Deterministic culture context: ${cultureLine}`
+  ].join("\n");
+}
+
+function readDeepSeekContent(json) {
+  const message = json.choices?.[0]?.message;
+  const content = message?.content;
+  if (typeof content === "string" && content.trim()) return content.trim();
+
+  if (Array.isArray(content)) {
+    const text = content.map(item => item?.text || item?.content || "").join("").trim();
+    if (text) return text;
+  }
+
+  const fallback = json.output_text || message?.reasoning_content || "";
+  return typeof fallback === "string" ? fallback.trim() : "";
+}
+
+async function requestDeepSeekJson(config, prompt, maxTokens, allowRetry = true) {
+  const json = await fetchJson(config.url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: config.model,
+      max_tokens: maxTokens,
+      temperature: 0.7,
+      stream: false,
+      thinking: { type: "disabled" },
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: "You are a careful bilingual Chinese naming consultant. Return valid JSON only with no markdown fences." },
+        { role: "user", content: prompt }
+      ]
+    })
+  }, "DeepSeek request failed");
+
+  const output = readDeepSeekContent(json);
+  if (output) return JSON.parse(output);
+  if (!allowRetry) throw new Error("DeepSeek returned empty content");
+  return requestDeepSeekJson(config, `${prompt}\nIf you cannot comply, still return the required JSON shape with concise placeholder-safe values.`, Math.max(maxTokens, 1000), false);
+}
+
+async function requestAiResult(body, culture) {
+  const config = getAiConfig();
+  if (!config) return demoResult(body);
+
+  const tier = normalizeTier(body.tier);
+  const prompt = buildPrompt(body, culture);
+  const maxTokens = tier === "simple" ? 700 : 1200;
+
+  if (config.provider === "deepseek") return requestDeepSeekJson(config, prompt, maxTokens);
+
+  const json = await fetchJson(config.url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: config.model,
+      input: prompt,
+      max_output_tokens: maxTokens,
+      text: { format: { type: "json_object" } }
+    })
+  }, "OpenAI request failed");
+  const output = json.output_text || json.output?.flatMap(item => item.content || []).find(item => item.type === "output_text")?.text;
+  if (!output) throw new Error("OpenAI returned empty content");
+  return JSON.parse(output);
+}
+
+async function buildPaidResult(body) {
+  const culture = traditionalCulture(body);
+  const result = await requestAiResult(body, culture);
+  result.traditionalCulture = culture;
+  result.zodiac = {
+    ...result.zodiac,
+    animal: culture.branch.zodiac,
+    animalEn: culture.branch.zodiacEn,
+    years: String(culture.basisYear),
+    traits: culture.zodiacProfile.personality,
+    traitsEn: culture.zodiacProfile.personalityEn
+  };
+  return result;
+}
+
 async function fetchPayPalAccessToken(config) {
   const response = await fetch(`${config.baseUrl}/v1/oauth2/token`, {
     method: "POST",
@@ -332,145 +727,27 @@ async function fetchPayPalJson(config, pathname, options, errorMessage) {
   return json;
 }
 
-function buildPrompt(body, culture) {
-  const tier = normalizeTier(body.tier);
-  const styleGuide = tier === "simple"
-    ? "Keep the result concise. Summary and culturalNote should each stay under 45 words per language. Each name meaning should stay under 28 words per language."
-    : "Keep the writing vivid but still concise. Summary should stay under 85 words per language. culturalNote should stay under 65 words per language. Each name meaning should stay under 45 words per language.";
-
-  const userProfile = compactBody(body);
-  const cultureLine = [
-    `year pillar: ${culture.pillar}`,
-    `cycle number: ${culture.cycleNumber}`,
-    `zodiac zh/en: ${culture.branch.zodiac}/${culture.branch.zodiacEn}`,
-    `stem: ${culture.stem.char} ${culture.stem.polarity}${culture.stem.element}`,
-    `branch: ${culture.branch.char} ${culture.branch.element}`,
-    `hour branch: ${culture.hourBranch.char} ${culture.hourBranch.element} ${culture.hourBranch.range}`
-  ].join("; ");
-
-  return [
-    "Return valid JSON only.",
-    "Required shape:",
-    '{"zodiac":{"animal":"","animalEn":"","years":"","traits":[],"traitsEn":[]},"summary":"","summaryEn":"","names":[{"hanzi":"","pinyin":"","seal":"","meaning":"","meaningEn":"","tone":""},{"hanzi":"","pinyin":"","seal":"","meaning":"","meaningEn":"","tone":""},{"hanzi":"","pinyin":"","seal":"","meaning":"","meaningEn":"","tone":""}],"culturalNote":"","culturalNoteEn":"","inputName":""}',
-    "Task:",
-    "Create three culturally grounded Chinese name options for an international user.",
-    "Do not claim destiny, science, full BaZi accuracy, missing elements, or favorable elements.",
-    "Use bilingual output for all narrative fields.",
-    styleGuide,
-    `User profile: ${JSON.stringify(userProfile)}`,
-    `Deterministic culture context: ${cultureLine}`
-  ].join("\n");
-}
-
-async function fetchJson(url, options, errorMessage) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 45000);
-  try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
-    const json = await response.json();
-    if (!response.ok) throw new Error(json.error?.message || errorMessage);
-    return json;
-  } catch (error) {
-    if (error.name === "AbortError") throw new Error("AI generation timed out. Please try again.");
-    throw error;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-function readDeepSeekContent(json) {
-  const message = json.choices?.[0]?.message;
-  const content = message?.content;
-  if (typeof content === "string" && content.trim()) return content.trim();
-
-  if (Array.isArray(content)) {
-    const text = content
-      .map(item => item?.text || item?.content || "")
-      .join("")
-      .trim();
-    if (text) return text;
-  }
-
-  const fallback = json.output_text || message?.reasoning_content || "";
-  return typeof fallback === "string" ? fallback.trim() : "";
-}
-
-async function requestDeepSeekJson(config, prompt, maxTokens, allowRetry = true) {
-  const json = await fetchJson(config.url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: config.model,
-      max_tokens: maxTokens,
-      temperature: 0.7,
-      stream: false,
-      thinking: { type: "disabled" },
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content: "You are a careful bilingual Chinese naming consultant. Return valid JSON only with no markdown fences."
-        },
-        { role: "user", content: prompt }
-      ]
-    })
-  }, "DeepSeek request failed");
-
-  const output = readDeepSeekContent(json);
-  if (output) return JSON.parse(output);
-
-  if (!allowRetry) throw new Error("DeepSeek returned empty content");
-
-  const retryPrompt = `${prompt}\nIf you cannot comply, still return the required JSON shape with concise placeholder-safe values.`;
-  return requestDeepSeekJson(config, retryPrompt, Math.max(maxTokens, 1000), false);
-}
-
-async function requestAiResult(body, culture) {
-  const config = getAiConfig();
-  if (!config) return demoResult(body);
-  const tier = normalizeTier(body.tier);
-  const prompt = buildPrompt(body, culture);
-  const maxTokens = tier === "simple" ? 700 : 1200;
-
-  if (config.provider === "deepseek") {
-    return requestDeepSeekJson(config, prompt, maxTokens);
-  }
-
-  const json = await fetchJson(config.url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: config.model,
-      input: prompt,
-      max_output_tokens: maxTokens,
-      text: { format: { type: "json_object" } }
-    })
-  }, "OpenAI request failed");
-  const output = json.output_text || json.output?.flatMap(item => item.content || []).find(item => item.type === "output_text")?.text;
-  if (!output) throw new Error("OpenAI returned empty content");
-  return JSON.parse(output);
-}
-
 async function handleGenerate(req, res) {
   const body = await readJsonBody(req, res);
   if (!body) return;
   const validationError = validateGenerationBody(body);
   if (validationError) return send(res, 422, { error: validationError });
   if (getPayPalConfig() && process.env.ALLOW_UNPAID_GENERATION !== "true") {
-    return send(res, 402, { error: "Payment required. Please use the PayPal checkout flow." });
+    return send(res, 402, { error: "Payment required. Please use the PayPal checkout flow or member credits." });
   }
 
   const culture = traditionalCulture(body);
   try {
     const result = await requestAiResult(body, culture);
     result.traditionalCulture = culture;
-    result.zodiac = { ...result.zodiac, animal: culture.branch.zodiac, animalEn: culture.branch.zodiacEn, years: String(culture.basisYear), traits: culture.zodiacProfile.personality, traitsEn: culture.zodiacProfile.personalityEn };
+    result.zodiac = {
+      ...result.zodiac,
+      animal: culture.branch.zodiac,
+      animalEn: culture.branch.zodiacEn,
+      years: String(culture.basisYear),
+      traits: culture.zodiacProfile.personality,
+      traitsEn: culture.zodiacProfile.personalityEn
+    };
     send(res, 200, result);
   } catch (error) {
     send(res, 502, { error: error.message });
@@ -513,14 +790,6 @@ async function handleCreatePayPalOrder(req, res) {
   }
 }
 
-async function buildPaidResult(body) {
-  const culture = traditionalCulture(body);
-  const result = await requestAiResult(body, culture);
-  result.traditionalCulture = culture;
-  result.zodiac = { ...result.zodiac, animal: culture.branch.zodiac, animalEn: culture.branch.zodiacEn, years: String(culture.basisYear), traits: culture.zodiacProfile.personality, traitsEn: culture.zodiacProfile.personalityEn };
-  return result;
-}
-
 async function handleCapturePayPalOrder(req, res) {
   const config = getPayPalConfig();
   if (!config) return send(res, 503, { error: "PayPal is not configured yet." });
@@ -550,13 +819,162 @@ async function handleCapturePayPalOrder(req, res) {
   }
 }
 
+async function handleRegister(req, res) {
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  const email = normalizeEmail(body.email);
+  const password = String(body.password || "");
+  const displayName = String(body.displayName || "").trim() || email.split("@")[0] || "Member";
+  if (!validateEmail(email)) return send(res, 422, { error: "A valid email address is required." });
+  if (password.length < 8) return send(res, 422, { error: "Password must be at least 8 characters." });
+  if (findUserByEmail(email)) return send(res, 409, { error: "An account with this email already exists." });
+
+  const user = createUserRecord(email, password, displayName);
+  database.users.push(user);
+  const sessionToken = createSession(user.id);
+  saveDatabase();
+  send(res, 201, {
+    user: publicUser(user),
+    catalog: getPublicCatalog(),
+    message: `Welcome to Mingyu. ${welcomeCredits} credits have been added to your new account.`
+  }, "application/json; charset=utf-8", { "Set-Cookie": buildSessionCookie(sessionToken, sessionLifetimeSeconds) });
+}
+
+async function handleLogin(req, res) {
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  const email = normalizeEmail(body.email);
+  const password = String(body.password || "");
+  const user = findUserByEmail(email);
+  if (!user || !verifyPassword(password, user.passwordHash, user.passwordSalt)) {
+    return send(res, 401, { error: "Incorrect email or password." });
+  }
+
+  const sessionToken = createSession(user.id);
+  send(res, 200, {
+    user: publicUser(user),
+    catalog: getPublicCatalog()
+  }, "application/json; charset=utf-8", { "Set-Cookie": buildSessionCookie(sessionToken, sessionLifetimeSeconds) });
+}
+
+async function handleLogout(req, res) {
+  destroySession(req);
+  send(res, 200, { ok: true }, "application/json; charset=utf-8", { "Set-Cookie": buildSessionCookie("", 0) });
+}
+
+async function handleSession(req, res) {
+  const user = getAuthenticatedUser(req);
+  send(res, 200, {
+    loggedIn: Boolean(user),
+    user: user ? publicUser(user) : null,
+    catalog: getPublicCatalog()
+  });
+}
+
+async function handleMemberOverview(req, res) {
+  const user = getAuthenticatedUser(req);
+  if (!user) return send(res, 401, { error: "Please sign in first." });
+
+  send(res, 200, {
+    user: publicUser(user),
+    catalog: getPublicCatalog(),
+    ledger: user.ledger.slice(0, 20),
+    reports: listUserReports(user)
+  });
+}
+
+async function handleMemberGenerate(req, res) {
+  const user = getAuthenticatedUser(req);
+  if (!user) return send(res, 401, { error: "Please sign in to use member credits." });
+
+  const rawBody = await readJsonBody(req, res);
+  if (!rawBody) return;
+  const body = compactBody(rawBody);
+  const validationError = validateGenerationBody(body);
+  if (validationError) return send(res, 422, { error: validationError });
+
+  const tier = normalizeTier(body.tier);
+  const creditCost = tierCreditCosts[tier];
+  if (user.creditsBalance < creditCost) {
+    return send(res, 402, { error: `Not enough credits. ${creditCost} credits are required for ${tier}.` });
+  }
+
+  try {
+    const result = await buildPaidResult(body);
+    const liveUser = database.users.find(item => item.id === user.id);
+    if (!liveUser) return send(res, 404, { error: "Account not found." });
+
+    addLedgerEntry(liveUser, {
+      type: "usage",
+      source: "generation",
+      description: `Used ${creditCost} credits for ${tier} generation`,
+      creditsDelta: -creditCost
+    });
+
+    const reportRecord = {
+      id: nextId("report_"),
+      userId: liveUser.id,
+      tier,
+      inputName: body.name,
+      createdAt: nowIso(),
+      zodiac: `${result.zodiac.animal} · ${result.zodiac.animalEn}`,
+      previewNames: result.names.map(item => item.hanzi),
+      result
+    };
+    database.reports.push(reportRecord);
+    liveUser.reportIds = Array.isArray(liveUser.reportIds) ? liveUser.reportIds : [];
+    liveUser.reportIds.unshift(reportRecord.id);
+    liveUser.reportIds = liveUser.reportIds.slice(0, 50);
+    saveDatabase();
+
+    result.membership = {
+      consumedCredits: creditCost,
+      remainingCredits: liveUser.creditsBalance,
+      reportId: reportRecord.id
+    };
+    send(res, 200, result);
+  } catch (error) {
+    send(res, 502, { error: error.message });
+  }
+}
+
+async function handleMemberReport(req, res, url) {
+  const user = getAuthenticatedUser(req);
+  if (!user) return send(res, 401, { error: "Please sign in first." });
+  const reportId = url.searchParams.get("id");
+  if (!reportId) return send(res, 422, { error: "Report ID is required." });
+
+  const report = database.reports.find(item => item.id === reportId && item.userId === user.id);
+  if (!report) return send(res, 404, { error: "Report not found." });
+  send(res, 200, report.result);
+}
+
+cleanupSessions();
+saveDatabase();
+
 http.createServer((req, res) => {
-  if (req.method === "GET" && req.url === "/api/paypal-config") return handlePayPalConfig(req, res);
-  if (req.method === "POST" && req.url === "/api/paypal/create-order") return handleCreatePayPalOrder(req, res);
-  if (req.method === "POST" && req.url === "/api/paypal/capture-order") return handleCapturePayPalOrder(req, res);
-  if (req.method === "POST" && req.url === "/api/generate") return handleGenerate(req, res);
-  const safeUrl = req.url === "/" ? "/index.html" : req.url.split("?")[0];
-  const file = path.normalize(path.join(root, safeUrl));
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  const pathname = url.pathname;
+
+  if (req.method === "GET" && pathname === "/api/paypal-config") return handlePayPalConfig(req, res);
+  if (req.method === "POST" && pathname === "/api/paypal/create-order") return handleCreatePayPalOrder(req, res);
+  if (req.method === "POST" && pathname === "/api/paypal/capture-order") return handleCapturePayPalOrder(req, res);
+  if (req.method === "POST" && pathname === "/api/generate") return handleGenerate(req, res);
+
+  if (req.method === "POST" && pathname === "/api/auth/register") return handleRegister(req, res);
+  if (req.method === "POST" && pathname === "/api/auth/login") return handleLogin(req, res);
+  if (req.method === "POST" && pathname === "/api/auth/logout") return handleLogout(req, res);
+  if (req.method === "GET" && pathname === "/api/auth/session") return handleSession(req, res);
+
+  if (req.method === "GET" && pathname === "/api/member/overview") return handleMemberOverview(req, res);
+  if (req.method === "POST" && pathname === "/api/member/generate") return handleMemberGenerate(req, res);
+  if (req.method === "GET" && pathname === "/api/member/report") return handleMemberReport(req, res, url);
+
+  const safePath = pathname === "/" ? "/index.html" : pathname;
+  const file = path.normalize(path.join(root, safePath));
   if (!file.startsWith(root)) return send(res, 403, "Forbidden", "text/plain; charset=utf-8");
-  fs.readFile(file, (error, data) => error ? send(res, 404, "Not found", "text/plain; charset=utf-8") : send(res, 200, data, types[path.extname(file)] || "application/octet-stream"));
+  fs.readFile(file, (error, data) => {
+    if (error) return send(res, 404, "Not found", "text/plain; charset=utf-8");
+    send(res, 200, data, types[path.extname(file)] || "application/octet-stream");
+  });
 }).listen(port, () => console.log(`Mingyu is running at http://localhost:${port}`));

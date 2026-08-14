@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Member Center | Mingyu Naming Studio</title>
+  <link rel="stylesheet" href="/account.css" />
+</head>
+<body>
+  <main class="account-shell">
+    <header class="account-topbar">
+      <a class="brand" href="/"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
+      <nav>
+        <a href="/">Back to site</a>
+        <a href="/cancellation.html">Cancellation Policy</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <p class="eyebrow">MEMBER CENTER</p>
+      <h1>Accounts, credits, and saved naming history</h1>
+      <p>This first version gives you a real member identity, welcome credits, saved activity, and a foundation for future subscription billing.</p>
+      <div class="hero-note">
+        <strong>Welcome credit policy</strong>
+        <span>New accounts receive 3 credits so you can test the member workflow immediately after registration.</span>
+      </div>
+    </section>
+
+    <p class="status-banner" id="statusBanner" hidden></p>
+
+    <section class="auth-grid" id="authGrid">
+      <article class="auth-card">
+        <p class="eyebrow">REGISTER</p>
+        <h2>Create your account</h2>
+        <form id="registerForm">
+          <label>
+            <span>Display name</span>
+            <input name="displayName" placeholder="Mingyu Member" />
+          </label>
+          <label>
+            <span>Email</span>
+            <input name="email" type="email" required placeholder="you@example.com" autocomplete="email" />
+          </label>
+          <label>
+            <span>Password</span>
+            <input name="password" type="password" required minlength="8" placeholder="At least 8 characters" autocomplete="new-password" />
+          </label>
+          <button type="submit">Create account</button>
+        </form>
+      </article>
+
+      <article class="auth-card">
+        <p class="eyebrow">LOGIN</p>
+        <h2>Sign in</h2>
+        <form id="loginForm">
+          <label>
+            <span>Email</span>
+            <input name="email" type="email" required placeholder="you@example.com" autocomplete="email" />
+          </label>
+          <label>
+            <span>Password</span>
+            <input name="password" type="password" required placeholder="Your password" autocomplete="current-password" />
+          </label>
+          <button type="submit">Sign in</button>
+        </form>
+      </article>
+    </section>
+
+    <section class="dashboard" id="dashboard" hidden>
+      <div class="summary-grid">
+        <article class="summary-card">
+          <small>ACCOUNT</small>
+          <h2 id="memberName">Member</h2>
+          <p id="memberEmail">you@example.com</p>
+          <button class="secondary" id="logoutBtn" type="button">Sign out</button>
+        </article>
+        <article class="summary-card emphasis-card">
+          <small>AVAILABLE CREDITS</small>
+          <h2 id="memberCredits">0</h2>
+          <p>1 credit = 1 AI naming or report generation request.</p>
+          <a class="text-link" href="/">Use credits on the naming page</a>
+        </article>
+        <article class="summary-card">
+          <small>MEMBERSHIP STATUS</small>
+          <h2 id="memberPlan">No active membership</h2>
+          <p id="memberRenewal">You can still use welcome credits and future one-time credit packs.</p>
+        </article>
+      </div>
+
+      <div class="content-grid">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">LEDGER</p>
+              <h3>Credit activity</h3>
+            </div>
+          </div>
+          <div class="ledger-list" id="ledgerList"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">REPORTS</p>
+              <h3>Saved naming history</h3>
+            </div>
+          </div>
+          <div class="report-list" id="reportList"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="plan-preview" id="planPreview">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">PRICING STRUCTURE</p>
+          <h2>Plans this member system is designed for</h2>
+        </div>
+      </div>
+      <div class="plan-grid" id="planGrid"></div>
+    </section>
+  </main>
+
+  <script src="/account.js"></script>
+</body>
+</html>

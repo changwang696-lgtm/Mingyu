@@ -13,7 +13,10 @@
   <header class="topbar">
     <a class="brand" href="#top"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
     <nav><a href="#pricing" data-i18n="navPlans">会员套餐</a><a href="#ritual" data-i18n="navNaming">起名</a><a href="#story" data-i18n="navCulture">生肖文化</a><a href="#craft" data-i18n="navCraft">东方好物</a></nav>
-    <button class="lang" id="langBtn" aria-label="Switch language">EN</button>
+    <div class="topbar-actions">
+      <a class="account-link" id="accountLink" href="/account.html" data-i18n="accountLinkGuest">注册 / 登录</a>
+      <button class="lang" id="langBtn" aria-label="Switch language">EN</button>
+    </div>
   </header>
 
   <main id="top">
@@ -123,6 +126,13 @@
 
     <section class="ritual" id="ritual">
       <div class="form-heading"><p class="section-no">贰 / 02</p><h2 data-i18n="formTitle">告诉我们，你是谁</h2><p data-i18n="formSub">您填写的姓名、出生日期和出生地不会被本网站保留。若有顾虑，可只输入您的姓氏，生成效果仍约有 90%。</p></div>
+      <div class="member-strip" id="memberStrip">
+        <div>
+          <small data-i18n="memberStripEyebrow">MEMBER ACCESS</small>
+          <p id="memberStripText">登录后可使用欢迎 credits 直接生成结果，并在会员中心查看余额与历史记录。</p>
+        </div>
+        <a class="member-strip-link" id="memberStripLink" href="/account.html" data-i18n="memberStripGuest">前往注册 / 登录</a>
+      </div>
       <form id="nameForm">
         <label class="wide"><span data-i18n="nameLabel">你现在的姓名</span><input id="name" name="name" required placeholder="e.g. Alex Morgan" autocomplete="name"><small data-i18n="nameHint">支持任何语言，我们会理解读音与文化背景</small></label>
         <fieldset><legend data-i18n="genderLabel">性别表达</legend><div class="segments"><label><input type="radio" name="gender" value="female"><span data-i18n="female">女性</span></label><label><input type="radio" name="gender" value="male"><span data-i18n="male">男性</span></label><label><input type="radio" name="gender" value="neutral" checked><span data-i18n="neutral">中性 / 不限</span></label></div></fieldset>
@@ -130,8 +140,8 @@
         <label class="wide timezone-field"><span data-i18n="timezoneLabel">出生地时区</span><select id="birthTimeZone" name="birthTimeZone" required><option value="" data-i18n="timezonePlaceholder">请选择出生地对应时区</option><optgroup label="United States & Canada"><option value="America/New_York">Eastern Time · New York / Toronto</option><option value="America/Chicago">Central Time · Chicago / Dallas</option><option value="America/Denver">Mountain Time · Denver</option><option value="America/Phoenix">Arizona Time · Phoenix</option><option value="America/Los_Angeles">Pacific Time · Los Angeles / Vancouver</option></optgroup><optgroup label="Europe"><option value="Europe/London">UK & Ireland · London / Dublin</option><option value="Europe/Paris">Central Europe · Paris / Berlin / Rome</option><option value="Europe/Athens">Eastern Europe · Athens / Helsinki</option><option value="Europe/Istanbul">Türkiye · Istanbul</option></optgroup><optgroup label="Asia"><option value="Asia/Shanghai">China Standard Time · Beijing / Shanghai</option><option value="Asia/Hong_Kong">Hong Kong</option><option value="Asia/Taipei">Taipei</option><option value="Asia/Singapore">Singapore / Kuala Lumpur</option></optgroup></select><small data-i18n="timezoneHint">系统会处理夏令时，并换算为中国标准时间（UTC+8）</small></label>
         <label class="wide"><span data-i18n="wishLabel">你希望名字传达什么？</span><textarea name="wish" rows="3" placeholder="Wisdom, freedom, warmth..."></textarea></label>
         <div class="plan-actions">
-          <button class="plan-button simple-plan" type="submit" name="tier" value="simple"><span><small data-i18n="simpleEdition">简约版</small><strong data-i18n="simpleGenerate">生成名字及生肖</strong><em data-i18n="simpleNoPdf">页面查看 · 不含 PDF</em></span><b>$2.99</b></button>
-          <button class="plan-button complete-plan" type="submit" name="tier" value="complete"><span><small data-i18n="completeEdition">完整版</small><strong data-i18n="completeGenerate">生成全部起名结果</strong><em data-i18n="completeWithPdf">完整页面 · 可保存 PDF</em></span><b>$9.90</b></button>
+          <button class="plan-button simple-plan" type="submit" name="tier" value="simple"><span><small data-i18n="simpleEdition">简约版</small><strong data-i18n="simpleGenerate">生成名字及生肖</strong><em id="simplePlanCaption" data-i18n="simpleNoPdf">页面查看 · 不含 PDF</em></span><b id="simplePlanPrice">$2.99</b></button>
+          <button class="plan-button complete-plan" type="submit" name="tier" value="complete"><span><small data-i18n="completeEdition">完整版</small><strong data-i18n="completeGenerate">生成全部起名结果</strong><em id="completePlanCaption" data-i18n="completeWithPdf">完整页面 · 可保存 PDF</em></span><b id="completePlanPrice">$9.90</b></button>
         </div>
         <p class="form-message" id="formMessage" role="alert" aria-live="polite"></p>
       </form>
