@@ -48,7 +48,7 @@ const translations = {
     genderLabel: "Gender expression", female: "Female", male: "Male", neutral: "Neutral / Any",
     birthLabel: "Date and time of birth", birthHint: "The more accurate, the more nuanced the cultural reading.",
     timezoneLabel: "Birthplace time zone", timezonePlaceholder: "Select the birthplace time zone", timezoneHint: "Daylight saving is applied before conversion to China Standard Time (UTC+8).", wishLabel: "What should your name convey?",
-    simpleEdition: "SIMPLE EDITION", simpleGenerate: "Names and zodiac", simpleNoPdf: "View online · No PDF",
+    simpleEdition: "SIMPLE EDITION", simpleGenerate: "Names and zodiac", simpleNoPdf: "View online · PDF included",
     completeEdition: "COMPLETE EDITION", completeGenerate: "Complete naming result", completeWithPdf: "Full result · Save as PDF",
     humanTitle: "Privacy first · Stored only for delivery", humanBody: "We store the details needed to deliver your paid result, reopen your order, and support dispute handling. This is a cultural interpretation, not fortune-telling or professional advice.",
     resultTitle: "Your Chinese name folio", simpleResultTitle: "Your names and zodiac", restart: "Start again ↺",
@@ -68,12 +68,12 @@ const translations = {
     paypalInlineTitle: "Pay with PayPal directly",
     paypalInlineBody: "Complete the form above, then use PayPal to pay and generate your result right away.",
     paypalValidation: "Please complete the required form fields before starting PayPal checkout.",
-    paypalHostedNote: "This checkout uses PayPal Hosted Checkout. After your order is prepared, you will be redirected to the official PayPal page to complete payment.",
-    paypalHostedDialogNote: "You will be redirected to the official PayPal checkout page. After payment, return to the site to continue.",
+    paypalHostedNote: "After your order is prepared, you will be redirected to the official PayPal page to complete payment. Once payment succeeds, the site will restore your result automatically.",
+    paypalHostedDialogNote: "You will be redirected to the official PayPal checkout page. After payment, the site will continue and restore your result automatically.",
     paypalHostedOpen: "Open PayPal checkout",
     paypalHostedOpened: "Redirecting to the PayPal checkout page...",
     guestOrderSavedTitle: "Guest order saved",
-    guestOrderSavedBody: "Order {orderId} is ready. Complete payment on PayPal, then return here to unlock or reopen your result.",
+    guestOrderSavedBody: "Order {orderId} is ready. Complete payment on PayPal and you will be returned to the site to restore or reopen your result.",
     findOrderLink: "Find my order",
     guestOrderCreateFailed: "We could not create your guest order. Please try again.",
     guestOrderRecovered: "Your saved order result has been restored."
@@ -125,7 +125,7 @@ const translations = {
     deliveryEmailLabel: "交付邮箱",
     deliveryEmailHint: "用于找回订单、重新打开结果，以及后续客服协助",
     birthLabel: "出生日期与时间", birthHint: "越准确，文化解读越细致", timezoneLabel: "出生地时区", timezonePlaceholder: "请选择出生地对应时区", timezoneHint: "系统会处理夏令时，并换算为中国标准时间（UTC+8）", wishLabel: "你希望名字传达什么？",
-    simpleEdition: "简约版", simpleGenerate: "生成名字及生肖", simpleNoPdf: "页面查看 · 不含 PDF",
+    simpleEdition: "简约版", simpleGenerate: "生成名字及生肖", simpleNoPdf: "页面查看 · 含 PDF 下载",
     completeEdition: "完整版", completeGenerate: "生成全部起名结果", completeWithPdf: "完整页面 · 可保存 PDF",
     humanTitle: "隐私优先 · 仅为交付保存必要信息", humanBody: "我们会保存交付结果、找回订单与处理争议所需的信息；如有顾虑可只输入姓氏。结果为传统文化创意解读，不构成命运预测或专业建议。",
     resultTitle: "你的东方名字卷", simpleResultTitle: "你的名字与生肖", restart: "重新填写 ↺", zodiacTitle: "你的生肖意象",
@@ -144,12 +144,12 @@ const translations = {
     paypalInlineTitle: "使用 PayPal 直接付款",
     paypalInlineBody: "填写上方信息后，可直接使用 PayPal 支付并生成结果。",
     paypalValidation: "请先完整填写必填信息，再使用 PayPal 付款。",
-    paypalHostedNote: "当前使用 PayPal Hosted Checkout 收款。游客订单创建成功后，会跳转到 PayPal 官方页面完成支付。",
-    paypalHostedDialogNote: "当前将跳转到 PayPal 官方结账页进行付款。付款完成后，请返回网站继续操作。",
+    paypalHostedNote: "当前会先创建游客订单，再跳转到 PayPal 官方页面完成支付。付款成功后，网站会自动恢复你的结果。",
+    paypalHostedDialogNote: "当前将跳转到 PayPal 官方结账页进行付款。付款完成后，网站会自动继续并恢复结果。",
     paypalHostedOpen: "打开 PayPal 付款页",
     paypalHostedOpened: "正在跳转到 PayPal 付款页...",
     guestOrderSavedTitle: "游客订单已保存",
-    guestOrderSavedBody: "订单号 {orderId} 已创建。请在 PayPal 完成付款后返回本站解锁或重新打开结果。",
+    guestOrderSavedBody: "订单号 {orderId} 已创建。请在 PayPal 完成付款，随后会自动回到本站恢复或重新打开结果。",
     findOrderLink: "找回我的订单",
     guestOrderCreateFailed: "创建游客订单失败，请稍后重试。",
     guestOrderRecovered: "已为你恢复已保存的订单结果。"
@@ -169,10 +169,8 @@ let paypalSdkPromise = null;
 let paypalButtonsInstance = null;
 let inlinePayPalRendered = false;
 const guestCheckoutKey = "mingyu_guest_checkout";
-const hostedPayPalLinks = {
-  simple: "https://www.paypal.com/ncp/payment/8WAQLCHG3A5S4",
-  complete: "https://www.paypal.com/ncp/payment/V3QNJF7PLKKRW"
-};
+const hostedPayPalLinks = { simple: "#", complete: "#" };
+let guestOrderMeta = null;
 const $ = selector => document.querySelector(selector);
 const dialog = $("#payment");
 const creditCosts = { simple: 1, complete: 3 };
@@ -180,8 +178,8 @@ const creditCosts = { simple: 1, complete: 3 };
 const tierCopy = {
   simple: {
     price: "$2.99",
-    zh: { title: "确认生成简约版", eyebrow: "简约版 · SIMPLE EDITION", button: "演示支付并生成 · $2.99", benefits: ["生成 3 个中文候选名字及拼音", "展示对应的固定十二生肖", "结果仅在网页查看，不提供 PDF"] },
-    en: { title: "Confirm Simple Edition", eyebrow: "SIMPLE EDITION", button: "Demo payment & generate · $2.99", benefits: ["Three Chinese name options with pinyin", "Your fixed Chinese zodiac sign", "Online result only, without PDF"] }
+    zh: { title: "确认生成简约版", eyebrow: "简约版 · SIMPLE EDITION", button: "支付并生成 · $2.99", benefits: ["生成 3 个中文候选名字及拼音", "展示对应的固定十二生肖", "结果保存到订单并支持 PDF 下载"] },
+    en: { title: "Confirm Simple Edition", eyebrow: "SIMPLE EDITION", button: "Pay & generate · $2.99", benefits: ["Three Chinese name options with pinyin", "Your fixed Chinese zodiac sign", "Saved to your order with PDF download access"] }
   },
   complete: {
     price: "$9.90",
@@ -450,7 +448,7 @@ async function openHostedCheckout(tier) {
   try {
     const order = await createGuestOrderForTier(tier, preparedBody);
     $("#formMessage").textContent = translations[lang].paypalHostedOpened;
-    window.location.assign(order.paypalLink);
+    window.location.assign(order.approvalUrl);
   } catch (error) {
     $("#formMessage").textContent = error.message || translations[lang].guestOrderCreateFailed;
     throw error;
@@ -460,7 +458,7 @@ async function openHostedCheckout(tier) {
 async function bindHostedCheckoutLink(selector, tier) {
   const link = $(selector);
   if (!link) return;
-  link.href = hostedPayPalLinks[tier];
+  link.href = "#";
   link.addEventListener("click", async event => {
     event.preventDefault();
     try {
@@ -632,6 +630,10 @@ async function renderInlinePayPalButtons() {
 
 function renderHostedCheckoutLinks() {
   if (!$("#paypalInline")) return;
+  if (!paypalConfig.enabled) {
+    $("#paypalInline").hidden = true;
+    return;
+  }
   $("#paypalInline").hidden = false;
   bindHostedCheckoutLink("#hostedSimpleLink", "simple");
   bindHostedCheckoutLink("#hostedCompleteLink", "complete");
@@ -647,6 +649,11 @@ async function restoreGuestOrderResultFromUrl() {
     const response = await fetch(`/api/guest-orders/result?order=${encodeURIComponent(orderId)}&token=${encodeURIComponent(token)}`);
     const data = await response.json();
     if (!response.ok) return;
+    guestOrderMeta = {
+      orderId: data.orderId,
+      token,
+      pdfUrl: data.pdfUrl || null
+    };
     activeTier = data.tier;
     latest = data.result;
     render(data.result);
@@ -654,7 +661,7 @@ async function restoreGuestOrderResultFromUrl() {
     $("#formMessage").textContent = translations[lang].guestOrderRecovered;
     showGuestCheckoutNotice({
       orderId: data.orderId,
-      successUrl: `/checkout-success.html?order=${encodeURIComponent(data.orderId)}&token=${encodeURIComponent(token)}`
+      successUrl: `/checkout-success.html?order=${encodeURIComponent(data.orderId)}&access=${encodeURIComponent(token)}`
     });
     $("#result").scrollIntoView({ behavior: "smooth" });
   } catch {
@@ -702,6 +709,10 @@ $("#restart").onclick = () => {
 };
 dialog.querySelector(".close").onclick = () => dialog.close();
 $("#savePdf").onclick = () => {
+  if (guestOrderMeta?.pdfUrl) {
+    window.location.assign(guestOrderMeta.pdfUrl);
+    return;
+  }
   if (activeTier !== "complete") return;
   document.body.classList.add("printing");
   window.print();
@@ -712,15 +723,13 @@ fetch("/api/paypal-config")
   .then(response => response.json())
   .then(config => {
     paypalConfig = { ...paypalConfig, ...config };
-    if (hostedPayPalLinks.simple && hostedPayPalLinks.complete) {
+    if (paypalConfig.enabled) {
       renderHostedCheckoutLinks();
-    } else if (paypalConfig.enabled) {
-      renderInlinePayPalButtons().catch(() => {});
     }
     if (dialog.open) updatePaymentDialog();
   })
   .catch(() => {
-    if (hostedPayPalLinks.simple && hostedPayPalLinks.complete) renderHostedCheckoutLinks();
+    $("#paypalInline").hidden = true;
   });
 
 applyLanguage();

@@ -144,36 +144,36 @@
         <label class="wide timezone-field"><span data-i18n="timezoneLabel">出生地时区</span><select id="birthTimeZone" name="birthTimeZone" required><option value="" data-i18n="timezonePlaceholder">请选择出生地对应时区</option><optgroup label="United States & Canada"><option value="America/New_York">Eastern Time · New York / Toronto</option><option value="America/Chicago">Central Time · Chicago / Dallas</option><option value="America/Denver">Mountain Time · Denver</option><option value="America/Phoenix">Arizona Time · Phoenix</option><option value="America/Los_Angeles">Pacific Time · Los Angeles / Vancouver</option></optgroup><optgroup label="Europe"><option value="Europe/London">UK & Ireland · London / Dublin</option><option value="Europe/Paris">Central Europe · Paris / Berlin / Rome</option><option value="Europe/Athens">Eastern Europe · Athens / Helsinki</option><option value="Europe/Istanbul">Türkiye · Istanbul</option></optgroup><optgroup label="Asia"><option value="Asia/Shanghai">China Standard Time · Beijing / Shanghai</option><option value="Asia/Hong_Kong">Hong Kong</option><option value="Asia/Taipei">Taipei</option><option value="Asia/Singapore">Singapore / Kuala Lumpur</option></optgroup></select><small data-i18n="timezoneHint">系统会处理夏令时，并换算为中国标准时间（UTC+8）</small></label>
         <label class="wide"><span data-i18n="wishLabel">你希望名字传达什么？</span><textarea name="wish" rows="3" placeholder="Wisdom, freedom, warmth..."></textarea></label>
         <div class="plan-actions">
-          <button class="plan-button simple-plan" type="submit" name="tier" value="simple"><span><small data-i18n="simpleEdition">简约版</small><strong data-i18n="simpleGenerate">生成名字及生肖</strong><em id="simplePlanCaption" data-i18n="simpleNoPdf">页面查看 · 不含 PDF</em></span><b id="simplePlanPrice">$2.99</b></button>
+          <button class="plan-button simple-plan" type="submit" name="tier" value="simple"><span><small data-i18n="simpleEdition">简约版</small><strong data-i18n="simpleGenerate">生成名字及生肖</strong><em id="simplePlanCaption" data-i18n="simpleNoPdf">页面查看 · 含 PDF 下载</em></span><b id="simplePlanPrice">$2.99</b></button>
           <button class="plan-button complete-plan" type="submit" name="tier" value="complete"><span><small data-i18n="completeEdition">完整版</small><strong data-i18n="completeGenerate">生成全部起名结果</strong><em id="completePlanCaption" data-i18n="completeWithPdf">完整页面 · 可保存 PDF</em></span><b id="completePlanPrice">$9.90</b></button>
         </div>
         <p class="form-message" id="formMessage" role="alert" aria-live="polite"></p>
       </form>
       <section class="paypal-inline" id="paypalInline">
         <div class="paypal-inline-head">
-          <p class="eyebrow">PAYPAL HOSTED CHECKOUT</p>
+          <p class="eyebrow">PAYPAL SECURE CHECKOUT</p>
           <h3 id="paypalInlineTitle">使用 PayPal 直接付款</h3>
           <p id="paypalInlineBody">填写上方信息后，可直接使用 PayPal 支付并生成结果。</p>
         </div>
         <div class="paypal-inline-grid">
           <article class="paypal-option">
             <small>Simple Edition · $2.99</small>
-            <a class="primary paypal-hosted-link" id="hostedSimpleLink" href="https://www.paypal.com/ncp/payment/8WAQLCHG3A5S4" target="_blank" rel="noreferrer noopener">PayPal Checkout</a>
+            <a class="primary paypal-hosted-link" id="hostedSimpleLink" href="#">PayPal Checkout</a>
           </article>
           <article class="paypal-option">
             <small>Complete Edition · $9.90</small>
-            <a class="primary paypal-hosted-link" id="hostedCompleteLink" href="https://www.paypal.com/ncp/payment/V3QNJF7PLKKRW" target="_blank" rel="noreferrer noopener">PayPal Checkout</a>
+            <a class="primary paypal-hosted-link" id="hostedCompleteLink" href="#">PayPal Checkout</a>
           </article>
         </div>
         <div class="guest-checkout-note" id="guestCheckoutNote" hidden>
           <strong data-i18n="guestOrderSavedTitle">游客订单已保存</strong>
-          <p id="guestOrderSavedBody">付款将在 PayPal 新窗口完成。支付后请回到本站继续解锁结果。</p>
+          <p id="guestOrderSavedBody">付款完成后会自动回到本站，随后恢复并保存你的结果。</p>
           <div class="guest-checkout-actions">
             <a class="text-link" id="guestSuccessLink" href="/checkout-success.html">支付完成后继续</a>
             <a class="text-link" id="findOrderLink" href="/order-lookup.html" data-i18n="findOrderLink">找回我的订单</a>
           </div>
         </div>
-        <p class="paypal-hosted-note" id="paypalHostedNote">当前使用 PayPal Hosted Checkout 收款。付款后可返回本站继续解锁结果，并通过订单号再次找回。</p>
+        <p class="paypal-hosted-note" id="paypalHostedNote">当前会先创建游客订单，再跳转到 PayPal 官方页面完成支付。付款成功后，网站会自动恢复结果，并支持订单找回与 PDF 下载。</p>
       </section>
       <div class="privacy"><span>✦</span><p><strong data-i18n="humanTitle">隐私优先 · 仅为交付保存必要信息</strong><br><small data-i18n="humanBody">我们会保存交付结果、找回订单与处理争议所需的信息；如有顾虑可只输入姓氏。结果为传统文化创意解读，不构成命运预测或专业建议。</small></p></div>
       <div class="launch-note">
@@ -235,7 +235,7 @@
     <small>© 2026 Mingyu Naming Studio</small>
   </footer>
 
-  <dialog id="payment"><button class="close" aria-label="Close">×</button><p class="eyebrow" id="paymentEyebrow">MINGYU EDITION</p><h2 id="paymentTitle">确认生成简约版</h2><div class="preview-sheet"><span>名屿</span><b>名</b><small>CHINESE NAMING EDITION</small></div><ul id="paymentBenefits"></ul><div id="paypalButtons" hidden></div><div class="paypal-hosted-dialog" id="hostedCheckout" hidden><a class="primary paypal-hosted-link" id="dialogHostedLink" href="https://www.paypal.com/ncp/payment/8WAQLCHG3A5S4" target="_blank" rel="noreferrer noopener">PayPal Checkout</a></div><button id="confirmPurchase" class="submit"><span id="confirmPurchaseText">演示支付并生成 · $2.99</span><b>→</b></button><small id="paymentNote" data-i18n="demoNote">当前为演示结账流程，未接入真实扣款。</small><small class="legal-note">By purchasing, you agree to our <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>, <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>, <a href="/refund.html" target="_blank" rel="noreferrer">Refund Policy</a>, and <a href="/cancellation.html" target="_blank" rel="noreferrer">Cancellation Policy</a>.</small></dialog>
+  <dialog id="payment"><button class="close" aria-label="Close">×</button><p class="eyebrow" id="paymentEyebrow">MINGYU EDITION</p><h2 id="paymentTitle">确认生成简约版</h2><div class="preview-sheet"><span>名屿</span><b>名</b><small>CHINESE NAMING EDITION</small></div><ul id="paymentBenefits"></ul><div id="paypalButtons" hidden></div><div class="paypal-hosted-dialog" id="hostedCheckout" hidden><a class="primary paypal-hosted-link" id="dialogHostedLink" href="#">PayPal Checkout</a></div><button id="confirmPurchase" class="submit"><span id="confirmPurchaseText">演示支付并生成 · $2.99</span><b>→</b></button><small id="paymentNote" data-i18n="demoNote">当前为演示结账流程，未接入真实扣款。</small><small class="legal-note">By purchasing, you agree to our <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>, <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>, <a href="/refund.html" target="_blank" rel="noreferrer">Refund Policy</a>, and <a href="/cancellation.html" target="_blank" rel="noreferrer">Cancellation Policy</a>.</small></dialog>
   <div class="loading" id="loading" hidden role="status" aria-live="polite"><div class="loader-seal">名</div><p data-i18n="loading">正在研读你的名字与时辰...</p></div>
   <script src="/app.js"></script>
 </body>
