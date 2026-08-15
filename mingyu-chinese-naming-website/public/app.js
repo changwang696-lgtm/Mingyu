@@ -417,29 +417,35 @@ function showGuestCheckoutNotice(order) {
   if (successLink) successLink.href = order.successUrl;
 }
 
-async function createGuestOrderForTier(tier) {
-  const body = collectFormBody(tier, true);
+async function createGuestOrderForTier(tier, body = null) {
+  const requestBody = body || collectFormBody(tier, true);
   pendingTier = tier;
-  pendingBody = body;
+  pendingBody = requestBody;
   const response = await fetch("/api/guest-orders/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    body: JSON.stringify(requestBody)
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || translations[lang].guestOrderCreateFailed);
-  const order = { ...data, tier, body, createdAt: Date.now() };
+  const order = { ...data, tier, body: requestBody, createdAt: Date.now() };
   persistGuestOrder(order);
   showGuestCheckoutNotice(order);
   return order;
 }
 
 async function openHostedCheckout(tier) {
+  const preparedBody = collectFormBody(tier, true);
   const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
-  const order = await createGuestOrderForTier(tier);
-  if (popup) popup.location.href = order.paypalLink;
-  else window.open(order.paypalLink, "_blank", "noopener,noreferrer");
-  $("#formMessage").textContent = translations[lang].paypalHostedOpened;
+  try {
+    const order = await createGuestOrderForTier(tier, preparedBody);
+    if (popup) popup.location.href = order.paypalLink;
+    else window.open(order.paypalLink, "_blank", "noopener,noreferrer");
+    $("#formMessage").textContent = translations[lang].paypalHostedOpened;
+  } catch (error) {
+    if (popup && !popup.closed) popup.close();
+    throw error;
+  }
 }
 
 async function bindHostedCheckoutLink(selector, tier) {
