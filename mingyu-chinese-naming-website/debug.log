@@ -1,0 +1,24 @@
+[4372:7608:0815/111943.001:WARNING:data_router_sender.cpp(28)] [DataRouterSender] RegisterReceiver not supported on sender side, route=/sg_tool/./pingback_receiver
+[4372:7608:0815/111943.037:WARNING:t_skinfilemap.cpp(63)] SGRenderLog:CheckUpdate newMem.OpenMem Suc, szNewMem:Local\sgime_skin.v2.filemap.sogouime
+[4372:7608:0815/111943.037:WARNING:t_skinfilemap.cpp(65)] SGRenderLog:CheckUpdate finish: old version:1
+[4372:7608:0815/111943.037:WARNING:t_skinfilemap.cpp(67)] SGRenderLog:CheckUpdate finish: new version:2
+[4372:6192:0815/111943.082:WARNING:kernel_switch.cc(127)] [Engine] GetProductDataInfo failed for: input_cloud_request_rank_1
+[4372:6192:0815/111943.082:WARNING:kernel_switch.cc(127)] [Engine] GetProductDataInfo failed for: input_cloud_request_type_1
+[16200:2804:0815/111951.377:WARNING:data_router_sender.cpp(28)] [DataRouterSender] RegisterReceiver not supported on sender side, route=/sg_tool/./pingback_receiver
+[16200:2804:0815/111951.412:WARNING:t_skinfilemap.cpp(63)] SGRenderLog:CheckUpdate newMem.OpenMem Suc, szNewMem:Local\sgime_skin.v2.filemap.sogouime
+[16200:2804:0815/111951.412:WARNING:t_skinfilemap.cpp(65)] SGRenderLog:CheckUpdate finish: old version:1
+[16200:2804:0815/111951.412:WARNING:t_skinfilemap.cpp(67)] SGRenderLog:CheckUpdate finish: new version:2
+[16200:6788:0815/111951.452:WARNING:kernel_switch.cc(127)] [Engine] GetProductDataInfo failed for: input_cloud_request_rank_1
+[16200:6788:0815/111951.452:WARNING:kernel_switch.cc(127)] [Engine] GetProductDataInfo failed for: input_cloud_request_type_1
+[17832:10096:0815/111954.165:WARNING:data_router_sender.cpp(28)] [DataRouterSender] RegisterReceiver not supported on sender side, route=/sg_tool/./pingback_receiver
+[17832:10096:0815/111954.200:WARNING:t_skinfilemap.cpp(63)] SGRenderLog:CheckUpdate newMem.OpenMem Suc, szNewMem:Local\sgime_skin.v2.filemap.sogouime
+[17832:10096:0815/111954.200:WARNING:t_skinfilemap.cpp(65)] SGRenderLog:CheckUpdate finish: old version:1
+[17832:10096:0815/111954.200:WARNING:t_skinfilemap.cpp(67)] SGRenderLog:CheckUpdate finish: new version:2
+[17832:13676:0815/111954.245:WARNING:kernel_switch.cc(127)] [Engine] GetProductDataInfo failed for: input_cloud_request_rank_1
+[17832:13676:0815/111954.245:WARNING:kernel_switch.cc(127)] [Engine] GetProductDataInfo failed for: input_cloud_request_type_1
+[13880:16196:0815/111959.953:WARNING:data_router_sender.cpp(28)] [DataRouterSender] RegisterReceiver not supported on sender side, route=/sg_tool/./pingback_receiver
+[13880:16196:0815/111959.988:WARNING:t_skinfilemap.cpp(63)] SGRenderLog:CheckUpdate newMem.OpenMem Suc, szNewMem:Local\sgime_skin.v2.filemap.sogouime
+[13880:16196:0815/111959.988:WARNING:t_skinfilemap.cpp(65)] SGRenderLog:CheckUpdate finish: old version:1
+[13880:16196:0815/111959.988:WARNING:t_skinfilemap.cpp(67)] SGRenderLog:CheckUpdate finish: new version:2
+[13880:10008:0815/112000.030:WARNING:kernel_switch.cc(127)] [Engine] GetProductDataInfo failed for: input_cloud_request_rank_1
+[13880:10008:0815/112000.030:WARNING:kernel_switch.cc(127)] [Engine] GetProductDataInfo failed for: input_cloud_request_type_1

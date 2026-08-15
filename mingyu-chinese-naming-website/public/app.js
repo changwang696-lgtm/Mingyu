@@ -436,11 +436,15 @@ async function createGuestOrderForTier(tier, body = null) {
 
 async function openHostedCheckout(tier) {
   const preparedBody = collectFormBody(tier, true);
-  const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
+  const popup = window.open("", "_blank");
+  if (popup && popup.document) {
+    popup.document.write(`<title>Redirecting to PayPal...</title><p style="font-family:Arial,sans-serif;padding:24px;">Redirecting to PayPal...</p>`);
+    popup.document.close();
+  }
   try {
     const order = await createGuestOrderForTier(tier, preparedBody);
-    if (popup) popup.location.href = order.paypalLink;
-    else window.open(order.paypalLink, "_blank", "noopener,noreferrer");
+    if (popup && !popup.closed) popup.location.replace(order.paypalLink);
+    else window.open(order.paypalLink, "_blank");
     $("#formMessage").textContent = translations[lang].paypalHostedOpened;
   } catch (error) {
     if (popup && !popup.closed) popup.close();
