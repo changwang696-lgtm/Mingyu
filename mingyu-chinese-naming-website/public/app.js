@@ -68,10 +68,10 @@ const translations = {
     paypalInlineTitle: "Pay with PayPal directly",
     paypalInlineBody: "Complete the form above, then use PayPal to pay and generate your result right away.",
     paypalValidation: "Please complete the required form fields before starting PayPal checkout.",
-    paypalHostedNote: "This checkout uses PayPal Hosted Checkout. Payment opens in a new tab and is processed on PayPal.",
-    paypalHostedDialogNote: "This payment opens the official PayPal checkout in a new tab. After payment, return to the site to continue.",
+    paypalHostedNote: "This checkout uses PayPal Hosted Checkout. After your order is prepared, you will be redirected to the official PayPal page to complete payment.",
+    paypalHostedDialogNote: "You will be redirected to the official PayPal checkout page. After payment, return to the site to continue.",
     paypalHostedOpen: "Open PayPal checkout",
-    paypalHostedOpened: "PayPal checkout has opened in a new tab.",
+    paypalHostedOpened: "Redirecting to the PayPal checkout page...",
     guestOrderSavedTitle: "Guest order saved",
     guestOrderSavedBody: "Order {orderId} is ready. Complete payment on PayPal, then return here to unlock or reopen your result.",
     findOrderLink: "Find my order",
@@ -144,10 +144,10 @@ const translations = {
     paypalInlineTitle: "使用 PayPal 直接付款",
     paypalInlineBody: "填写上方信息后，可直接使用 PayPal 支付并生成结果。",
     paypalValidation: "请先完整填写必填信息，再使用 PayPal 付款。",
-    paypalHostedNote: "当前使用 PayPal Hosted Checkout 收款。付款将在新窗口打开，并由 PayPal 官方页面完成支付。",
-    paypalHostedDialogNote: "当前将打开 PayPal 官方结账页进行付款。付款完成后，请返回网站继续操作。",
+    paypalHostedNote: "当前使用 PayPal Hosted Checkout 收款。游客订单创建成功后，会跳转到 PayPal 官方页面完成支付。",
+    paypalHostedDialogNote: "当前将跳转到 PayPal 官方结账页进行付款。付款完成后，请返回网站继续操作。",
     paypalHostedOpen: "打开 PayPal 付款页",
-    paypalHostedOpened: "PayPal 付款页已在新窗口打开。",
+    paypalHostedOpened: "正在跳转到 PayPal 付款页...",
     guestOrderSavedTitle: "游客订单已保存",
     guestOrderSavedBody: "订单号 {orderId} 已创建。请在 PayPal 完成付款后返回本站解锁或重新打开结果。",
     findOrderLink: "找回我的订单",
@@ -207,8 +207,14 @@ function updateMemberExperience() {
   if (!simplePrice || !completePrice || !simpleCaption || !completeCaption) return;
 
   if (!membershipPreviewEnabled) {
-    if (accountLink) accountLink.hidden = true;
-    if ($("#navPlansLink")) $("#navPlansLink").hidden = true;
+    if (accountLink) {
+      accountLink.hidden = true;
+      accountLink.style.display = "none";
+    }
+    if ($("#navPlansLink")) {
+      $("#navPlansLink").hidden = true;
+      $("#navPlansLink").style.display = "none";
+    }
     if ($("#pricing")) $("#pricing").hidden = true;
     if ($("#memberFlow")) $("#memberFlow").hidden = true;
     if ($("#memberStrip")) $("#memberStrip").hidden = true;
@@ -221,7 +227,11 @@ function updateMemberExperience() {
 
   if (!accountLink || !memberStripText || !memberStripLink) return;
   accountLink.hidden = false;
-  if ($("#navPlansLink")) $("#navPlansLink").hidden = false;
+  accountLink.style.display = "";
+  if ($("#navPlansLink")) {
+    $("#navPlansLink").hidden = false;
+    $("#navPlansLink").style.display = "";
+  }
   if ($("#pricing")) $("#pricing").hidden = false;
   if ($("#memberFlow")) $("#memberFlow").hidden = false;
   if ($("#memberStrip")) $("#memberStrip").hidden = false;
@@ -436,18 +446,13 @@ async function createGuestOrderForTier(tier, body = null) {
 
 async function openHostedCheckout(tier) {
   const preparedBody = collectFormBody(tier, true);
-  const popup = window.open("", "_blank");
-  if (popup && popup.document) {
-    popup.document.write(`<title>Redirecting to PayPal...</title><p style="font-family:Arial,sans-serif;padding:24px;">Redirecting to PayPal...</p>`);
-    popup.document.close();
-  }
+  $("#formMessage").textContent = lang === "zh" ? "正在创建游客订单..." : "Preparing your guest order...";
   try {
     const order = await createGuestOrderForTier(tier, preparedBody);
-    if (popup && !popup.closed) popup.location.replace(order.paypalLink);
-    else window.open(order.paypalLink, "_blank");
     $("#formMessage").textContent = translations[lang].paypalHostedOpened;
+    window.location.assign(order.paypalLink);
   } catch (error) {
-    if (popup && !popup.closed) popup.close();
+    $("#formMessage").textContent = error.message || translations[lang].guestOrderCreateFailed;
     throw error;
   }
 }
@@ -460,7 +465,6 @@ async function bindHostedCheckoutLink(selector, tier) {
     event.preventDefault();
     try {
       await openHostedCheckout(tier);
-      $("#formMessage").textContent = "";
     } catch (error) {
       $("#formMessage").textContent = error.message || translations[lang].guestOrderCreateFailed;
     }
