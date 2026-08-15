@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="AI-powered Chinese naming memberships, credit packs, and personalized naming reports rooted in language, symbolism, and traditional culture." />
+  <meta name="description" content="AI-powered Chinese naming reports rooted in language, symbolism, and traditional culture, with guest order recovery and email delivery." />
   <title>名屿 Mingyu · Chinese Naming Studio</title>
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/theme.css" />
@@ -12,9 +12,9 @@
 <body>
   <header class="topbar">
     <a class="brand" href="#top"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
-    <nav><a href="#pricing" data-i18n="navPlans">会员套餐</a><a href="#ritual" data-i18n="navNaming">起名</a><a href="#story" data-i18n="navCulture">生肖文化</a><a href="#craft" data-i18n="navCraft">东方好物</a></nav>
+    <nav><a id="navPlansLink" data-staged-feature="membership" href="#pricing" data-i18n="navPlans">会员套餐</a><a href="#ritual" data-i18n="navNaming">起名</a><a href="#story" data-i18n="navCulture">生肖文化</a><a href="#craft" data-i18n="navCraft">东方好物</a></nav>
     <div class="topbar-actions">
-      <a class="account-link" id="accountLink" href="/account.html" data-i18n="accountLinkGuest">注册 / 登录</a>
+      <a class="account-link" id="accountLink" data-staged-feature="membership" href="/account.html" data-i18n="accountLinkGuest">注册 / 登录</a>
       <button class="lang" id="langBtn" aria-label="Switch language">EN</button>
     </div>
   </header>
@@ -26,7 +26,7 @@
       <div class="hero-copy">
         <p class="eyebrow" data-i18n="eyebrow">以字为舟 · 渡见东方</p>
         <h1><span data-i18n="heroA">一个名字，</span><br><em data-i18n="heroB">一生的东方寓意</em></h1>
-        <p data-i18n="heroBody">从你的原名、出生时刻与个性出发，获得由 AI 驱动的中文起名建议、文化解读与会员制 credits 服务。</p>
+        <p data-i18n="heroBody">从你的原名、出生时刻与个性出发，获得由 AI 驱动的中文起名建议、文化解读，以及支持游客订单找回的付费报告服务。</p>
         <a class="primary" href="#ritual"><span data-i18n="begin">开始寻名</span><b>↓</b></a>
       </div>
       <div class="hero-side"><span>天 地 人</span><i></i><small>NAME · SOUND · MEANING</small></div>
@@ -37,7 +37,8 @@
       <div class="intro-copy"><p data-i18n="introBody">中文名字是声音、字形与意义的共同选择。我们以你的身份为起点，参考生肖的文化意象与汉字传统，提供有出处、有解释、可被真实使用的名字。</p><div class="pill-row"><span>音 SOUND</span><span>形 FORM</span><span>意 MEANING</span></div></div>
     </section>
 
-    <section class="membership-model" id="pricing">
+    <!-- Membership pricing is intentionally hidden for now. Keep this section for later reactivation. -->
+    <section class="membership-model" id="pricing" data-staged-feature="membership">
       <div class="membership-head">
         <div>
           <p class="section-no">会员模型 / MEMBERSHIP MODEL</p>
@@ -90,7 +91,8 @@
       </aside>
     </section>
 
-    <section class="member-flow" id="memberFlow">
+    <!-- Membership account flow is intentionally hidden for now. Keep this section for later reactivation. -->
+    <section class="member-flow" id="memberFlow" data-staged-feature="membership">
       <div class="membership-head">
         <div>
           <p class="section-no">账户与交付 / ACCOUNT FLOW</p>
@@ -125,8 +127,9 @@
     </section>
 
     <section class="ritual" id="ritual">
-      <div class="form-heading"><p class="section-no">贰 / 02</p><h2 data-i18n="formTitle">告诉我们，你是谁</h2><p data-i18n="formSub">您填写的姓名、出生日期和出生地不会被本网站保留。若有顾虑，可只输入您的姓氏，生成效果仍约有 90%。</p></div>
-      <div class="member-strip" id="memberStrip">
+      <div class="form-heading"><p class="section-no">贰 / 02</p><h2 data-i18n="formTitle">告诉我们，你是谁</h2><p data-i18n="formSub">为支持游客订单交付与找回，我们会保存本次付款所需信息。若有顾虑，可只输入您的姓氏，生成效果仍约有 90%。</p></div>
+      <!-- Member access strip is temporarily hidden but preserved for future relaunch. -->
+      <div class="member-strip" id="memberStrip" data-staged-feature="membership">
         <div>
           <small data-i18n="memberStripEyebrow">MEMBER ACCESS</small>
           <p id="memberStripText">登录后可使用欢迎 credits 直接生成结果，并在会员中心查看余额与历史记录。</p>
@@ -135,6 +138,7 @@
       </div>
       <form id="nameForm">
         <label class="wide"><span data-i18n="nameLabel">你现在的姓名</span><input id="name" name="name" required placeholder="e.g. Alex Morgan" autocomplete="name"><small data-i18n="nameHint">支持任何语言，我们会理解读音与文化背景</small></label>
+        <label><span data-i18n="deliveryEmailLabel">交付邮箱</span><input id="deliveryEmail" name="deliveryEmail" required type="email" placeholder="you@example.com" autocomplete="email"><small data-i18n="deliveryEmailHint">用于找回订单、重复打开结果与后续客服协助</small></label>
         <fieldset><legend data-i18n="genderLabel">性别表达</legend><div class="segments"><label><input type="radio" name="gender" value="female"><span data-i18n="female">女性</span></label><label><input type="radio" name="gender" value="male"><span data-i18n="male">男性</span></label><label><input type="radio" name="gender" value="neutral" checked><span data-i18n="neutral">中性 / 不限</span></label></div></fieldset>
         <label><span data-i18n="birthLabel">出生日期与时间</span><input id="birth" name="birth" required type="datetime-local"><small data-i18n="birthHint">越准确，文化解读越细致</small></label>
         <label class="wide timezone-field"><span data-i18n="timezoneLabel">出生地时区</span><select id="birthTimeZone" name="birthTimeZone" required><option value="" data-i18n="timezonePlaceholder">请选择出生地对应时区</option><optgroup label="United States & Canada"><option value="America/New_York">Eastern Time · New York / Toronto</option><option value="America/Chicago">Central Time · Chicago / Dallas</option><option value="America/Denver">Mountain Time · Denver</option><option value="America/Phoenix">Arizona Time · Phoenix</option><option value="America/Los_Angeles">Pacific Time · Los Angeles / Vancouver</option></optgroup><optgroup label="Europe"><option value="Europe/London">UK & Ireland · London / Dublin</option><option value="Europe/Paris">Central Europe · Paris / Berlin / Rome</option><option value="Europe/Athens">Eastern Europe · Athens / Helsinki</option><option value="Europe/Istanbul">Türkiye · Istanbul</option></optgroup><optgroup label="Asia"><option value="Asia/Shanghai">China Standard Time · Beijing / Shanghai</option><option value="Asia/Hong_Kong">Hong Kong</option><option value="Asia/Taipei">Taipei</option><option value="Asia/Singapore">Singapore / Kuala Lumpur</option></optgroup></select><small data-i18n="timezoneHint">系统会处理夏令时，并换算为中国标准时间（UTC+8）</small></label>
@@ -161,12 +165,20 @@
             <a class="primary paypal-hosted-link" id="hostedCompleteLink" href="https://www.paypal.com/ncp/payment/V3QNJF7PLKKRW" target="_blank" rel="noreferrer noopener">PayPal Checkout</a>
           </article>
         </div>
-        <p class="paypal-hosted-note" id="paypalHostedNote">当前为 PayPal Hosted Checkout 测试接入。付款将在新窗口打开；回站后的自动验单与自动发放 credits 将在下一阶段完成。</p>
+        <div class="guest-checkout-note" id="guestCheckoutNote" hidden>
+          <strong data-i18n="guestOrderSavedTitle">游客订单已保存</strong>
+          <p id="guestOrderSavedBody">付款将在 PayPal 新窗口完成。支付后请回到本站继续解锁结果。</p>
+          <div class="guest-checkout-actions">
+            <a class="text-link" id="guestSuccessLink" href="/checkout-success.html">支付完成后继续</a>
+            <a class="text-link" id="findOrderLink" href="/order-lookup.html" data-i18n="findOrderLink">找回我的订单</a>
+          </div>
+        </div>
+        <p class="paypal-hosted-note" id="paypalHostedNote">当前使用 PayPal Hosted Checkout 收款。付款后可返回本站继续解锁结果，并通过订单号再次找回。</p>
       </section>
-      <div class="privacy"><span>✦</span><p><strong data-i18n="humanTitle">隐私优先 · 不建立个人档案</strong><br><small data-i18n="humanBody">我们不会保留您的姓名、出生日期或出生地；如有顾虑可只输入姓氏。结果为传统文化创意解读，不构成命运预测或专业建议。</small></p></div>
+      <div class="privacy"><span>✦</span><p><strong data-i18n="humanTitle">隐私优先 · 仅为交付保存必要信息</strong><br><small data-i18n="humanBody">我们会保存交付结果、找回订单与处理争议所需的信息；如有顾虑可只输入姓氏。结果为传统文化创意解读，不构成命运预测或专业建议。</small></p></div>
       <div class="launch-note">
         <strong data-i18n="launchTitle">当前站点状态</strong>
-        <p data-i18n="launchBody">目前站点仍以单次生成页为主；注册、会员中心、credits 台账、发票与自动续费界面将作为下一阶段上线。</p>
+        <p data-i18n="launchBody">目前站点仍以游客单次生成与订单找回为主；注册、登录、会员套餐、credits 台账、发票与自动续费界面已暂时隐藏并保留代码，后续可继续启用。</p>
       </div>
     </section>
 
@@ -218,6 +230,7 @@
       <a href="/terms.html" target="_blank" rel="noreferrer">Terms of Service</a>
       <a href="/refund.html" target="_blank" rel="noreferrer">Refund Policy</a>
         <a href="/cancellation.html" target="_blank" rel="noreferrer">Cancellation Policy</a>
+        <a href="/order-lookup.html">Find My Order</a>
     </nav>
     <small>© 2026 Mingyu Naming Studio</small>
   </footer>

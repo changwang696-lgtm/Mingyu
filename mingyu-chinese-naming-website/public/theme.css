@@ -712,6 +712,35 @@ dialog { color: #30251d; background: var(--paper); border-top: 8px solid var(--c
 .paypal-option small { display: block; margin-bottom: 12px; color: var(--ink); font: 12px Arial,sans-serif; letter-spacing: .9px; text-transform: uppercase; }
 .paypal-hosted-link { width: 100%; justify-content: center; text-decoration: none; box-sizing: border-box; }
 .paypal-hosted-note { margin: 16px 0 0; color: #756c61; line-height: 1.7; }
+.guest-checkout-note {
+  margin-top: 18px;
+  padding: 18px;
+  border-left: 4px solid var(--teal);
+  background: rgba(23,109,104,.08);
+}
+.guest-checkout-note strong {
+  display: block;
+  color: var(--ink);
+  font-size: 15px;
+}
+.guest-checkout-note p {
+  margin: 8px 0 0;
+  color: #54463a;
+  line-height: 1.7;
+}
+.guest-checkout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+}
+.text-link {
+  color: var(--cinnabar);
+  text-decoration: none;
+  font: 12px Arial, sans-serif;
+  letter-spacing: .6px;
+}
+.text-link:hover { text-decoration: underline; }
 
 @media (max-width: 1050px) {
   .membership-grid { grid-template-columns: 1fr; }

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>支付完成后继续 | Mingyu</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/guest-order.css" />
+</head>
+<body>
+  <main class="guest-shell">
+    <div class="guest-wrap">
+      <header class="guest-topbar">
+        <a class="brand" href="/"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
+        <nav>
+          <a href="/">返回首页</a>
+          <a href="/order-lookup.html">找回我的订单</a>
+        </nav>
+      </header>
+
+      <section class="guest-card">
+        <p class="guest-eyebrow">PAYMENT RETURN</p>
+        <h1>支付完成后继续解锁结果</h1>
+        <p>如果你刚刚已经在 PayPal 完成付款，请点击下方按钮继续。本站会根据你的游客订单恢复并保存结果，这样即使刷新页面，也可以再次打开并下载 PDF。</p>
+        <div class="guest-status" id="statusBox">正在检查当前订单信息...</div>
+        <div class="guest-meta">
+          <div><small>ORDER ID</small><strong id="orderIdValue">-</strong></div>
+          <div><small>DELIVERY EMAIL</small><strong id="emailValue">-</strong></div>
+          <div><small>EDITION</small><strong id="tierValue">-</strong></div>
+          <div><small>STATUS</small><strong id="statusValue">-</strong></div>
+        </div>
+        <div class="guest-actions">
+          <button class="guest-primary" id="unlockBtn" type="button">我已完成付款，继续解锁结果</button>
+          <a class="guest-secondary" id="viewResultLink" href="/" hidden>打开已保存结果</a>
+          <a class="guest-secondary" href="/order-lookup.html">找回其他订单</a>
+        </div>
+        <p class="guest-message" id="messageBox"></p>
+      </section>
+    </div>
+  </main>
+
+  <script src="/checkout-success.js"></script>
+</body>
+</html>

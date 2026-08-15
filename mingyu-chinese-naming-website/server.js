@@ -13,8 +13,17 @@ const useSupabase = Boolean(supabaseUrl && supabaseServiceRoleKey);
 const port = Number(process.env.PORT) || 4173;
 const orderStore = new Map();
 const sessionCookieName = "mingyu_session";
+const adminSessionCookieName = "mingyu_admin";
 const welcomeCredits = 3;
 const sessionLifetimeSeconds = 60 * 60 * 24 * 30;
+const adminSessionLifetimeSeconds = 60 * 60 * 24 * 7;
+const adminUsername = process.env.ADMIN_USERNAME || "";
+const adminPassword = process.env.ADMIN_PASSWORD || "";
+const adminSessionSecret = process.env.ADMIN_SESSION_SECRET || adminPassword || "";
+const resendApiKey = process.env.RESEND_API_KEY || "";
+const mailFrom = process.env.MAIL_FROM || "";
+const mailReplyTo = process.env.MAIL_REPLY_TO || "";
+const siteBaseUrl = String(process.env.SITE_BASE_URL || "").replace(/\/$/, "");
 const tierPricing = {
   simple: { value: "2.99", label: "Simple Edition" },
   complete: { value: "9.90", label: "Complete Edition" }
@@ -97,7 +106,7 @@ const placeTimeZones = [
 ];
 
 function createDefaultDatabase() {
-  return { users: [], sessions: [], reports: [] };
+  return { users: [], sessions: [], reports: [], guestOrders: [] };
 }
 
 function ensureDatabaseFile() {
@@ -112,7 +121,8 @@ function loadDatabase() {
     return {
       users: Array.isArray(parsed.users) ? parsed.users : [],
       sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
-      reports: Array.isArray(parsed.reports) ? parsed.reports : []
+        reports: Array.isArray(parsed.reports) ? parsed.reports : [],
+        guestOrders: Array.isArray(parsed.guestOrders) ? parsed.guestOrders : []
     };
   } catch {
     const fallback = createDefaultDatabase();
@@ -284,6 +294,27 @@ function mapReportSummaryRow(row) {
   };
 }
 
+function mapGuestOrderRow(row) {
+  return {
+    id: row.id,
+    accessToken: row.access_token,
+    email: row.email,
+    tier: row.tier,
+    priceValue: row.price_value,
+    paypalLink: row.paypal_link,
+    inputName: row.input_name,
+    formBody: row.form_body,
+    status: row.status,
+    result: row.result || null,
+    createdAt: row.created_at,
+    fulfilledAt: row.fulfilled_at || null,
+    paymentConfirmedAt: row.payment_confirmed_at || null,
+    emailSentAt: row.email_sent_at || null,
+    emailDeliveryStatus: row.email_delivery_status || null,
+    emailDeliveryError: row.email_delivery_error || null
+  };
+}
+
 function getPublicCatalog() {
   return {
     plans: Object.values(memberPlans),
@@ -411,6 +442,281 @@ async function getUserReportSummaries(userId, limit = 12) {
   return rows.map(mapReportSummaryRow);
 }
 
+function createGuestOrderRecord(email, formBody) {
+  const tier = normalizeTier(formBody.tier);
+  const pricing = tierPricing[tier];
+  return {
+    id: nextId("guest_"),
+    accessToken: nextId("gtok_"),
+    email,
+    tier,
+    priceValue: pricing.value,
+    paypalLink: tier === "simple"
+      ? "https://www.paypal.com/ncp/payment/8WAQLCHG3A5S4"
+      : "https://www.paypal.com/ncp/payment/V3QNJF7PLKKRW",
+    inputName: formBody.name,
+    formBody,
+    status: "pending_payment",
+    result: null,
+    createdAt: nowIso(),
+    fulfilledAt: null,
+    paymentConfirmedAt: null,
+    emailSentAt: null,
+    emailDeliveryStatus: "pending",
+    emailDeliveryError: null
+  };
+}
+
+async function getGuestOrderById(orderId) {
+  if (!useSupabase) {
+    return database.guestOrders.find(item => item.id === orderId) || null;
+  }
+  const rows = await supabaseRequest("guest_orders", {
+    searchParams: {
+      select: "*",
+      id: `eq.${orderId}`,
+      limit: 1
+    }
+  });
+  return rows[0] ? mapGuestOrderRow(rows[0]) : null;
+}
+
+async function getGuestOrderByIdAndToken(orderId, token) {
+  if (!useSupabase) {
+    return database.guestOrders.find(item => item.id === orderId && item.accessToken === token) || null;
+  }
+  const rows = await supabaseRequest("guest_orders", {
+    searchParams: {
+      select: "*",
+      id: `eq.${orderId}`,
+      access_token: `eq.${token}`,
+      limit: 1
+    }
+  });
+  return rows[0] ? mapGuestOrderRow(rows[0]) : null;
+}
+
+async function getGuestOrderByIdAndEmail(orderId, email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!useSupabase) {
+    return database.guestOrders.find(item => item.id === orderId && item.email === normalizedEmail) || null;
+  }
+  const rows = await supabaseRequest("guest_orders", {
+    searchParams: {
+      select: "*",
+      id: `eq.${orderId}`,
+      email: `eq.${normalizedEmail}`,
+      limit: 1
+    }
+  });
+  return rows[0] ? mapGuestOrderRow(rows[0]) : null;
+}
+
+async function insertGuestOrder(order) {
+  if (!useSupabase) {
+    database.guestOrders.unshift(order);
+    database.guestOrders = database.guestOrders.slice(0, 500);
+    saveDatabase();
+    return order;
+  }
+  const rows = await supabaseRequest("guest_orders", {
+    method: "POST",
+    body: {
+      id: order.id,
+      access_token: order.accessToken,
+      email: order.email,
+      tier: order.tier,
+      price_value: order.priceValue,
+      paypal_link: order.paypalLink,
+      input_name: order.inputName,
+      form_body: order.formBody,
+      status: order.status,
+      created_at: order.createdAt,
+      email_delivery_status: order.emailDeliveryStatus
+    }
+  });
+  return rows[0] ? mapGuestOrderRow(rows[0]) : order;
+}
+
+async function updateGuestOrder(orderId, token, updates) {
+  if (!useSupabase) {
+    const index = database.guestOrders.findIndex(item => item.id === orderId && item.accessToken === token);
+    if (index === -1) return null;
+    database.guestOrders[index] = { ...database.guestOrders[index], ...updates };
+    saveDatabase();
+    return database.guestOrders[index];
+  }
+  const rows = await supabaseRequest("guest_orders", {
+    method: "PATCH",
+    searchParams: {
+      id: `eq.${orderId}`,
+      access_token: `eq.${token}`
+    },
+    body: {
+      ...(updates.status ? { status: updates.status } : {}),
+      ...(updates.result !== undefined ? { result: updates.result } : {}),
+      ...(updates.fulfilledAt ? { fulfilled_at: updates.fulfilledAt } : {}),
+      ...(updates.paymentConfirmedAt ? { payment_confirmed_at: updates.paymentConfirmedAt } : {}),
+      ...(updates.emailSentAt !== undefined ? { email_sent_at: updates.emailSentAt } : {}),
+      ...(updates.emailDeliveryStatus !== undefined ? { email_delivery_status: updates.emailDeliveryStatus } : {}),
+      ...(updates.emailDeliveryError !== undefined ? { email_delivery_error: updates.emailDeliveryError } : {})
+    },
+    allowEmpty: true
+  });
+  return rows?.[0] ? mapGuestOrderRow(rows[0]) : null;
+}
+
+async function listGuestOrders({ status, limit = 100 } = {}) {
+  const normalizedLimit = Math.max(1, Math.min(Number(limit) || 100, 200));
+  if (!useSupabase) {
+    return database.guestOrders
+      .filter(item => !status || item.status === status)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, normalizedLimit);
+  }
+  const rows = await supabaseRequest("guest_orders", {
+    searchParams: {
+      select: "*",
+      order: "created_at.desc",
+      limit: normalizedLimit,
+      ...(status ? { status: `eq.${status}` } : {})
+    }
+  });
+  return rows.map(mapGuestOrderRow);
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function getAbsoluteUrl(relativePath) {
+  if (!siteBaseUrl) return relativePath;
+  const normalizedPath = String(relativePath || "").startsWith("/") ? relativePath : `/${relativePath}`;
+  return `${siteBaseUrl}${normalizedPath}`;
+}
+
+function buildGuestOrderSuccessUrl(order) {
+  return getAbsoluteUrl(`/checkout-success.html?order=${encodeURIComponent(order.id)}&token=${encodeURIComponent(order.accessToken)}`);
+}
+
+function buildGuestOrderDeliveryUrl(order) {
+  return getAbsoluteUrl(`/?guestOrder=${encodeURIComponent(order.id)}&token=${encodeURIComponent(order.accessToken)}`);
+}
+
+function isMailConfigured() {
+  return Boolean(resendApiKey && mailFrom && siteBaseUrl);
+}
+
+function summarizeGuestOrder(order) {
+  return {
+    id: order.id,
+    email: order.email,
+    tier: order.tier,
+    priceValue: order.priceValue,
+    inputName: order.inputName,
+    status: order.status,
+    createdAt: order.createdAt,
+    fulfilledAt: order.fulfilledAt,
+    paymentConfirmedAt: order.paymentConfirmedAt,
+    emailSentAt: order.emailSentAt,
+    emailDeliveryStatus: order.emailDeliveryStatus || "pending",
+    emailDeliveryError: order.emailDeliveryError,
+    hasResult: Boolean(order.result),
+    deliveryUrl: order.result ? buildGuestOrderDeliveryUrl(order) : null,
+    successUrl: buildGuestOrderSuccessUrl(order)
+  };
+}
+
+function buildGuestOrderEmail(order) {
+  const editionLabel = order.tier === "simple" ? "Simple Edition" : "Complete Edition";
+  const deliveryUrl = buildGuestOrderDeliveryUrl(order);
+  const supportUrl = getAbsoluteUrl("/order-lookup.html");
+  const subject = `Your Mingyu Chinese naming result is ready (${order.id})`;
+  const html = `
+  <div style="font-family:Arial,sans-serif;background:#f6ecd8;padding:32px 16px;color:#30251d;">
+    <div style="max-width:640px;margin:0 auto;background:#fffdf8;border:1px solid rgba(48,37,29,.12);padding:32px;">
+      <p style="margin:0 0 12px;color:#9e392b;font-size:12px;letter-spacing:1.2px;">MINGYU DELIVERY</p>
+      <h1 style="margin:0 0 16px;color:#071c31;font-size:28px;font-weight:400;">Your naming result is ready</h1>
+      <p style="margin:0 0 14px;line-height:1.8;">Thank you for your order. We have saved your result so you can reopen it any time from the secure link below.</p>
+      <div style="margin:20px 0;padding:18px;border-left:4px solid #176d68;background:rgba(23,109,104,.08);">
+        <p style="margin:0 0 8px;"><strong>Order ID:</strong> ${escapeHtml(order.id)}</p>
+        <p style="margin:0 0 8px;"><strong>Edition:</strong> ${escapeHtml(editionLabel)} · $${escapeHtml(order.priceValue)}</p>
+        <p style="margin:0;"><strong>Delivery email:</strong> ${escapeHtml(order.email)}</p>
+      </div>
+      <p style="margin:20px 0;">
+        <a href="${escapeHtml(deliveryUrl)}" style="display:inline-block;padding:14px 22px;background:#9e392b;color:#fff8e9;text-decoration:none;">Open My Result</a>
+      </p>
+      <p style="margin:0 0 8px;line-height:1.8;">If you ever lose the page, you can recover the order here:</p>
+      <p style="margin:0 0 18px;"><a href="${escapeHtml(supportUrl)}">${escapeHtml(supportUrl)}</a></p>
+      <p style="margin:0;color:#7a6b5f;font-size:13px;line-height:1.8;">This email was sent automatically by Mingyu after your guest order was fulfilled.</p>
+    </div>
+  </div>`;
+  const text = [
+    "Your Mingyu naming result is ready.",
+    `Order ID: ${order.id}`,
+    `Edition: ${editionLabel} - $${order.priceValue}`,
+    `Open your result: ${deliveryUrl}`,
+    `Recover your order later: ${supportUrl}`
+  ].join("\n");
+  return { subject, html, text };
+}
+
+async function sendGuestOrderEmail(order, { force = false } = {}) {
+  if (!order?.id || !order?.accessToken) throw new Error("Guest order is incomplete.");
+  if (!order.result) throw new Error("This order does not have a saved result yet.");
+  if (!isMailConfigured()) {
+    throw new Error("Email delivery is not configured. Set RESEND_API_KEY, MAIL_FROM, and SITE_BASE_URL.");
+  }
+  if (!force && order.emailDeliveryStatus === "sent") return order;
+
+  const emailContent = buildGuestOrderEmail(order);
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: mailFrom,
+      to: [order.email],
+      ...(mailReplyTo ? { reply_to: mailReplyTo } : {}),
+      subject: emailContent.subject,
+      html: emailContent.html,
+      text: emailContent.text
+    })
+  });
+  const text = await response.text();
+  let payload = {};
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = {};
+    }
+  }
+  if (!response.ok) {
+    const message = payload?.message || payload?.error || "Email delivery failed.";
+    await updateGuestOrder(order.id, order.accessToken, {
+      emailDeliveryStatus: "failed",
+      emailDeliveryError: message
+    });
+    throw new Error(message);
+  }
+
+  const sentAt = nowIso();
+  const updated = await updateGuestOrder(order.id, order.accessToken, {
+    emailSentAt: sentAt,
+    emailDeliveryStatus: "sent",
+    emailDeliveryError: null
+  });
+  return updated || { ...order, emailSentAt: sentAt, emailDeliveryStatus: "sent", emailDeliveryError: null };
+}
+
 function parseCookies(req) {
   return Object.fromEntries(
     String(req.headers.cookie || "")
@@ -436,6 +742,65 @@ function buildSessionCookie(value, maxAgeSeconds) {
   ];
   if (process.env.NODE_ENV === "production") parts.push("Secure");
   return parts.join("; ");
+}
+
+function buildAdminCookie(value, maxAgeSeconds) {
+  const parts = [
+    `${adminSessionCookieName}=${encodeURIComponent(value)}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    `Max-Age=${maxAgeSeconds}`
+  ];
+  if (process.env.NODE_ENV === "production") parts.push("Secure");
+  return parts.join("; ");
+}
+
+function signAdminPayload(payload) {
+  return crypto.createHmac("sha256", adminSessionSecret).update(payload).digest("hex");
+}
+
+function createAdminToken(username) {
+  const expiresAt = Date.now() + adminSessionLifetimeSeconds * 1000;
+  const payload = `${username}.${expiresAt}`;
+  const signature = signAdminPayload(payload);
+  return Buffer.from(`${payload}.${signature}`).toString("base64url");
+}
+
+function readAdminToken(token) {
+  if (!token || !adminSessionSecret) return null;
+  try {
+    const raw = Buffer.from(token, "base64url").toString("utf8");
+    const [username, expiresAt, signature] = raw.split(".");
+    const payload = `${username}.${expiresAt}`;
+    if (!username || !expiresAt || !signature) return null;
+    if (signAdminPayload(payload) !== signature) return null;
+    if (Number(expiresAt) < Date.now()) return null;
+    return { username, expiresAt: Number(expiresAt) };
+  } catch {
+    return null;
+  }
+}
+
+function isAdminConfigured() {
+  return Boolean(adminUsername && adminPassword && adminSessionSecret);
+}
+
+function getAuthenticatedAdmin(req) {
+  if (!isAdminConfigured()) return null;
+  const token = parseCookies(req)[adminSessionCookieName];
+  const session = readAdminToken(token);
+  if (!session || session.username !== adminUsername) return null;
+  return { username: session.username };
+}
+
+function requireAdmin(req, res) {
+  const admin = getAuthenticatedAdmin(req);
+  if (!admin) {
+    send(res, 401, { error: "Please sign in as admin first." });
+    return null;
+  }
+  return admin;
 }
 
 async function cleanupSessions() {
@@ -563,6 +928,15 @@ function validateGenerationBody(body) {
   if (!body.name?.trim() || !body.birth || !body.birthTimeZone) return "Name, birth date and birthplace time zone are required";
   if (Number.isNaN(new Date(body.birth).getTime())) return "Birth date is invalid";
   if (!isValidTimeZone(body.birthTimeZone)) return "Birthplace time zone is invalid";
+  return null;
+}
+
+function validateGuestCheckoutBody(rawBody) {
+  const body = compactBody(rawBody);
+  const validationError = validateGenerationBody(body);
+  if (validationError) return validationError;
+  const email = normalizeEmail(rawBody.deliveryEmail || rawBody.email);
+  if (!validateEmail(email)) return "A valid delivery email is required";
   return null;
 }
 
@@ -946,6 +1320,212 @@ async function handlePayPalConfig(req, res) {
   send(res, 200, { enabled: Boolean(config), clientId: config?.clientId || null, currency: "USD", mode: config?.mode || null });
 }
 
+async function handleGuestOrderStart(req, res) {
+  const rawBody = await readJsonBody(req, res);
+  if (!rawBody) return;
+  const validationError = validateGuestCheckoutBody(rawBody);
+  if (validationError) return send(res, 422, { error: validationError });
+
+  const formBody = compactBody(rawBody);
+  const order = await insertGuestOrder(createGuestOrderRecord(normalizeEmail(rawBody.deliveryEmail || rawBody.email), formBody));
+  send(res, 201, {
+    orderId: order.id,
+    accessToken: order.accessToken,
+    tier: order.tier,
+    email: order.email,
+    paypalLink: order.paypalLink,
+    successUrl: `/checkout-success.html?order=${encodeURIComponent(order.id)}&token=${encodeURIComponent(order.accessToken)}`,
+    deliveryUrl: `/?guestOrder=${encodeURIComponent(order.id)}&token=${encodeURIComponent(order.accessToken)}`
+  });
+}
+
+async function handleGuestOrderStatus(req, res, url) {
+  const orderId = String(url.searchParams.get("order") || "");
+  const token = String(url.searchParams.get("token") || "");
+  if (!orderId || !token) return send(res, 422, { error: "Order ID and access token are required." });
+  const order = await getGuestOrderByIdAndToken(orderId, token);
+  if (!order) return send(res, 404, { error: "Order not found." });
+  send(res, 200, {
+    orderId: order.id,
+    email: order.email,
+    tier: order.tier,
+    priceValue: order.priceValue,
+    status: order.status,
+    createdAt: order.createdAt,
+    fulfilledAt: order.fulfilledAt,
+    hasResult: Boolean(order.result)
+  });
+}
+
+async function handleGuestOrderLookup(req, res) {
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  const orderId = String(body.orderId || "").trim();
+  const email = normalizeEmail(body.email);
+  if (!orderId || !validateEmail(email)) return send(res, 422, { error: "Order ID and a valid email are required." });
+  const order = await getGuestOrderByIdAndEmail(orderId, email);
+  if (!order) return send(res, 404, { error: "We could not find an order that matches this email and order ID." });
+  send(res, 200, {
+    orderId: order.id,
+    accessToken: order.accessToken,
+    status: order.status,
+    successUrl: `/checkout-success.html?order=${encodeURIComponent(order.id)}&token=${encodeURIComponent(order.accessToken)}`,
+    deliveryUrl: `/?guestOrder=${encodeURIComponent(order.id)}&token=${encodeURIComponent(order.accessToken)}`
+  });
+}
+
+async function handleGuestOrderFulfill(req, res) {
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  const orderId = String(body.orderId || "").trim();
+  const token = String(body.token || "").trim();
+  if (!orderId || !token) return send(res, 422, { error: "Order ID and access token are required." });
+  const stored = await getGuestOrderByIdAndToken(orderId, token);
+  if (!stored) return send(res, 404, { error: "Order not found." });
+
+  if (stored.result) {
+    return send(res, 200, {
+      orderId: stored.id,
+      status: stored.status,
+      deliveryUrl: `/?guestOrder=${encodeURIComponent(stored.id)}&token=${encodeURIComponent(stored.accessToken)}`,
+      fulfilledAt: stored.fulfilledAt
+    });
+  }
+
+  try {
+    const result = await buildPaidResult(stored.formBody);
+    const completedAt = nowIso();
+    const fulfilledOrder = await updateGuestOrder(orderId, token, {
+      status: "fulfilled",
+      result,
+      fulfilledAt: completedAt,
+      paymentConfirmedAt: completedAt
+    });
+    let emailSent = false;
+    let emailError = null;
+    if (isMailConfigured()) {
+      try {
+        await sendGuestOrderEmail(fulfilledOrder || { ...stored, result, status: "fulfilled", fulfilledAt: completedAt, paymentConfirmedAt: completedAt });
+        emailSent = true;
+      } catch (error) {
+        emailError = error.message;
+      }
+    }
+    send(res, 200, {
+      orderId: stored.id,
+      status: "fulfilled",
+      deliveryUrl: `/?guestOrder=${encodeURIComponent(stored.id)}&token=${encodeURIComponent(stored.accessToken)}`,
+      fulfilledAt: completedAt,
+      emailSent,
+      emailError
+    });
+  } catch (error) {
+    send(res, 502, { error: error.message });
+  }
+}
+
+async function handleGuestOrderResult(req, res, url) {
+  const orderId = String(url.searchParams.get("order") || "");
+  const token = String(url.searchParams.get("token") || "");
+  if (!orderId || !token) return send(res, 422, { error: "Order ID and access token are required." });
+  const order = await getGuestOrderByIdAndToken(orderId, token);
+  if (!order) return send(res, 404, { error: "Order not found." });
+  if (!order.result) return send(res, 409, { error: "This order has not been fulfilled yet." });
+  send(res, 200, {
+    orderId: order.id,
+    email: order.email,
+    tier: order.tier,
+    status: order.status,
+    createdAt: order.createdAt,
+    fulfilledAt: order.fulfilledAt,
+    result: order.result
+  });
+}
+
+async function handleAdminLogin(req, res) {
+  if (!isAdminConfigured()) return send(res, 503, { error: "Admin login is not configured yet." });
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  const username = String(body.username || "").trim();
+  const password = String(body.password || "");
+  if (username !== adminUsername || password !== adminPassword) {
+    return send(res, 401, { error: "Incorrect admin username or password." });
+  }
+  const token = createAdminToken(username);
+  send(res, 200, { ok: true, username }, "application/json; charset=utf-8", {
+    "Set-Cookie": buildAdminCookie(token, adminSessionLifetimeSeconds)
+  });
+}
+
+async function handleAdminLogout(req, res) {
+  send(res, 200, { ok: true }, "application/json; charset=utf-8", {
+    "Set-Cookie": buildAdminCookie("", 0)
+  });
+}
+
+async function handleAdminSession(req, res) {
+  const admin = getAuthenticatedAdmin(req);
+  send(res, 200, {
+    configured: isAdminConfigured(),
+    authenticated: Boolean(admin),
+    username: admin?.username || null,
+    emailEnabled: isMailConfigured()
+  });
+}
+
+async function handleAdminGuestOrders(req, res, url) {
+  if (!requireAdmin(req, res)) return;
+  const status = String(url.searchParams.get("status") || "").trim();
+  const emailStatus = String(url.searchParams.get("emailStatus") || "").trim();
+  const query = String(url.searchParams.get("q") || "").trim().toLowerCase();
+  let orders = await listGuestOrders({ status: status || undefined, limit: url.searchParams.get("limit") || 100 });
+  if (emailStatus) {
+    orders = orders.filter(order => (order.emailDeliveryStatus || "pending") === emailStatus);
+  }
+  if (query) {
+    orders = orders.filter(order =>
+      order.id.toLowerCase().includes(query)
+      || order.email.toLowerCase().includes(query)
+      || String(order.inputName || "").toLowerCase().includes(query)
+    );
+  }
+  send(res, 200, {
+    orders: orders.map(summarizeGuestOrder),
+    emailEnabled: isMailConfigured()
+  });
+}
+
+async function handleAdminGuestOrderDetail(req, res, url) {
+  if (!requireAdmin(req, res)) return;
+  const orderId = String(url.searchParams.get("order") || "").trim();
+  if (!orderId) return send(res, 422, { error: "Order ID is required." });
+  const order = await getGuestOrderById(orderId);
+  if (!order) return send(res, 404, { error: "Order not found." });
+  send(res, 200, {
+    order: {
+      ...summarizeGuestOrder(order),
+      accessToken: order.accessToken,
+      formBody: order.formBody,
+      result: order.result
+    }
+  });
+}
+
+async function handleAdminGuestOrderSendEmail(req, res) {
+  if (!requireAdmin(req, res)) return;
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  const orderId = String(body.orderId || "").trim();
+  if (!orderId) return send(res, 422, { error: "Order ID is required." });
+  const order = await getGuestOrderById(orderId);
+  if (!order) return send(res, 404, { error: "Order not found." });
+  const updated = await sendGuestOrderEmail(order, { force: body.force !== false });
+  send(res, 200, {
+    ok: true,
+    order: summarizeGuestOrder(updated)
+  });
+}
+
 async function handleCreatePayPalOrder(req, res) {
   const config = getPayPalConfig();
   if (!config) return send(res, 503, { error: "PayPal is not configured yet." });
@@ -1184,6 +1764,17 @@ http.createServer((req, res) => {
 
   const task = (() => {
     if (req.method === "GET" && pathname === "/api/paypal-config") return handlePayPalConfig(req, res);
+    if (req.method === "POST" && pathname === "/api/guest-orders/start") return handleGuestOrderStart(req, res);
+    if (req.method === "GET" && pathname === "/api/guest-orders/status") return handleGuestOrderStatus(req, res, url);
+    if (req.method === "POST" && pathname === "/api/guest-orders/lookup") return handleGuestOrderLookup(req, res);
+    if (req.method === "POST" && pathname === "/api/guest-orders/fulfill") return handleGuestOrderFulfill(req, res);
+    if (req.method === "GET" && pathname === "/api/guest-orders/result") return handleGuestOrderResult(req, res, url);
+    if (req.method === "POST" && pathname === "/api/admin/login") return handleAdminLogin(req, res);
+    if (req.method === "POST" && pathname === "/api/admin/logout") return handleAdminLogout(req, res);
+    if (req.method === "GET" && pathname === "/api/admin/session") return handleAdminSession(req, res);
+    if (req.method === "GET" && pathname === "/api/admin/guest-orders") return handleAdminGuestOrders(req, res, url);
+    if (req.method === "GET" && pathname === "/api/admin/guest-orders/detail") return handleAdminGuestOrderDetail(req, res, url);
+    if (req.method === "POST" && pathname === "/api/admin/guest-orders/send-email") return handleAdminGuestOrderSendEmail(req, res);
     if (req.method === "POST" && pathname === "/api/paypal/create-order") return handleCreatePayPalOrder(req, res);
     if (req.method === "POST" && pathname === "/api/paypal/capture-order") return handleCapturePayPalOrder(req, res);
     if (req.method === "POST" && pathname === "/api/generate") return handleGenerate(req, res);

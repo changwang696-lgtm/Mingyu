@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>后台登录 | Mingyu</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin.css" />
+</head>
+<body>
+  <main class="admin-shell admin-login-shell">
+    <section class="admin-login-card">
+      <a class="brand" href="/"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
+      <p class="admin-eyebrow">ADMIN ACCESS</p>
+      <h1>游客订单后台</h1>
+      <p class="admin-muted">登录后可以查看游客订单、恢复链接、邮件发送状态，并支持补发结果邮件。</p>
+      <form id="adminLoginForm" class="admin-form">
+        <label>
+          <span>管理员账号</span>
+          <input name="username" required autocomplete="username" />
+        </label>
+        <label>
+          <span>管理员密码</span>
+          <input name="password" type="password" required autocomplete="current-password" />
+        </label>
+        <button class="admin-primary" type="submit">登录后台</button>
+      </form>
+      <p id="adminLoginMessage" class="admin-message"></p>
+    </section>
+  </main>
+  <script src="/admin-login.js"></script>
+</body>
+</html>

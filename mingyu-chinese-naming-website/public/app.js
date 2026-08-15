@@ -2,7 +2,7 @@ const translations = {
   en: {
     navPlans: "Plans", navNaming: "Naming", navCulture: "Zodiac Culture", navCraft: "Crafts", accountLinkGuest: "Sign in",
     eyebrow: "Words become a vessel · Meet the East", heroA: "One name,", heroB: "a lifetime of meaning",
-    heroBody: "From your original name, birth moment and personality, discover AI-powered Chinese naming suggestions, cultural readings, and a membership-based credits model.",
+    heroBody: "From your original name, birth moment and personality, discover AI-powered Chinese naming suggestions, cultural readings, and paid naming reports with guest order recovery.",
     begin: "Find my name", introTitle: "Not a translation, but a new way to see you.",
     introBody: "A Chinese name is a choice of sound, form and meaning. Starting from your identity, we interpret zodiac symbolism and character traditions to create names that are thoughtful, explained and usable in real life.",
     pricingTitle: "A pricing model that fits an AI product better",
@@ -41,14 +41,16 @@ const translations = {
     memberPaymentFallback: "Not enough credits for this request. Continue with PayPal checkout instead.",
     creditUsed: "{count} credit used. {remaining} credits remaining.",
     accountLinkMember: "My account",
-    formTitle: "Tell us who you are", formSub: "Your name, birth date and birthplace are not retained. If you prefer, enter only your surname; results remain about 90% as effective.",
+    formTitle: "Tell us who you are", formSub: "For guest checkout recovery, we store the information required to deliver and reopen your paid result. If you prefer, enter only your surname; results remain about 90% as effective.",
     nameLabel: "Your current name", nameHint: "Any language is welcome. We consider pronunciation and context.",
+    deliveryEmailLabel: "Delivery email",
+    deliveryEmailHint: "Used to recover your order, reopen your result, and receive support if anything goes wrong.",
     genderLabel: "Gender expression", female: "Female", male: "Male", neutral: "Neutral / Any",
     birthLabel: "Date and time of birth", birthHint: "The more accurate, the more nuanced the cultural reading.",
     timezoneLabel: "Birthplace time zone", timezonePlaceholder: "Select the birthplace time zone", timezoneHint: "Daylight saving is applied before conversion to China Standard Time (UTC+8).", wishLabel: "What should your name convey?",
     simpleEdition: "SIMPLE EDITION", simpleGenerate: "Names and zodiac", simpleNoPdf: "View online · No PDF",
     completeEdition: "COMPLETE EDITION", completeGenerate: "Complete naming result", completeWithPdf: "Full result · Save as PDF",
-    humanTitle: "Privacy first · No profile is kept", humanBody: "We do not retain your name, birth date or birthplace. Use only your surname if you prefer. This is a cultural interpretation, not fortune-telling or professional advice.",
+    humanTitle: "Privacy first · Stored only for delivery", humanBody: "We store the details needed to deliver your paid result, reopen your order, and support dispute handling. This is a cultural interpretation, not fortune-telling or professional advice.",
     resultTitle: "Your Chinese name folio", simpleResultTitle: "Your names and zodiac", restart: "Start again ↺",
     zodiacTitle: "Your zodiac imagery", traditionTitle: "Traditional time & element reading", yearPillar: "Year pillar",
     heavenlyStem: "Heavenly stem", earthlyBranch: "Earthly branch & zodiac", birthHour: "Birth hour",
@@ -61,7 +63,7 @@ const translations = {
     craftTitle: "An Eastern gift bearing your name", craftSub: "Objects made by artisans, turning your name into a keepsake you can touch.",
     product1: "Custom name seal", product2: "Silk round fan", product3: "Name calligraphy scroll",
     launchTitle: "Current site status",
-    launchBody: "The site still uses a single-generation page today; registration, the member center, credit ledger, invoices, and auto-renew billing screens are planned for the next phase.",
+    launchBody: "The site currently focuses on guest one-time generation and order recovery. Registration, sign-in, memberships, credit ledger, invoices, and auto-renew billing are temporarily hidden but the code is preserved for a later relaunch.",
     demoNote: "This is a demonstration checkout. No real charge will be made.", loading: "Reading the sound, meaning and moment of your name...",
     paypalInlineTitle: "Pay with PayPal directly",
     paypalInlineBody: "Complete the form above, then use PayPal to pay and generate your result right away.",
@@ -69,11 +71,16 @@ const translations = {
     paypalHostedNote: "This checkout uses PayPal Hosted Checkout. Payment opens in a new tab and is processed on PayPal.",
     paypalHostedDialogNote: "This payment opens the official PayPal checkout in a new tab. After payment, return to the site to continue.",
     paypalHostedOpen: "Open PayPal checkout",
-    paypalHostedOpened: "PayPal checkout has opened in a new tab."
+    paypalHostedOpened: "PayPal checkout has opened in a new tab.",
+    guestOrderSavedTitle: "Guest order saved",
+    guestOrderSavedBody: "Order {orderId} is ready. Complete payment on PayPal, then return here to unlock or reopen your result.",
+    findOrderLink: "Find my order",
+    guestOrderCreateFailed: "We could not create your guest order. Please try again.",
+    guestOrderRecovered: "Your saved order result has been restored."
   },
   zh: {
     navPlans: "会员套餐", navNaming: "起名", navCulture: "生肖文化", navCraft: "东方好物", accountLinkGuest: "注册 / 登录", eyebrow: "以字为舟 · 渡见东方",
-    heroA: "一个名字，", heroB: "一生的东方寓意", heroBody: "从你的原名、出生时刻与个性出发，获得由 AI 驱动的中文起名建议、文化解读与会员制 credits 服务。",
+    heroA: "一个名字，", heroB: "一生的东方寓意", heroBody: "从你的原名、出生时刻与个性出发，获得由 AI 驱动的中文起名建议、文化解读，以及支持游客订单找回的付费报告服务。",
     begin: "开始寻名", introTitle: "不是翻译名字，而是重新认识你。",
     introBody: "中文名字是声音、字形与意义的共同选择。我们以你的身份为起点，参考生肖的文化意象与汉字传统，提供有出处、有解释、可被真实使用的名字。",
     pricingTitle: "更适合 AI 产品的收费方式",
@@ -112,13 +119,15 @@ const translations = {
     memberPaymentFallback: "当前 credits 不足，本次将继续使用 PayPal 结账。",
     creditUsed: "已消耗 {count} credit，当前剩余 {remaining} credits。",
     accountLinkMember: "会员中心",
-    formTitle: "告诉我们，你是谁", formSub: "您填写的姓名、出生日期和出生地不会被本网站保留。若有顾虑，可只输入您的姓氏，生成效果仍约有 90%。",
+    formTitle: "告诉我们，你是谁", formSub: "为支持游客订单交付与找回，我们会保存本次付款所需信息。若有顾虑，可只输入您的姓氏，生成效果仍约有 90%。",
     nameLabel: "你现在的姓名",
     nameHint: "支持任何语言，我们会理解读音与文化背景", genderLabel: "性别表达", female: "女性", male: "男性", neutral: "中性 / 不限",
+    deliveryEmailLabel: "交付邮箱",
+    deliveryEmailHint: "用于找回订单、重新打开结果，以及后续客服协助",
     birthLabel: "出生日期与时间", birthHint: "越准确，文化解读越细致", timezoneLabel: "出生地时区", timezonePlaceholder: "请选择出生地对应时区", timezoneHint: "系统会处理夏令时，并换算为中国标准时间（UTC+8）", wishLabel: "你希望名字传达什么？",
     simpleEdition: "简约版", simpleGenerate: "生成名字及生肖", simpleNoPdf: "页面查看 · 不含 PDF",
     completeEdition: "完整版", completeGenerate: "生成全部起名结果", completeWithPdf: "完整页面 · 可保存 PDF",
-    humanTitle: "隐私优先 · 不建立个人档案", humanBody: "我们不会保留您的姓名、出生日期或出生地；如有顾虑可只输入姓氏。结果为传统文化创意解读，不构成命运预测或专业建议。",
+    humanTitle: "隐私优先 · 仅为交付保存必要信息", humanBody: "我们会保存交付结果、找回订单与处理争议所需的信息；如有顾虑可只输入姓氏。结果为传统文化创意解读，不构成命运预测或专业建议。",
     resultTitle: "你的东方名字卷", simpleResultTitle: "你的名字与生肖", restart: "重新填写 ↺", zodiacTitle: "你的生肖意象",
     traditionTitle: "传统时序文化解读", yearPillar: "年柱", heavenlyStem: "天干", earthlyBranch: "地支与生肖", birthHour: "出生时辰",
     stemMeaning: "体现年柱天干的阴阳与五行属性", branchMeaning: "地支与生肖为固定对应关系", methodNote: "计算说明",
@@ -130,7 +139,7 @@ const translations = {
     craftTitle: "一件带着名字的东方礼物", craftSub: "来自手艺人的小物，为名字留下可以触摸的纪念。",
     product1: "定制姓名印章", product2: "缂丝团扇", product3: "姓名书法卷",
     launchTitle: "当前站点状态",
-    launchBody: "目前站点仍以单次生成页为主；注册、会员中心、credits 台账、发票与自动续费界面将作为下一阶段上线。",
+    launchBody: "目前站点仍以游客单次生成与订单找回为主；注册、登录、会员套餐、credits 台账、发票与自动续费界面已暂时隐藏并保留代码，后续可继续启用。",
     demoNote: "当前为演示结账流程，未接入真实扣款。", loading: "正在研读你的名字与时辰...",
     paypalInlineTitle: "使用 PayPal 直接付款",
     paypalInlineBody: "填写上方信息后，可直接使用 PayPal 支付并生成结果。",
@@ -138,7 +147,12 @@ const translations = {
     paypalHostedNote: "当前使用 PayPal Hosted Checkout 收款。付款将在新窗口打开，并由 PayPal 官方页面完成支付。",
     paypalHostedDialogNote: "当前将打开 PayPal 官方结账页进行付款。付款完成后，请返回网站继续操作。",
     paypalHostedOpen: "打开 PayPal 付款页",
-    paypalHostedOpened: "PayPal 付款页已在新窗口打开。"
+    paypalHostedOpened: "PayPal 付款页已在新窗口打开。",
+    guestOrderSavedTitle: "游客订单已保存",
+    guestOrderSavedBody: "订单号 {orderId} 已创建。请在 PayPal 完成付款后返回本站解锁或重新打开结果。",
+    findOrderLink: "找回我的订单",
+    guestOrderCreateFailed: "创建游客订单失败，请稍后重试。",
+    guestOrderRecovered: "已为你恢复已保存的订单结果。"
   }
 };
 
@@ -148,10 +162,13 @@ let activeTier = "complete";
 let pendingTier = "simple";
 let pendingBody = null;
 let sessionState = { loggedIn: false, user: null, catalog: null };
+// Future switch: set to true when the account, membership, and credits experience should return to the homepage.
+const membershipPreviewEnabled = false;
 let paypalConfig = { enabled: false, clientId: null, currency: "USD" };
 let paypalSdkPromise = null;
 let paypalButtonsInstance = null;
 let inlinePayPalRendered = false;
+const guestCheckoutKey = "mingyu_guest_checkout";
 const hostedPayPalLinks = {
   simple: "https://www.paypal.com/ncp/payment/8WAQLCHG3A5S4",
   complete: "https://www.paypal.com/ncp/payment/V3QNJF7PLKKRW"
@@ -187,7 +204,27 @@ function updateMemberExperience() {
   const simpleCaption = $("#simplePlanCaption");
   const completeCaption = $("#completePlanCaption");
 
-  if (!accountLink || !memberStripText || !memberStripLink || !simplePrice || !completePrice || !simpleCaption || !completeCaption) return;
+  if (!simplePrice || !completePrice || !simpleCaption || !completeCaption) return;
+
+  if (!membershipPreviewEnabled) {
+    if (accountLink) accountLink.hidden = true;
+    if ($("#navPlansLink")) $("#navPlansLink").hidden = true;
+    if ($("#pricing")) $("#pricing").hidden = true;
+    if ($("#memberFlow")) $("#memberFlow").hidden = true;
+    if ($("#memberStrip")) $("#memberStrip").hidden = true;
+    simplePrice.textContent = "$2.99";
+    completePrice.textContent = "$9.90";
+    simpleCaption.textContent = translations[lang].simpleNoPdf;
+    completeCaption.textContent = translations[lang].completeWithPdf;
+    return;
+  }
+
+  if (!accountLink || !memberStripText || !memberStripLink) return;
+  accountLink.hidden = false;
+  if ($("#navPlansLink")) $("#navPlansLink").hidden = false;
+  if ($("#pricing")) $("#pricing").hidden = false;
+  if ($("#memberFlow")) $("#memberFlow").hidden = false;
+  if ($("#memberStrip")) $("#memberStrip").hidden = false;
 
   if (sessionState.loggedIn && sessionState.user) {
     accountLink.textContent = translations[lang].accountLinkMember;
@@ -220,6 +257,8 @@ function applyLanguage() {
   if ($("#paypalInlineTitle")) $("#paypalInlineTitle").textContent = translations[lang].paypalInlineTitle;
   if ($("#paypalInlineBody")) $("#paypalInlineBody").textContent = translations[lang].paypalInlineBody;
   if ($("#paypalHostedNote")) $("#paypalHostedNote").textContent = translations[lang].paypalHostedNote;
+  if ($("#guestCheckoutNote strong")) $("#guestCheckoutNote strong").textContent = translations[lang].guestOrderSavedTitle;
+  if ($("#findOrderLink")) $("#findOrderLink").textContent = translations[lang].findOrderLink;
   if ($("#dialogHostedLink")) $("#dialogHostedLink").textContent = translations[lang].paypalHostedOpen;
   $("#langBtn").textContent = lang === "zh" ? "EN" : "中文";
   updateMemberExperience();
@@ -232,7 +271,7 @@ $("#langBtn").onclick = () => {
   applyLanguage();
 };
 
-$("#nameForm").addEventListener("submit", event => {
+$("#nameForm").addEventListener("submit", async event => {
   event.preventDefault();
   const form = event.currentTarget;
   if (!form.checkValidity()) {
@@ -247,9 +286,7 @@ $("#nameForm").addEventListener("submit", event => {
   }
   if (hostedPayPalLinks[pendingTier]) {
     try {
-      prepareHostedCheckout(pendingTier);
-      window.open(hostedPayPalLinks[pendingTier], "_blank", "noopener,noreferrer");
-      $("#formMessage").textContent = translations[lang].paypalHostedOpened;
+      await openHostedCheckout(pendingTier);
       return;
     } catch {
       return;
@@ -359,26 +396,63 @@ function collectFormBody(tier, requireValid = true) {
   return { ...Object.fromEntries(new FormData(form)), tier };
 }
 
-function prepareHostedCheckout(tier) {
-  pendingTier = tier;
-  pendingBody = collectFormBody(tier, true);
-  sessionStorage.setItem("mingyu_pending_checkout", JSON.stringify({
-    tier,
-    body: pendingBody,
-    createdAt: Date.now()
-  }));
+function persistGuestOrder(order) {
+  localStorage.setItem(guestCheckoutKey, JSON.stringify(order));
 }
 
-function bindHostedCheckoutLink(selector, tier) {
+function readGuestOrder() {
+  try {
+    return JSON.parse(localStorage.getItem(guestCheckoutKey) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function showGuestCheckoutNotice(order) {
+  if (!$("#guestCheckoutNote")) return;
+  $("#guestCheckoutNote").hidden = false;
+  const body = $("#guestOrderSavedBody");
+  if (body) body.textContent = t("guestOrderSavedBody", { orderId: order.orderId });
+  const successLink = $("#guestSuccessLink");
+  if (successLink) successLink.href = order.successUrl;
+}
+
+async function createGuestOrderForTier(tier) {
+  const body = collectFormBody(tier, true);
+  pendingTier = tier;
+  pendingBody = body;
+  const response = await fetch("/api/guest-orders/start", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || translations[lang].guestOrderCreateFailed);
+  const order = { ...data, tier, body, createdAt: Date.now() };
+  persistGuestOrder(order);
+  showGuestCheckoutNotice(order);
+  return order;
+}
+
+async function openHostedCheckout(tier) {
+  const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
+  const order = await createGuestOrderForTier(tier);
+  if (popup) popup.location.href = order.paypalLink;
+  else window.open(order.paypalLink, "_blank", "noopener,noreferrer");
+  $("#formMessage").textContent = translations[lang].paypalHostedOpened;
+}
+
+async function bindHostedCheckoutLink(selector, tier) {
   const link = $(selector);
   if (!link) return;
   link.href = hostedPayPalLinks[tier];
-  link.addEventListener("click", event => {
+  link.addEventListener("click", async event => {
+    event.preventDefault();
     try {
-      prepareHostedCheckout(tier);
+      await openHostedCheckout(tier);
       $("#formMessage").textContent = "";
     } catch (error) {
-      event.preventDefault();
+      $("#formMessage").textContent = error.message || translations[lang].guestOrderCreateFailed;
     }
   });
 }
@@ -410,6 +484,11 @@ async function capturePayPalOrder(orderID, tier) {
 }
 
 async function refreshSession() {
+  if (!membershipPreviewEnabled) {
+    sessionState = { loggedIn: false, user: null, catalog: null };
+    updateMemberExperience();
+    return;
+  }
   try {
     const response = await fetch("/api/auth/session");
     const data = await response.json();
@@ -422,6 +501,9 @@ async function refreshSession() {
 }
 
 async function startMemberGeneration() {
+  if (!membershipPreviewEnabled) {
+    throw new Error(lang === "zh" ? "会员生成入口当前已隐藏。" : "Member generation is temporarily hidden.");
+  }
   $("#loading").hidden = false;
   $("#formMessage").textContent = "";
   try {
@@ -542,6 +624,30 @@ function renderHostedCheckoutLinks() {
   inlinePayPalRendered = true;
 }
 
+async function restoreGuestOrderResultFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const orderId = params.get("guestOrder");
+  const token = params.get("token");
+  if (!orderId || !token) return;
+  try {
+    const response = await fetch(`/api/guest-orders/result?order=${encodeURIComponent(orderId)}&token=${encodeURIComponent(token)}`);
+    const data = await response.json();
+    if (!response.ok) return;
+    activeTier = data.tier;
+    latest = data.result;
+    render(data.result);
+    $("#result").hidden = false;
+    $("#formMessage").textContent = translations[lang].guestOrderRecovered;
+    showGuestCheckoutNotice({
+      orderId: data.orderId,
+      successUrl: `/checkout-success.html?order=${encodeURIComponent(data.orderId)}&token=${encodeURIComponent(token)}`
+    });
+    $("#result").scrollIntoView({ behavior: "smooth" });
+  } catch {
+    // Ignore silently and leave the normal page flow intact.
+  }
+}
+
 function renderZodiacProfile(culture, en) {
   const profile = culture?.zodiacProfile;
   if (!profile) return;
@@ -605,3 +711,4 @@ fetch("/api/paypal-config")
 
 applyLanguage();
 refreshSession();
+restoreGuestOrderResultFromUrl();
