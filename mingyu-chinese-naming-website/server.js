@@ -2,10 +2,14 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { PDFDocument, rgb } = require("pdf-lib");
+const fontkit = require("@pdf-lib/fontkit");
 
 const root = path.join(__dirname, "public");
 const dataDir = path.join(__dirname, "data");
 const databaseFile = path.join(dataDir, "membership-db.json");
+const fontCacheDir = path.join(dataDir, "fonts");
+const pdfFontCacheFile = path.join(fontCacheDir, "NotoSansCJKsc-Regular.otf");
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "";
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -24,6 +28,7 @@ const resendApiKey = process.env.RESEND_API_KEY || "";
 const mailFrom = process.env.MAIL_FROM || "";
 const mailReplyTo = process.env.MAIL_REPLY_TO || "";
 const siteBaseUrl = String(process.env.SITE_BASE_URL || "").replace(/\/$/, "");
+const pdfFontUrl = process.env.PDF_FONT_URL || "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf";
 const tierPricing = {
   simple: { value: "2.99", label: "Simple Edition" },
   complete: { value: "9.90", label: "Complete Edition" }
@@ -60,7 +65,8 @@ const types = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".svg": "image/svg+xml",
-  ".json": "application/json; charset=utf-8"
+  ".json": "application/json; charset=utf-8",
+  ".pdf": "application/pdf"
 };
 const signs = [["鼠", "Rat"], ["牛", "Ox"], ["虎", "Tiger"], ["兔", "Rabbit"], ["龙", "Dragon"], ["蛇", "Snake"], ["马", "Horse"], ["羊", "Goat"], ["猴", "Monkey"], ["鸡", "Rooster"], ["狗", "Dog"], ["猪", "Pig"]];
 const zodiacProfiles = [
@@ -301,11 +307,19 @@ function mapGuestOrderRow(row) {
     email: row.email,
     tier: row.tier,
     priceValue: row.price_value,
-    paypalLink: row.paypal_link,
+    paypalLink: row.paypal_link || null,
+    paypalOrderId: row.paypal_order_id || null,
+    paypalCaptureId: row.paypal_capture_id || null,
+    paymentStatus: row.payment_status || null,
+    paymentAmount: row.payment_amount || null,
+    paymentCurrency: row.payment_currency || "USD",
     inputName: row.input_name,
     formBody: row.form_body,
     status: row.status,
     result: row.result || null,
+    pdfBase64: row.pdf_base64 || null,
+    pdfFileName: row.pdf_file_name || null,
+    pdfGeneratedAt: row.pdf_generated_at || null,
     createdAt: row.created_at,
     fulfilledAt: row.fulfilled_at || null,
     paymentConfirmedAt: row.payment_confirmed_at || null,
@@ -445,19 +459,26 @@ async function getUserReportSummaries(userId, limit = 12) {
 function createGuestOrderRecord(email, formBody) {
   const tier = normalizeTier(formBody.tier);
   const pricing = tierPricing[tier];
+  const orderId = nextId("guest_");
   return {
-    id: nextId("guest_"),
+    id: orderId,
     accessToken: nextId("gtok_"),
     email,
     tier,
     priceValue: pricing.value,
-    paypalLink: tier === "simple"
-      ? "https://www.paypal.com/ncp/payment/8WAQLCHG3A5S4"
-      : "https://www.paypal.com/ncp/payment/V3QNJF7PLKKRW",
+    paypalLink: null,
+    paypalOrderId: null,
+    paypalCaptureId: null,
+    paymentStatus: "pending",
+    paymentAmount: pricing.value,
+    paymentCurrency: "USD",
     inputName: formBody.name,
     formBody,
     status: "pending_payment",
     result: null,
+    pdfBase64: null,
+    pdfFileName: `${orderId}-${tier}.pdf`,
+    pdfGeneratedAt: null,
     createdAt: nowIso(),
     fulfilledAt: null,
     paymentConfirmedAt: null,
@@ -528,9 +549,17 @@ async function insertGuestOrder(order) {
       tier: order.tier,
       price_value: order.priceValue,
       paypal_link: order.paypalLink,
+          paypal_order_id: order.paypalOrderId,
+          paypal_capture_id: order.paypalCaptureId,
+          payment_status: order.paymentStatus,
+          payment_amount: order.paymentAmount,
+          payment_currency: order.paymentCurrency,
       input_name: order.inputName,
       form_body: order.formBody,
       status: order.status,
+          pdf_base64: order.pdfBase64,
+          pdf_file_name: order.pdfFileName,
+          pdf_generated_at: order.pdfGeneratedAt,
       created_at: order.createdAt,
       email_delivery_status: order.emailDeliveryStatus
     }
@@ -554,7 +583,16 @@ async function updateGuestOrder(orderId, token, updates) {
     },
     body: {
       ...(updates.status ? { status: updates.status } : {}),
+          ...(updates.paypalLink !== undefined ? { paypal_link: updates.paypalLink } : {}),
+          ...(updates.paypalOrderId !== undefined ? { paypal_order_id: updates.paypalOrderId } : {}),
+          ...(updates.paypalCaptureId !== undefined ? { paypal_capture_id: updates.paypalCaptureId } : {}),
+          ...(updates.paymentStatus !== undefined ? { payment_status: updates.paymentStatus } : {}),
+          ...(updates.paymentAmount !== undefined ? { payment_amount: updates.paymentAmount } : {}),
+          ...(updates.paymentCurrency !== undefined ? { payment_currency: updates.paymentCurrency } : {}),
       ...(updates.result !== undefined ? { result: updates.result } : {}),
+          ...(updates.pdfBase64 !== undefined ? { pdf_base64: updates.pdfBase64 } : {}),
+          ...(updates.pdfFileName !== undefined ? { pdf_file_name: updates.pdfFileName } : {}),
+          ...(updates.pdfGeneratedAt !== undefined ? { pdf_generated_at: updates.pdfGeneratedAt } : {}),
       ...(updates.fulfilledAt ? { fulfilled_at: updates.fulfilledAt } : {}),
       ...(updates.paymentConfirmedAt ? { payment_confirmed_at: updates.paymentConfirmedAt } : {}),
       ...(updates.emailSentAt !== undefined ? { email_sent_at: updates.emailSentAt } : {}),
@@ -601,11 +639,15 @@ function getAbsoluteUrl(relativePath) {
 }
 
 function buildGuestOrderSuccessUrl(order) {
-  return getAbsoluteUrl(`/checkout-success.html?order=${encodeURIComponent(order.id)}&token=${encodeURIComponent(order.accessToken)}`);
+  return getAbsoluteUrl(`/checkout-success.html?order=${encodeURIComponent(order.id)}&access=${encodeURIComponent(order.accessToken)}`);
 }
 
 function buildGuestOrderDeliveryUrl(order) {
   return getAbsoluteUrl(`/?guestOrder=${encodeURIComponent(order.id)}&token=${encodeURIComponent(order.accessToken)}`);
+}
+
+function buildGuestOrderPdfUrl(order) {
+  return getAbsoluteUrl(`/api/guest-orders/pdf?order=${encodeURIComponent(order.id)}&token=${encodeURIComponent(order.accessToken)}`);
 }
 
 function isMailConfigured() {
@@ -620,6 +662,11 @@ function summarizeGuestOrder(order) {
     priceValue: order.priceValue,
     inputName: order.inputName,
     status: order.status,
+    paymentStatus: order.paymentStatus || "pending",
+    paypalOrderId: order.paypalOrderId || null,
+    paypalCaptureId: order.paypalCaptureId || null,
+    paymentAmount: order.paymentAmount || null,
+    paymentCurrency: order.paymentCurrency || "USD",
     createdAt: order.createdAt,
     fulfilledAt: order.fulfilledAt,
     paymentConfirmedAt: order.paymentConfirmedAt,
@@ -627,14 +674,138 @@ function summarizeGuestOrder(order) {
     emailDeliveryStatus: order.emailDeliveryStatus || "pending",
     emailDeliveryError: order.emailDeliveryError,
     hasResult: Boolean(order.result),
+    hasPdf: Boolean(order.pdfBase64),
+    pdfGeneratedAt: order.pdfGeneratedAt || null,
+    pdfUrl: order.pdfBase64 ? buildGuestOrderPdfUrl(order) : null,
     deliveryUrl: order.result ? buildGuestOrderDeliveryUrl(order) : null,
     successUrl: buildGuestOrderSuccessUrl(order)
   };
 }
 
+function ensureDirSync(dirPath) {
+  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
+}
+
+async function getPdfFontBytes() {
+  ensureDirSync(fontCacheDir);
+  if (fs.existsSync(pdfFontCacheFile)) return fs.readFileSync(pdfFontCacheFile);
+  const response = await fetch(pdfFontUrl);
+  if (!response.ok) throw new Error("Unable to download the PDF font file.");
+  const buffer = Buffer.from(await response.arrayBuffer());
+  fs.writeFileSync(pdfFontCacheFile, buffer);
+  return buffer;
+}
+
+function formatReportDate(value) {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) return nowIso().slice(0, 10);
+  return date.toISOString().slice(0, 10);
+}
+
+function wrapPdfText(text, font, size, maxWidth) {
+  const source = String(text || "").replace(/\r/g, "");
+  const paragraphs = source.split("\n");
+  const lines = [];
+  for (const paragraph of paragraphs) {
+    const trimmed = paragraph.trim();
+    if (!trimmed) {
+      lines.push("");
+      continue;
+    }
+    let current = "";
+    for (const character of trimmed) {
+      const candidate = current + character;
+      if (font.widthOfTextAtSize(candidate, size) <= maxWidth || !current) {
+        current = candidate;
+      } else {
+        lines.push(current);
+        current = character;
+      }
+    }
+    if (current) lines.push(current);
+  }
+  return lines;
+}
+
+async function buildGuestOrderPdfBytes(order) {
+  const pdfDoc = await PDFDocument.create();
+  pdfDoc.registerFontkit(fontkit);
+  const font = await pdfDoc.embedFont(await getPdfFontBytes(), { subset: true });
+  const pageSize = [595.28, 841.89];
+  const margin = 48;
+  const maxWidth = pageSize[0] - margin * 2;
+  const lineGap = 6;
+  const colors = {
+    ink: rgb(0.04, 0.11, 0.19),
+    warm: rgb(0.62, 0.22, 0.17),
+    soft: rgb(0.33, 0.27, 0.23)
+  };
+  let page = pdfDoc.addPage(pageSize);
+  let y = page.getHeight() - margin;
+
+  const ensureSpace = neededHeight => {
+    if (y - neededHeight >= margin) return;
+    page = pdfDoc.addPage(pageSize);
+    y = page.getHeight() - margin;
+  };
+
+  const drawTextLine = (text, { size = 11, color = colors.soft, x = margin } = {}) => {
+    ensureSpace(size + lineGap);
+    page.drawText(String(text || ""), { x, y, size, font, color });
+    y -= size + lineGap;
+  };
+
+  const drawParagraph = (text, { size = 11, color = colors.soft, x = margin, gapAfter = 8 } = {}) => {
+    const lines = wrapPdfText(text, font, size, maxWidth - (x - margin));
+    for (const line of lines) drawTextLine(line || " ", { size, color, x });
+    y -= gapAfter;
+  };
+
+  const drawSectionTitle = text => {
+    drawTextLine(text, { size: 15, color: colors.warm });
+    y -= 2;
+  };
+
+  const result = order.result || {};
+  const culture = result.traditionalCulture || {};
+  const editionLabel = order.tier === "simple" ? "Simple Edition" : "Complete Edition";
+  const downloadUrl = buildGuestOrderPdfUrl(order);
+
+  drawTextLine("Mingyu Chinese Naming Report", { size: 22, color: colors.ink });
+  drawTextLine(`Guest Order · ${order.id}`, { size: 12, color: colors.warm });
+  y -= 8;
+
+  drawParagraph(`Delivery email: ${order.email}\nEdition: ${editionLabel} · USD ${order.priceValue}\nGenerated date: ${formatReportDate(order.fulfilledAt || order.createdAt)}`, { size: 11, color: colors.soft, gapAfter: 12 });
+
+  drawSectionTitle("Overview");
+  drawParagraph(`Input name: ${result.inputName || order.inputName || order.formBody?.name || "-"}`, { size: 11, color: colors.soft, gapAfter: 4 });
+  drawParagraph(result.summary || "", { size: 11, color: colors.soft, gapAfter: 4 });
+  drawParagraph(result.summaryEn || "", { size: 10, color: colors.soft, gapAfter: 12 });
+
+  drawSectionTitle("Name Options");
+  for (const option of Array.isArray(result.names) ? result.names : []) {
+    drawTextLine(`${option.hanzi || ""}  ${option.pinyin || ""}`.trim(), { size: 14, color: colors.ink });
+    if (option.tone) drawTextLine(`Tone: ${option.tone}`, { size: 10, color: colors.warm, x: margin + 6 });
+    drawParagraph(option.meaning || "", { size: 11, color: colors.soft, x: margin + 6, gapAfter: 2 });
+    drawParagraph(option.meaningEn || "", { size: 10, color: colors.soft, x: margin + 6, gapAfter: 10 });
+  }
+
+  drawSectionTitle("Zodiac & Traditional Culture");
+  drawParagraph(`Zodiac: ${result.zodiac?.animal || "-"} · ${result.zodiac?.animalEn || "-"}\nYear pillar: ${culture.pillar || "-"}\nBirth hour: ${culture.hourBranch?.char || "-"}时 · ${culture.hourBranch?.range || "-"}`, { size: 11, color: colors.soft, gapAfter: 4 });
+  drawParagraph(culture.note || result.culturalNote || "", { size: 11, color: colors.soft, gapAfter: 4 });
+  drawParagraph(culture.noteEn || result.culturalNoteEn || "", { size: 10, color: colors.soft, gapAfter: 12 });
+
+  drawSectionTitle("Access");
+  drawParagraph(`Order ID: ${order.id}\nResult page: ${buildGuestOrderDeliveryUrl(order)}\nPDF download: ${downloadUrl}`, { size: 10, color: colors.soft, gapAfter: 0 });
+
+  return Buffer.from(await pdfDoc.save());
+}
+
 function buildGuestOrderEmail(order) {
   const editionLabel = order.tier === "simple" ? "Simple Edition" : "Complete Edition";
   const deliveryUrl = buildGuestOrderDeliveryUrl(order);
+  const successUrl = buildGuestOrderSuccessUrl(order);
+  const pdfUrl = order.pdfBase64 ? buildGuestOrderPdfUrl(order) : "";
   const supportUrl = getAbsoluteUrl("/order-lookup.html");
   const subject = `Your Mingyu Chinese naming result is ready (${order.id})`;
   const html = `
@@ -648,9 +819,12 @@ function buildGuestOrderEmail(order) {
         <p style="margin:0 0 8px;"><strong>Edition:</strong> ${escapeHtml(editionLabel)} · $${escapeHtml(order.priceValue)}</p>
         <p style="margin:0;"><strong>Delivery email:</strong> ${escapeHtml(order.email)}</p>
       </div>
-      <p style="margin:20px 0;">
+      <p style="margin:20px 0 12px;">
         <a href="${escapeHtml(deliveryUrl)}" style="display:inline-block;padding:14px 22px;background:#9e392b;color:#fff8e9;text-decoration:none;">Open My Result</a>
       </p>
+      ${pdfUrl ? `<p style="margin:0 0 14px;"><a href="${escapeHtml(pdfUrl)}">Download PDF directly</a></p>` : `<p style="margin:0 0 14px;line-height:1.8;">After opening your result, you can use the Save PDF button on the page to keep a local copy.</p>`}
+      <p style="margin:0 0 8px;line-height:1.8;">Need to reopen the payment return page first? Use this secure continue link:</p>
+      <p style="margin:0 0 14px;"><a href="${escapeHtml(successUrl)}">${escapeHtml(successUrl)}</a></p>
       <p style="margin:0 0 8px;line-height:1.8;">If you ever lose the page, you can recover the order here:</p>
       <p style="margin:0 0 18px;"><a href="${escapeHtml(supportUrl)}">${escapeHtml(supportUrl)}</a></p>
       <p style="margin:0;color:#7a6b5f;font-size:13px;line-height:1.8;">This email was sent automatically by Mingyu after your guest order was fulfilled.</p>
@@ -661,6 +835,8 @@ function buildGuestOrderEmail(order) {
     `Order ID: ${order.id}`,
     `Edition: ${editionLabel} - $${order.priceValue}`,
     `Open your result: ${deliveryUrl}`,
+    ...(pdfUrl ? [`Download PDF: ${pdfUrl}`] : ["Save PDF from the result page after opening it."]),
+    `Continue from the payment return page: ${successUrl}`,
     `Recover your order later: ${supportUrl}`
   ].join("\n");
   return { subject, html, text };
@@ -1288,6 +1464,156 @@ async function fetchPayPalJson(config, pathname, options, errorMessage) {
   return json;
 }
 
+function getGuestOrderCancelUrl(order) {
+  const successUrl = buildGuestOrderSuccessUrl(order);
+  return `${successUrl}${successUrl.includes("?") ? "&" : "?"}cancelled=1`;
+}
+
+function getPayPalApprovalLink(payPalOrder) {
+  return payPalOrder?.links?.find(link => link.rel === "payer-action" || link.rel === "approve")?.href || null;
+}
+
+function extractPayPalCapture(payPalOrder) {
+  const purchaseUnit = payPalOrder?.purchase_units?.[0] || {};
+  const capture = purchaseUnit.payments?.captures?.[0] || null;
+  return {
+    status: capture?.status || payPalOrder?.status || null,
+    captureId: capture?.id || null,
+    amount: capture?.amount?.value || purchaseUnit.amount?.value || null,
+    currency: capture?.amount?.currency_code || purchaseUnit.amount?.currency_code || "USD",
+    customId: purchaseUnit.custom_id || purchaseUnit.invoice_id || purchaseUnit.reference_id || null
+  };
+}
+
+function assertPayPalOrderMatchesGuestOrder(order, payPalOrder) {
+  const capture = extractPayPalCapture(payPalOrder);
+  if (capture.customId && capture.customId !== order.id) {
+    throw new Error("The PayPal payment does not match this guest order.");
+  }
+  if (capture.amount && String(capture.amount) !== String(order.priceValue)) {
+    throw new Error("The paid amount does not match this guest order.");
+  }
+  if (capture.currency && String(capture.currency).toUpperCase() !== "USD") {
+    throw new Error("The paid currency does not match this guest order.");
+  }
+  return capture;
+}
+
+async function createPayPalGuestCheckout(order) {
+  const config = getPayPalConfig();
+  if (!config) throw new Error("PayPal is not configured yet.");
+  const created = await fetchPayPalJson(config, "/v2/checkout/orders", {
+    method: "POST",
+    body: JSON.stringify({
+      intent: "CAPTURE",
+      purchase_units: [{
+        custom_id: order.id,
+        invoice_id: order.id,
+        description: `Mingyu Chinese Naming - ${tierPricing[order.tier].label}`,
+        amount: {
+          currency_code: order.paymentCurrency || "USD",
+          value: order.priceValue
+        }
+      }],
+      payment_source: {
+        paypal: {
+          experience_context: {
+            brand_name: "Mingyu",
+            landing_page: "GUEST_CHECKOUT",
+            shipping_preference: "NO_SHIPPING",
+            user_action: "PAY_NOW",
+            return_url: buildGuestOrderSuccessUrl(order),
+            cancel_url: getGuestOrderCancelUrl(order)
+          }
+        }
+      }
+    })
+  }, "PayPal order creation failed");
+  const approvalUrl = getPayPalApprovalLink(created);
+  if (!approvalUrl) throw new Error("PayPal did not return an approval URL.");
+  return {
+    paypalOrderId: created.id,
+    paypalLink: approvalUrl,
+    paymentStatus: String(created.status || "CREATED").toLowerCase()
+  };
+}
+
+async function confirmGuestOrderPayment(order, requestedPayPalOrderId = null) {
+  const config = getPayPalConfig();
+  if (!config) throw new Error("PayPal is not configured yet.");
+  const payPalOrderId = requestedPayPalOrderId || order.paypalOrderId;
+  if (!payPalOrderId) throw new Error("The PayPal order ID is missing for this guest order.");
+  if (order.paypalOrderId && requestedPayPalOrderId && order.paypalOrderId !== requestedPayPalOrderId) {
+    throw new Error("This PayPal return does not match the current guest order.");
+  }
+
+  const fetched = await fetchPayPalJson(config, `/v2/checkout/orders/${encodeURIComponent(payPalOrderId)}`, {
+    method: "GET"
+  }, "PayPal order lookup failed");
+  let capture = assertPayPalOrderMatchesGuestOrder(order, fetched);
+  let payPalOrder = fetched;
+
+  if (capture.status !== "COMPLETED") {
+    if (String(fetched.status || "").toUpperCase() !== "APPROVED") {
+      throw new Error("PayPal payment has not been approved yet.");
+    }
+    payPalOrder = await fetchPayPalJson(config, `/v2/checkout/orders/${encodeURIComponent(payPalOrderId)}/capture`, {
+      method: "POST",
+      body: JSON.stringify({})
+    }, "PayPal capture failed");
+    capture = assertPayPalOrderMatchesGuestOrder(order, payPalOrder);
+  }
+
+  if (capture.status !== "COMPLETED") {
+    throw new Error("PayPal payment is not completed yet.");
+  }
+
+  const paymentConfirmedAt = order.paymentConfirmedAt || nowIso();
+  const updates = {
+    paypalOrderId: payPalOrderId,
+    paypalCaptureId: capture.captureId,
+    paymentStatus: "completed",
+    paymentAmount: capture.amount || order.priceValue,
+    paymentCurrency: capture.currency || "USD",
+    paymentConfirmedAt,
+    status: order.result ? order.status : "paid"
+  };
+  const updated = await updateGuestOrder(order.id, order.accessToken, updates);
+  return updated || { ...order, ...updates };
+}
+
+async function ensureGuestOrderFulfilled(order, requestedPayPalOrderId = null) {
+  let liveOrder = order;
+  if (!liveOrder.paymentConfirmedAt || liveOrder.paymentStatus !== "completed") {
+    liveOrder = await confirmGuestOrderPayment(liveOrder, requestedPayPalOrderId);
+  }
+
+  if (!liveOrder.result || !liveOrder.pdfBase64) {
+    const result = liveOrder.result || await buildPaidResult(liveOrder.formBody);
+    const pdfBuffer = liveOrder.pdfBase64 ? Buffer.from(liveOrder.pdfBase64, "base64") : await buildGuestOrderPdfBytes({ ...liveOrder, result });
+    const fulfilledAt = liveOrder.fulfilledAt || nowIso();
+    const updates = {
+      status: "fulfilled",
+      result,
+      pdfBase64: pdfBuffer.toString("base64"),
+      pdfGeneratedAt: liveOrder.pdfGeneratedAt || fulfilledAt,
+      fulfilledAt
+    };
+    liveOrder = await updateGuestOrder(liveOrder.id, liveOrder.accessToken, updates) || { ...liveOrder, ...updates };
+  }
+
+  if (isMailConfigured() && liveOrder.emailDeliveryStatus !== "sent") {
+    try {
+      liveOrder = await sendGuestOrderEmail(liveOrder, { force: false });
+    } catch (error) {
+      liveOrder = await getGuestOrderByIdAndToken(liveOrder.id, liveOrder.accessToken) || liveOrder;
+      console.error("Guest order email delivery failed:", error.message);
+    }
+  }
+
+  return liveOrder;
+}
+
 async function handleGenerate(req, res) {
   const body = await readJsonBody(req, res);
   if (!body) return;
@@ -1327,16 +1653,31 @@ async function handleGuestOrderStart(req, res) {
   if (validationError) return send(res, 422, { error: validationError });
 
   const formBody = compactBody(rawBody);
-  const order = await insertGuestOrder(createGuestOrderRecord(normalizeEmail(rawBody.deliveryEmail || rawBody.email), formBody));
-  send(res, 201, {
-    orderId: order.id,
-    accessToken: order.accessToken,
-    tier: order.tier,
-    email: order.email,
-    paypalLink: order.paypalLink,
-    successUrl: `/checkout-success.html?order=${encodeURIComponent(order.id)}&token=${encodeURIComponent(order.accessToken)}`,
-    deliveryUrl: `/?guestOrder=${encodeURIComponent(order.id)}&token=${encodeURIComponent(order.accessToken)}`
-  });
+  const created = await insertGuestOrder(createGuestOrderRecord(normalizeEmail(rawBody.deliveryEmail || rawBody.email), formBody));
+  try {
+    const payPalCheckout = await createPayPalGuestCheckout(created);
+    const order = await updateGuestOrder(created.id, created.accessToken, {
+      paypalOrderId: payPalCheckout.paypalOrderId,
+      paypalLink: payPalCheckout.paypalLink,
+      paymentStatus: payPalCheckout.paymentStatus,
+      status: "pending_payment"
+    }) || { ...created, ...payPalCheckout, status: "pending_payment" };
+    send(res, 201, {
+      orderId: order.id,
+      accessToken: order.accessToken,
+      tier: order.tier,
+      email: order.email,
+      approvalUrl: order.paypalLink,
+      successUrl: buildGuestOrderSuccessUrl(order),
+      deliveryUrl: buildGuestOrderDeliveryUrl(order)
+    });
+  } catch (error) {
+    await updateGuestOrder(created.id, created.accessToken, {
+      status: "payment_error",
+      paymentStatus: "failed"
+    });
+    send(res, 502, { error: error.message });
+  }
 }
 
 async function handleGuestOrderStatus(req, res, url) {
@@ -1351,9 +1692,12 @@ async function handleGuestOrderStatus(req, res, url) {
     tier: order.tier,
     priceValue: order.priceValue,
     status: order.status,
+    paymentStatus: order.paymentStatus || "pending",
     createdAt: order.createdAt,
     fulfilledAt: order.fulfilledAt,
-    hasResult: Boolean(order.result)
+    hasResult: Boolean(order.result),
+    hasPdf: Boolean(order.pdfBase64),
+    pdfUrl: order.pdfBase64 ? buildGuestOrderPdfUrl(order) : null
   });
 }
 
@@ -1369,8 +1713,10 @@ async function handleGuestOrderLookup(req, res) {
     orderId: order.id,
     accessToken: order.accessToken,
     status: order.status,
-    successUrl: `/checkout-success.html?order=${encodeURIComponent(order.id)}&token=${encodeURIComponent(order.accessToken)}`,
-    deliveryUrl: `/?guestOrder=${encodeURIComponent(order.id)}&token=${encodeURIComponent(order.accessToken)}`
+    paymentStatus: order.paymentStatus || "pending",
+    successUrl: buildGuestOrderSuccessUrl(order),
+    deliveryUrl: buildGuestOrderDeliveryUrl(order),
+    pdfUrl: order.pdfBase64 ? buildGuestOrderPdfUrl(order) : null
   });
 }
 
@@ -1379,45 +1725,22 @@ async function handleGuestOrderFulfill(req, res) {
   if (!body) return;
   const orderId = String(body.orderId || "").trim();
   const token = String(body.token || "").trim();
+  const payPalOrderId = String(body.paypalOrderId || "").trim() || null;
   if (!orderId || !token) return send(res, 422, { error: "Order ID and access token are required." });
   const stored = await getGuestOrderByIdAndToken(orderId, token);
   if (!stored) return send(res, 404, { error: "Order not found." });
 
-  if (stored.result) {
-    return send(res, 200, {
-      orderId: stored.id,
-      status: stored.status,
-      deliveryUrl: `/?guestOrder=${encodeURIComponent(stored.id)}&token=${encodeURIComponent(stored.accessToken)}`,
-      fulfilledAt: stored.fulfilledAt
-    });
-  }
-
   try {
-    const result = await buildPaidResult(stored.formBody);
-    const completedAt = nowIso();
-    const fulfilledOrder = await updateGuestOrder(orderId, token, {
-      status: "fulfilled",
-      result,
-      fulfilledAt: completedAt,
-      paymentConfirmedAt: completedAt
-    });
-    let emailSent = false;
-    let emailError = null;
-    if (isMailConfigured()) {
-      try {
-        await sendGuestOrderEmail(fulfilledOrder || { ...stored, result, status: "fulfilled", fulfilledAt: completedAt, paymentConfirmedAt: completedAt });
-        emailSent = true;
-      } catch (error) {
-        emailError = error.message;
-      }
-    }
+    const fulfilledOrder = await ensureGuestOrderFulfilled(stored, payPalOrderId);
     send(res, 200, {
-      orderId: stored.id,
-      status: "fulfilled",
-      deliveryUrl: `/?guestOrder=${encodeURIComponent(stored.id)}&token=${encodeURIComponent(stored.accessToken)}`,
-      fulfilledAt: completedAt,
-      emailSent,
-      emailError
+      orderId: fulfilledOrder.id,
+      status: fulfilledOrder.status,
+      paymentStatus: fulfilledOrder.paymentStatus || "completed",
+      deliveryUrl: buildGuestOrderDeliveryUrl(fulfilledOrder),
+      pdfUrl: fulfilledOrder.pdfBase64 ? buildGuestOrderPdfUrl(fulfilledOrder) : null,
+      fulfilledAt: fulfilledOrder.fulfilledAt,
+      emailSent: fulfilledOrder.emailDeliveryStatus === "sent",
+      emailError: fulfilledOrder.emailDeliveryStatus === "failed" ? fulfilledOrder.emailDeliveryError : null
     });
   } catch (error) {
     send(res, 502, { error: error.message });
@@ -1436,9 +1759,26 @@ async function handleGuestOrderResult(req, res, url) {
     email: order.email,
     tier: order.tier,
     status: order.status,
+    paymentStatus: order.paymentStatus || "pending",
     createdAt: order.createdAt,
     fulfilledAt: order.fulfilledAt,
+    pdfUrl: order.pdfBase64 ? buildGuestOrderPdfUrl(order) : null,
     result: order.result
+  });
+}
+
+async function handleGuestOrderPdf(req, res, url) {
+  const orderId = String(url.searchParams.get("order") || "");
+  const token = String(url.searchParams.get("token") || "");
+  if (!orderId || !token) return send(res, 422, { error: "Order ID and access token are required." });
+  const order = await getGuestOrderByIdAndToken(orderId, token);
+  if (!order) return send(res, 404, { error: "Order not found." });
+  if (!order.pdfBase64) return send(res, 409, { error: "This order does not have a saved PDF yet." });
+  const fileName = order.pdfFileName || `${order.id}.pdf`;
+  const fileBuffer = Buffer.from(order.pdfBase64, "base64");
+  send(res, 200, fileBuffer, "application/pdf", {
+    "Content-Disposition": `attachment; filename=\"${fileName}\"`,
+    "Cache-Control": "private, max-age=60"
   });
 }
 
@@ -1769,6 +2109,7 @@ http.createServer((req, res) => {
     if (req.method === "POST" && pathname === "/api/guest-orders/lookup") return handleGuestOrderLookup(req, res);
     if (req.method === "POST" && pathname === "/api/guest-orders/fulfill") return handleGuestOrderFulfill(req, res);
     if (req.method === "GET" && pathname === "/api/guest-orders/result") return handleGuestOrderResult(req, res, url);
+        if (req.method === "GET" && pathname === "/api/guest-orders/pdf") return handleGuestOrderPdf(req, res, url);
     if (req.method === "POST" && pathname === "/api/admin/login") return handleAdminLogin(req, res);
     if (req.method === "POST" && pathname === "/api/admin/logout") return handleAdminLogout(req, res);
     if (req.method === "GET" && pathname === "/api/admin/session") return handleAdminSession(req, res);
