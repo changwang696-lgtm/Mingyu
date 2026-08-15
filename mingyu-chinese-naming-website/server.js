@@ -143,12 +143,46 @@ function saveDatabase() {
   fs.writeFileSync(databaseFile, JSON.stringify(database, null, 2));
 }
 
+function isJwtLikeKey(value) {
+  return /^\S+\.\S+\.\S+$/.test(String(value || "").trim());
+}
+
+function isSupabaseNewApiKey(value) {
+  return /^sb_(publishable|secret)_/i.test(String(value || "").trim());
+}
+
 function getSupabaseHeaders(extraHeaders = {}) {
-  return {
-    apikey: supabaseAnonKey || supabaseServiceRoleKey,
-    Authorization: `Bearer ${supabaseServiceRoleKey}`,
+  const serviceKey = String(supabaseServiceRoleKey || "").trim();
+  const anonKey = String(supabaseAnonKey || "").trim();
+  const apiKey = serviceKey || anonKey;
+  const headers = {
+    ...(apiKey ? { apikey: apiKey } : {}),
     ...extraHeaders
   };
+
+  // Legacy Supabase keys are JWTs and can be sent in Authorization.
+  if (isJwtLikeKey(serviceKey)) {
+    headers.Authorization = `Bearer ${serviceKey}`;
+    return headers;
+  }
+
+  // New-style sb_secret / sb_publishable keys should be sent as apikey only.
+  if (isSupabaseNewApiKey(serviceKey)) {
+    return headers;
+  }
+
+  if (!serviceKey && isJwtLikeKey(anonKey)) {
+    headers.Authorization = `Bearer ${anonKey}`;
+  }
+  return headers;
+}
+
+function normalizeSupabaseErrorMessage(message) {
+  const text = String(message || "");
+  if (/Expected 3 parts in JWT; got 1/i.test(text)) {
+    return "Supabase key configuration is invalid. If you are using the new sb_secret key, keep it on SUPABASE_SERVICE_ROLE_KEY and do not send it as a Bearer JWT. If you are using legacy keys, SUPABASE_SERVICE_ROLE_KEY must be the full service_role JWT.";
+  }
+  return text;
 }
 
 function buildSupabaseUrl(resource, searchParams = {}) {
@@ -172,7 +206,7 @@ async function supabaseRequest(resource, { method = "GET", searchParams = {}, bo
   const text = await response.text();
   const payload = text ? JSON.parse(text) : null;
   if (!response.ok) {
-    throw new Error(payload?.message || payload?.details || payload?.hint || `Supabase request failed for ${resource}`);
+        throw new Error(normalizeSupabaseErrorMessage(payload?.message || payload?.details || payload?.hint || `Supabase request failed for ${resource}`));
   }
   return allowEmpty ? payload : payload || [];
 }
@@ -188,7 +222,7 @@ async function supabaseRpc(name, args = {}) {
   });
   const text = await response.text();
   const payload = text ? JSON.parse(text) : null;
-  if (!response.ok) throw new Error(payload?.message || payload?.details || payload?.hint || `Supabase RPC failed for ${name}`);
+  if (!response.ok) throw new Error(normalizeSupabaseErrorMessage(payload?.message || payload?.details || payload?.hint || `Supabase RPC failed for ${name}`));
   return payload;
 }
 
