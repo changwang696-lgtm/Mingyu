@@ -136,7 +136,7 @@ async function initializeSuccessPage() {
     const current = resolveCurrentOrder();
     if (current.cancelled) {
       setStatus("你已取消 PayPal 付款。订单仍然保留，你可以稍后重新发起支付。");
-      setMessage("如需继续，可返回首页重新发起，或保留订单号稍后找回。");
+      setMessage("你已经回到本站。本站填写的邮箱仅用于接收结果邮件；如需继续，可返回首页重新发起，或保留订单号稍后找回。");
       return;
     }
     if (!order || order.hasResult || autoUnlockStarted) return;
