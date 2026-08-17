@@ -1681,14 +1681,15 @@ async function handlePayPalConfig(req, res) {
 }
 
 async function handleGuestOrderStart(req, res) {
-  const rawBody = await readJsonBody(req, res);
-  if (!rawBody) return;
-  const validationError = validateGuestCheckoutBody(rawBody);
-  if (validationError) return send(res, 422, { error: validationError });
-
-  const formBody = compactBody(rawBody);
-  const created = await insertGuestOrder(createGuestOrderRecord(normalizeEmail(rawBody.deliveryEmail || rawBody.email), formBody));
+  let created = null;
   try {
+    const rawBody = await readJsonBody(req, res);
+    if (!rawBody) return;
+    const validationError = validateGuestCheckoutBody(rawBody);
+    if (validationError) return send(res, 422, { error: validationError });
+
+    const formBody = compactBody(rawBody);
+    created = await insertGuestOrder(createGuestOrderRecord(normalizeEmail(rawBody.deliveryEmail || rawBody.email), formBody));
     const payPalCheckout = await createPayPalGuestCheckout(created);
     const order = await updateGuestOrder(created.id, created.accessToken, {
       paypalOrderId: payPalCheckout.paypalOrderId,
@@ -1706,11 +1707,13 @@ async function handleGuestOrderStart(req, res) {
       deliveryUrl: buildGuestOrderDeliveryUrl(order)
     });
   } catch (error) {
-    await updateGuestOrder(created.id, created.accessToken, {
-      status: "payment_error",
-      paymentStatus: "failed"
-    });
-    send(res, 502, { error: error.message });
+    if (created?.id && created?.accessToken) {
+      await updateGuestOrder(created.id, created.accessToken, {
+        status: "payment_error",
+        paymentStatus: "failed"
+      });
+    }
+    send(res, 500, { error: error.message || "Failed to start guest checkout." });
   }
 }
 
