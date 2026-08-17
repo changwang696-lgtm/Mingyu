@@ -1344,6 +1344,20 @@ function getPayPalConfig() {
   };
 }
 
+function getHostedPayPalLinks() {
+  const simple = String(process.env.PAYPAL_HOSTED_SIMPLE_URL || "https://www.paypal.com/ncp/payment/8WAQLCHG3A5S4").trim();
+  const complete = String(process.env.PAYPAL_HOSTED_COMPLETE_URL || "https://www.paypal.com/ncp/payment/V3QNJF7PLKKRW").trim();
+  return {
+    simple: simple || null,
+    complete: complete || null
+  };
+}
+
+function getHostedPayPalLink(tier) {
+  const links = getHostedPayPalLinks();
+  return links[normalizeTier(tier)] || null;
+}
+
 function cleanupOrders() {
   const cutoff = Date.now() - 1000 * 60 * 60 * 6;
   for (const [orderId, value] of orderStore.entries()) {
@@ -1603,6 +1617,25 @@ async function createPayPalGuestCheckout(order) {
   };
 }
 
+function isGuestOrderPaymentConfirmed(order) {
+  const paymentStatus = String(order.paymentStatus || "").toLowerCase();
+  return Boolean(order.paymentConfirmedAt) && (paymentStatus === "completed" || paymentStatus === "hosted_link_confirmed");
+}
+
+async function confirmHostedLinkGuestOrder(order) {
+  if (!getHostedPayPalLink(order.tier)) {
+    throw new Error("Hosted PayPal links are not configured for this guest order.");
+  }
+  const paymentConfirmedAt = order.paymentConfirmedAt || nowIso();
+  const updates = {
+    paymentStatus: "hosted_link_confirmed",
+    paymentConfirmedAt,
+    status: order.result ? order.status : "paid"
+  };
+  const updated = await updateGuestOrder(order.id, order.accessToken, updates);
+  return updated || { ...order, ...updates };
+}
+
 async function confirmGuestOrderPayment(order, requestedPayPalOrderId = null) {
   const config = getPayPalConfig();
   if (!config) throw new Error("PayPal is not configured yet.");
@@ -1649,8 +1682,14 @@ async function confirmGuestOrderPayment(order, requestedPayPalOrderId = null) {
 
 async function ensureGuestOrderFulfilled(order, requestedPayPalOrderId = null) {
   let liveOrder = order;
-  if (!liveOrder.paymentConfirmedAt || liveOrder.paymentStatus !== "completed") {
-    liveOrder = await confirmGuestOrderPayment(liveOrder, requestedPayPalOrderId);
+  if (!isGuestOrderPaymentConfirmed(liveOrder)) {
+    if (liveOrder.paypalOrderId || requestedPayPalOrderId) {
+      liveOrder = await confirmGuestOrderPayment(liveOrder, requestedPayPalOrderId);
+    } else if (liveOrder.paypalLink && getHostedPayPalLink(liveOrder.tier) === liveOrder.paypalLink) {
+      liveOrder = await confirmHostedLinkGuestOrder(liveOrder);
+    } else {
+      throw new Error("The PayPal order ID is missing for this guest order.");
+    }
   }
 
   if (!liveOrder.result || !liveOrder.pdfBase64) {
@@ -1708,12 +1747,14 @@ async function handleGenerate(req, res) {
 
 async function handlePayPalConfig(req, res) {
   const config = getPayPalConfig();
+  const hostedLinks = getHostedPayPalLinks();
   send(res, 200, {
     enabled: Boolean(config),
     clientId: config?.clientId || null,
     currency: "USD",
     mode: config?.mode || null,
-    live: config?.mode === "live"
+    live: config?.mode === "live",
+    hostedLinks
   });
 }
 
@@ -1727,7 +1768,14 @@ async function handleGuestOrderStart(req, res) {
 
     const formBody = compactBody(rawBody);
     created = await insertGuestOrder(createGuestOrderRecord(normalizeEmail(rawBody.deliveryEmail || rawBody.email), formBody));
-    const payPalCheckout = await createPayPalGuestCheckout(created);
+      const hostedLink = getHostedPayPalLink(created.tier);
+      const payPalCheckout = hostedLink
+        ? {
+            paypalOrderId: null,
+            paypalLink: hostedLink,
+            paymentStatus: "pending"
+          }
+        : await createPayPalGuestCheckout(created);
     const order = await updateGuestOrder(created.id, created.accessToken, {
       paypalOrderId: payPalCheckout.paypalOrderId,
       paypalLink: payPalCheckout.paypalLink,
@@ -1741,7 +1789,8 @@ async function handleGuestOrderStart(req, res) {
       email: order.email,
       approvalUrl: order.paypalLink,
       successUrl: buildGuestOrderSuccessUrl(order),
-      deliveryUrl: buildGuestOrderDeliveryUrl(order)
+        deliveryUrl: buildGuestOrderDeliveryUrl(order),
+        paymentMode: hostedLink ? "hosted_link" : "paypal_api"
     });
   } catch (error) {
     if (created?.id && created?.accessToken) {
@@ -1767,6 +1816,7 @@ async function handleGuestOrderStatus(req, res, url) {
     priceValue: order.priceValue,
     status: order.status,
     paymentStatus: order.paymentStatus || "pending",
+    paypalOrderId: order.paypalOrderId || null,
     createdAt: order.createdAt,
     fulfilledAt: order.fulfilledAt,
     hasResult: Boolean(order.result),
