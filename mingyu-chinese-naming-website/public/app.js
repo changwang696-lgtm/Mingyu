@@ -419,7 +419,20 @@ function showGuestCheckoutNotice(order) {
   if (successLink) successLink.href = order.successUrl;
 }
 
-async function createGuestOrderForTier(tier, body = null) {
+    async function readApiResponse(response) {
+      const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+      const rawText = await response.text();
+      if (contentType.includes("application/json")) {
+        try {
+          return { data: rawText ? JSON.parse(rawText) : {}, rawText };
+        } catch (error) {
+          throw new Error(lang === "zh" ? "服务器返回了无效的 JSON 数据，请稍后重试。" : "The server returned invalid JSON. Please try again.");
+        }
+      }
+      return { data: null, rawText };
+    }
+
+    async function createGuestOrderForTier(tier, body = null) {
   const requestBody = body || collectFormBody(tier, true);
   pendingTier = tier;
   pendingBody = requestBody;
@@ -428,8 +441,18 @@ async function createGuestOrderForTier(tier, body = null) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(requestBody)
   });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || translations[lang].guestOrderCreateFailed);
+      const { data, rawText } = await readApiResponse(response);
+      if (!response.ok) {
+        const serverMessage = data?.error || data?.message;
+        if (serverMessage) throw new Error(serverMessage);
+        if (rawText && rawText.trim().startsWith("<!DOCTYPE")) {
+          throw new Error(lang === "zh" ? "服务器当前返回了网页错误页，请稍后重试，并检查 Render 部署日志。" : "The server returned an HTML error page. Please try again and check the Render deployment logs.");
+        }
+        throw new Error(translations[lang].guestOrderCreateFailed);
+      }
+      if (!data || typeof data !== "object") {
+        throw new Error(lang === "zh" ? "服务器返回的数据格式不正确，请稍后重试。" : "The server response format was invalid. Please try again.");
+      }
   const order = { ...data, tier, body: requestBody, createdAt: Date.now() };
   persistGuestOrder(order);
   showGuestCheckoutNotice(order);
