@@ -1322,12 +1322,23 @@ function getAiConfig() {
   return null;
 }
 
+function getPayPalMode() {
+  const configuredMode = String(process.env.PAYPAL_ENV || "").trim().toLowerCase();
+  if (configuredMode && configuredMode !== "live" && configuredMode !== "sandbox") {
+    throw new Error("PAYPAL_ENV must be either live or sandbox.");
+  }
+  if (configuredMode) return configuredMode;
+  return process.env.NODE_ENV === "production" ? "live" : "sandbox";
+}
+
 function getPayPalConfig() {
-  if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) return null;
-  const mode = process.env.PAYPAL_ENV === "live" ? "live" : "sandbox";
+  const clientId = String(process.env.PAYPAL_CLIENT_ID || "").trim();
+  const clientSecret = String(process.env.PAYPAL_CLIENT_SECRET || "").trim();
+  if (!clientId || !clientSecret) return null;
+  const mode = getPayPalMode();
   return {
-    clientId: process.env.PAYPAL_CLIENT_ID,
-    clientSecret: process.env.PAYPAL_CLIENT_SECRET,
+    clientId,
+    clientSecret,
     mode,
     baseUrl: mode === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com"
   };
@@ -1479,7 +1490,12 @@ async function fetchPayPalAccessToken(config) {
     body: "grant_type=client_credentials"
   });
   const json = await response.json();
-  if (!response.ok || !json.access_token) throw new Error(json.error_description || "PayPal authentication failed");
+  if (!response.ok || !json.access_token) {
+    if (config.mode === "live") {
+      throw new Error("PayPal Live authentication failed. PAYPAL_ENV=live requires the Client ID and Secret from the same PayPal Live app; Sandbox credentials cannot process real payments.");
+    }
+    throw new Error(json.error_description || "PayPal Sandbox authentication failed.");
+  }
   return json.access_token;
 }
 
@@ -1505,6 +1521,20 @@ function getGuestOrderCancelUrl(order) {
 
 function getPayPalApprovalLink(payPalOrder) {
   return payPalOrder?.links?.find(link => link.rel === "payer-action" || link.rel === "approve")?.href || null;
+}
+
+function assertPayPalApprovalLinkMatchesMode(config, approvalUrl) {
+  let hostname;
+  try {
+    hostname = new URL(approvalUrl).hostname.toLowerCase();
+  } catch {
+    throw new Error("PayPal returned an invalid approval URL.");
+  }
+  const isSandboxUrl = hostname === "sandbox.paypal.com" || hostname.endsWith(".sandbox.paypal.com");
+  if (config.mode === "live" && isSandboxUrl) {
+    throw new Error("PayPal returned a Sandbox checkout URL while PAYPAL_ENV=live. Verify that both credentials come from the same PayPal Live app and redeploy the service.");
+  }
+  return approvalUrl;
 }
 
 function extractPayPalCapture(payPalOrder) {
@@ -1565,6 +1595,7 @@ async function createPayPalGuestCheckout(order) {
   }, "PayPal order creation failed");
   const approvalUrl = getPayPalApprovalLink(created);
   if (!approvalUrl) throw new Error("PayPal did not return an approval URL.");
+  assertPayPalApprovalLinkMatchesMode(config, approvalUrl);
   return {
     paypalOrderId: created.id,
     paypalLink: approvalUrl,
@@ -1677,7 +1708,13 @@ async function handleGenerate(req, res) {
 
 async function handlePayPalConfig(req, res) {
   const config = getPayPalConfig();
-  send(res, 200, { enabled: Boolean(config), clientId: config?.clientId || null, currency: "USD", mode: config?.mode || null });
+  send(res, 200, {
+    enabled: Boolean(config),
+    clientId: config?.clientId || null,
+    currency: "USD",
+    mode: config?.mode || null,
+    live: config?.mode === "live"
+  });
 }
 
 async function handleGuestOrderStart(req, res) {
