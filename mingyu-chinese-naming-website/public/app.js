@@ -68,12 +68,12 @@ const translations = {
          paypalInlineTitle: "Pay with PayPal directly",
          paypalInlineBody: "Complete the form above, then continue to the official PayPal page. You can pay with a PayPal account or an eligible card. The email you enter on this site is only for delivery and can differ from your PayPal login email.",
     paypalValidation: "Please complete the required form fields before starting PayPal checkout.",
-         paypalHostedNote: "After your order is prepared, you will be redirected to the official PayPal payment page. You can pay with a PayPal account or an eligible bank card. The email entered on this site is only used to deliver your result and can differ from your PayPal login email. If you cancel payment, PayPal will return you to this site and keep your order for later recovery.",
-         paypalHostedDialogNote: "You will be redirected to the official PayPal payment page. After payment, the site will continue and restore your result automatically. If you cancel payment, you will be returned to this site.",
+         paypalHostedNote: "After your order is prepared, you will be redirected to the official PayPal payment page. You can pay with a PayPal account or an eligible bank card. The email entered on this site is only used to deliver your result and can differ from your PayPal login email. After payment, return to this site through the success page to continue delivery. If you cancel payment, the order will still be kept for later recovery.",
+              paypalHostedDialogNote: "You will be redirected to the official PayPal payment page. After payment, return to Mingyu and continue delivery from the saved order page. If you cancel payment, the order will remain saved for later recovery.",
     paypalHostedOpen: "Open PayPal checkout",
     paypalHostedOpened: "Redirecting to the PayPal checkout page...",
     guestOrderSavedTitle: "Guest order saved",
-         guestOrderSavedBody: "Order {orderId} is ready. Complete payment on PayPal and you will be returned to the site to restore or reopen your result. If you cancel payment, the order will still be kept for later recovery.",
+             guestOrderSavedBody: "Order {orderId} is ready. Complete payment on PayPal, then return to the saved order page to continue delivery. If you close the page, you can still recover this order later by email and order ID.",
     findOrderLink: "Find my order",
     guestOrderCreateFailed: "We could not create your guest order. Please try again.",
     guestOrderRecovered: "Your saved order result has been restored."
@@ -144,12 +144,12 @@ const translations = {
          paypalInlineTitle: "使用 PayPal 直接付款",
          paypalInlineBody: "填写上方信息后，将跳转到 PayPal 官方安全支付页。你可以使用 PayPal 账户登录付款，或选择支持的银行卡支付。你在本站填写的邮箱仅用于接收结果邮件，与 PayPal 登录邮箱可以不同。",
     paypalValidation: "请先完整填写必填信息，再使用 PayPal 付款。",
-         paypalHostedNote: "当前会先创建游客订单，再跳转到 PayPal 官方安全支付页。你可以使用 PayPal 账户登录付款，或选择支持的银行卡支付。你在本站填写的邮箱仅用于接收结果邮件，与 PayPal 登录邮箱可以不同。若你取消支付，PayPal 会带你返回本站，订单也会保留，方便稍后继续或找回。",
-         paypalHostedDialogNote: "当前将跳转到 PayPal 官方安全支付页进行付款。付款完成后，网站会自动继续并恢复结果；若你取消支付，也会返回本站。",
+             paypalHostedNote: "当前会先创建游客订单，再跳转到 PayPal 官方安全支付页。你可以使用 PayPal 账户登录付款，或选择支持的银行卡支付。你在本站填写的邮箱仅用于接收结果邮件，与 PayPal 登录邮箱可以不同。付款完成后，请返回本站的成功页继续交付；若中途关闭页面，也可以凭邮箱和订单号稍后找回。",
+             paypalHostedDialogNote: "当前将跳转到 PayPal 官方安全支付页进行付款。付款完成后，请返回名屿并通过已保存的订单继续交付；若你取消支付，订单也会保留，方便稍后找回。",
     paypalHostedOpen: "打开 PayPal 付款页",
     paypalHostedOpened: "正在跳转到 PayPal 付款页...",
     guestOrderSavedTitle: "游客订单已保存",
-         guestOrderSavedBody: "订单号 {orderId} 已创建。请在 PayPal 完成付款，随后会自动回到本站恢复或重新打开结果。若你取消支付，订单仍会保留，方便稍后继续或找回。",
+             guestOrderSavedBody: "订单号 {orderId} 已创建。请在 PayPal 完成付款后返回本站继续交付；若关闭页面，也可以稍后通过邮箱和订单号找回。",
     findOrderLink: "找回我的订单",
     guestOrderCreateFailed: "创建游客订单失败，请稍后重试。",
     guestOrderRecovered: "已为你恢复已保存的订单结果。"
@@ -164,12 +164,12 @@ let pendingBody = null;
 let sessionState = { loggedIn: false, user: null, catalog: null };
 // Future switch: set to true when the account, membership, and credits experience should return to the homepage.
 const membershipPreviewEnabled = false;
-let paypalConfig = { enabled: false, clientId: null, currency: "USD" };
+    let paypalConfig = { enabled: false, clientId: null, currency: "USD", hostedLinks: { simple: null, complete: null } };
 let paypalSdkPromise = null;
 let paypalButtonsInstance = null;
 let inlinePayPalRendered = false;
 const guestCheckoutKey = "mingyu_guest_checkout";
-const hostedPayPalLinks = { simple: "#", complete: "#" };
+    let hostedPayPalLinks = { simple: null, complete: null };
 let guestOrderMeta = null;
 const $ = selector => document.querySelector(selector);
 const dialog = $("#payment");
@@ -647,13 +647,14 @@ async function renderInlinePayPalButtons() {
 
 function renderHostedCheckoutLinks() {
   if (!$("#paypalInline")) return;
-  if (!paypalConfig.enabled) {
+      const hasHostedCheckout = Boolean(hostedPayPalLinks.simple || hostedPayPalLinks.complete);
+      if (!hasHostedCheckout && !paypalConfig.enabled) {
     $("#paypalInline").hidden = true;
     return;
   }
   $("#paypalInline").hidden = false;
-  bindHostedCheckoutLink("#hostedSimpleLink", "simple");
-  bindHostedCheckoutLink("#hostedCompleteLink", "complete");
+      if (hostedPayPalLinks.simple) bindHostedCheckoutLink("#hostedSimpleLink", "simple");
+      if (hostedPayPalLinks.complete) bindHostedCheckoutLink("#hostedCompleteLink", "complete");
   inlinePayPalRendered = true;
 }
 
@@ -740,9 +741,8 @@ fetch("/api/paypal-config")
   .then(response => response.json())
   .then(config => {
     paypalConfig = { ...paypalConfig, ...config };
-    if (paypalConfig.enabled) {
-      renderHostedCheckoutLinks();
-    }
+    hostedPayPalLinks = { ...hostedPayPalLinks, ...(config.hostedLinks || {}) };
+    renderHostedCheckoutLinks();
     if (dialog.open) updatePaymentDialog();
   })
   .catch(() => {

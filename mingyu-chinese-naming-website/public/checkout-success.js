@@ -70,9 +70,14 @@ async function loadStatus() {
   };
   persistCurrentOrder({ orderId: current.orderId, accessToken: current.token });
   setMeta(order);
-  setStatus(order.hasResult
-    ? "该订单的结果已经保存。你可以直接重新打开结果。"
-    : "订单已记录。系统将自动为你恢复并保存结果。");
+  if (order.hasResult) {
+    setStatus("该订单的结果已经保存。你可以直接重新打开结果。");
+  } else if (!order.paypalOrderId && order.paymentStatus !== "completed" && order.paymentStatus !== "hosted_link_confirmed") {
+    setStatus("订单已记录。若你刚刚已通过固定 PayPal 链接完成付款，请点击下方按钮继续交付。");
+    setMessage("这是轻量收款模式。本站已保存订单号；付款完成后，请回到这里继续生成结果。");
+  } else {
+    setStatus("订单已记录。系统将自动为你恢复并保存结果。");
+  }
   return order;
 }
 
@@ -82,8 +87,8 @@ async function fulfillCurrentOrder({ auto = false } = {}) {
     setMessage("当前没有可用订单，请先返回首页重新发起付款。");
     return;
   }
-  setMessage(auto ? "正在自动恢复并保存结果..." : "正在为你恢复并保存结果...");
-  setStatus(auto ? "已检测到当前订单，正在生成并保存结果..." : "正在处理你的订单，请稍候...");
+  setMessage(auto ? "正在自动恢复并保存结果..." : "正在继续处理这笔订单...");
+  setStatus(auto ? "已检测到当前订单，正在生成并保存结果..." : "正在为你确认订单并准备交付，请稍候...");
   document.querySelector("#unlockBtn").disabled = true;
   try {
     const response = await fetch("/api/guest-orders/fulfill", {
@@ -140,6 +145,7 @@ async function initializeSuccessPage() {
       return;
     }
     if (!order || order.hasResult || autoUnlockStarted) return;
+    if (!order.paypalOrderId && order.paymentStatus !== "completed" && order.paymentStatus !== "hosted_link_confirmed") return;
     autoUnlockStarted = true;
     await fulfillCurrentOrder({ auto: true });
   } catch (error) {
