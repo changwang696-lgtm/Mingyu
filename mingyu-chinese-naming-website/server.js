@@ -1345,18 +1345,9 @@ function getPayPalConfig() {
 }
 
 function getHostedPayPalLinks() {
-  // Live orders must use the REST checkout flow so the server can verify and
-  // capture the exact PayPal order before delivering the result.
-  if (getPayPalMode() === "live") return { simple: null, complete: null };
-  // Hosted payment links do not expose a PayPal order ID for server-side
-  // capture/verification. Keep them opt-in so normal checkout uses the
-  // configured PayPal REST app and can be reconciled with the guest order.
-  const simple = String(process.env.PAYPAL_HOSTED_SIMPLE_URL || "").trim();
-  const complete = String(process.env.PAYPAL_HOSTED_COMPLETE_URL || "").trim();
-  return {
-    simple: simple || null,
-    complete: complete || null
-  };
+  // Hosted payment links cannot be reconciled with a server-side PayPal order.
+  // All customer payments use the REST Checkout flow.
+  return { simple: null, complete: null };
 }
 
 function getHostedPayPalLink(tier) {
