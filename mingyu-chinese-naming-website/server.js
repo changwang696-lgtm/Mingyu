@@ -1331,6 +1331,11 @@ function getPayPalMode() {
   return process.env.NODE_ENV === "production" ? "live" : "sandbox";
 }
 
+function isCheckoutPaused() {
+  const raw = String(process.env.PAYPAL_CHECKOUT_PAUSED || "true").trim().toLowerCase();
+  return raw !== "false";
+}
+
 function getPayPalConfig() {
   const clientId = String(process.env.PAYPAL_CLIENT_ID || "").trim();
   const clientSecret = String(process.env.PAYPAL_CLIENT_SECRET || "").trim();
@@ -1345,6 +1350,12 @@ function getPayPalConfig() {
 }
 
 function getHostedPayPalLinks() {
+  if (isCheckoutPaused()) {
+    return {
+      simple: null,
+      complete: null
+    };
+  }
   const simple = String(process.env.PAYPAL_HOSTED_SIMPLE_URL || "https://www.paypal.com/ncp/payment/8WAQLCHG3A5S4").trim();
   const complete = String(process.env.PAYPAL_HOSTED_COMPLETE_URL || "https://www.paypal.com/ncp/payment/V3QNJF7PLKKRW").trim();
   return {
@@ -1578,6 +1589,9 @@ function assertPayPalOrderMatchesGuestOrder(order, payPalOrder) {
 }
 
 async function createPayPalGuestCheckout(order) {
+  if (isCheckoutPaused()) {
+    throw new Error("Checkout is temporarily paused while PayPal merchant review is being completed.");
+  }
   const config = getPayPalConfig();
   if (!config) throw new Error("PayPal is not configured yet.");
   const created = await fetchPayPalJson(config, "/v2/checkout/orders", {
@@ -1754,13 +1768,18 @@ async function handlePayPalConfig(req, res) {
     currency: "USD",
     mode: config?.mode || null,
     live: config?.mode === "live",
-    hostedLinks
+    hostedLinks,
+    paused: isCheckoutPaused()
   });
 }
 
 async function handleGuestOrderStart(req, res) {
   let created = null;
   try {
+    if (isCheckoutPaused()) {
+      send(res, 503, { error: "Checkout is temporarily paused while PayPal merchant review is being completed." });
+      return;
+    }
     const rawBody = await readJsonBody(req, res);
     if (!rawBody) return;
     const validationError = validateGuestCheckoutBody(rawBody);
@@ -1991,6 +2010,9 @@ async function handleAdminGuestOrderSendEmail(req, res) {
 }
 
 async function handleCreatePayPalOrder(req, res) {
+  if (isCheckoutPaused()) {
+    return send(res, 503, { error: "Checkout is temporarily paused while PayPal merchant review is being completed." });
+  }
   const config = getPayPalConfig();
   if (!config) return send(res, 503, { error: "PayPal is not configured yet." });
 
@@ -2022,6 +2044,9 @@ async function handleCreatePayPalOrder(req, res) {
 }
 
 async function handleCapturePayPalOrder(req, res) {
+  if (isCheckoutPaused()) {
+    return send(res, 503, { error: "Checkout is temporarily paused while PayPal merchant review is being completed." });
+  }
   const config = getPayPalConfig();
   if (!config) return send(res, 503, { error: "PayPal is not configured yet." });
 
