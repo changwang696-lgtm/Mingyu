@@ -381,8 +381,6 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 .plan-actions { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
 .plan-button { min-width: 0; min-height: 132px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px; border: 1px solid rgba(242,207,131,.55); color: var(--paper); background: rgba(7,28,49,.62); text-align: left; cursor: pointer; transition: transform .2s ease, border-color .2s ease, background .2s ease; }
 .plan-button:hover { transform: translateY(-3px); border-color: var(--gold-light); }
-.plan-button:disabled { cursor: not-allowed; opacity: .62; transform: none; box-shadow: none; filter: grayscale(.18); }
-.plan-button:disabled:hover { transform: none; border-color: rgba(242,207,131,.55); }
 .plan-button span { min-width: 0; display: grid; gap: 7px; }
 .plan-button small { color: var(--gold-light); font: 10px Arial,sans-serif; letter-spacing: 1.5px; }
 .plan-button strong { font-size: 19px; font-weight: 400; }
@@ -395,11 +393,6 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
   padding: 18px 20px;
   border-left: 3px solid var(--gold);
   background: rgba(7,28,49,.48);
-}
-
-.review-notice {
-  padding-top: 54px;
-  padding-bottom: 54px;
 }
 
 .launch-note strong {
@@ -718,6 +711,7 @@ dialog { color: #30251d; background: var(--paper); border-top: 8px solid var(--c
 .paypal-option { padding: 16px; border: 1px solid rgba(7,22,38,.08); background: rgba(255,255,255,.92); }
 .paypal-option small { display: block; margin-bottom: 12px; color: var(--ink); font: 12px Arial,sans-serif; letter-spacing: .9px; text-transform: uppercase; }
 .paypal-hosted-link { width: 100%; justify-content: center; text-decoration: none; box-sizing: border-box; }
+.paypal-button-slot { min-height: 45px; }
 .paypal-hosted-note { margin: 16px 0 0; color: #756c61; line-height: 1.7; }
 .guest-checkout-note {
   margin-top: 18px;
