@@ -1331,11 +1331,6 @@ function getPayPalMode() {
   return process.env.NODE_ENV === "production" ? "live" : "sandbox";
 }
 
-function isCheckoutPaused() {
-  const raw = String(process.env.PAYPAL_CHECKOUT_PAUSED || "true").trim().toLowerCase();
-  return raw !== "false";
-}
-
 function getPayPalConfig() {
   const clientId = String(process.env.PAYPAL_CLIENT_ID || "").trim();
   const clientSecret = String(process.env.PAYPAL_CLIENT_SECRET || "").trim();
@@ -1350,14 +1345,14 @@ function getPayPalConfig() {
 }
 
 function getHostedPayPalLinks() {
-  if (isCheckoutPaused()) {
-    return {
-      simple: null,
-      complete: null
-    };
-  }
-  const simple = String(process.env.PAYPAL_HOSTED_SIMPLE_URL || "https://www.paypal.com/ncp/payment/8WAQLCHG3A5S4").trim();
-  const complete = String(process.env.PAYPAL_HOSTED_COMPLETE_URL || "https://www.paypal.com/ncp/payment/V3QNJF7PLKKRW").trim();
+  // Live orders must use the REST checkout flow so the server can verify and
+  // capture the exact PayPal order before delivering the result.
+  if (getPayPalMode() === "live") return { simple: null, complete: null };
+  // Hosted payment links do not expose a PayPal order ID for server-side
+  // capture/verification. Keep them opt-in so normal checkout uses the
+  // configured PayPal REST app and can be reconciled with the guest order.
+  const simple = String(process.env.PAYPAL_HOSTED_SIMPLE_URL || "").trim();
+  const complete = String(process.env.PAYPAL_HOSTED_COMPLETE_URL || "").trim();
   return {
     simple: simple || null,
     complete: complete || null
@@ -1589,9 +1584,6 @@ function assertPayPalOrderMatchesGuestOrder(order, payPalOrder) {
 }
 
 async function createPayPalGuestCheckout(order) {
-  if (isCheckoutPaused()) {
-    throw new Error("Checkout is temporarily paused while PayPal merchant review is being completed.");
-  }
   const config = getPayPalConfig();
   if (!config) throw new Error("PayPal is not configured yet.");
   const created = await fetchPayPalJson(config, "/v2/checkout/orders", {
@@ -1768,18 +1760,13 @@ async function handlePayPalConfig(req, res) {
     currency: "USD",
     mode: config?.mode || null,
     live: config?.mode === "live",
-    hostedLinks,
-    paused: isCheckoutPaused()
+    hostedLinks
   });
 }
 
 async function handleGuestOrderStart(req, res) {
   let created = null;
   try {
-    if (isCheckoutPaused()) {
-      send(res, 503, { error: "Checkout is temporarily paused while PayPal merchant review is being completed." });
-      return;
-    }
     const rawBody = await readJsonBody(req, res);
     if (!rawBody) return;
     const validationError = validateGuestCheckoutBody(rawBody);
@@ -1804,6 +1791,7 @@ async function handleGuestOrderStart(req, res) {
     send(res, 201, {
       orderId: order.id,
       accessToken: order.accessToken,
+      paypalOrderId: order.paypalOrderId || null,
       tier: order.tier,
       email: order.email,
       approvalUrl: order.paypalLink,
@@ -2010,9 +1998,6 @@ async function handleAdminGuestOrderSendEmail(req, res) {
 }
 
 async function handleCreatePayPalOrder(req, res) {
-  if (isCheckoutPaused()) {
-    return send(res, 503, { error: "Checkout is temporarily paused while PayPal merchant review is being completed." });
-  }
   const config = getPayPalConfig();
   if (!config) return send(res, 503, { error: "PayPal is not configured yet." });
 
@@ -2044,9 +2029,6 @@ async function handleCreatePayPalOrder(req, res) {
 }
 
 async function handleCapturePayPalOrder(req, res) {
-  if (isCheckoutPaused()) {
-    return send(res, 503, { error: "Checkout is temporarily paused while PayPal merchant review is being completed." });
-  }
   const config = getPayPalConfig();
   if (!config) return send(res, 503, { error: "PayPal is not configured yet." });
 
