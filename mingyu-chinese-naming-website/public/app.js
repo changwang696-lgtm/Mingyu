@@ -6,7 +6,7 @@ const translations = {
     begin: "Find my name", introTitle: "Not a translation, but a new way to see you.",
     introBody: "A Chinese name is a choice of sound, form and meaning. Starting from your identity, we interpret zodiac symbolism and character traditions to create names that are thoughtful, explained and usable in real life.",
     pricingTitle: "Transparent one-time digital naming editions",
-    pricingBody: "Mingyu currently presents two one-time digital naming editions. During PayPal merchant review, service details, pricing, delivery, refund, and order recovery information remain public while checkout is temporarily paused.",
+    pricingBody: "Mingyu currently sells two one-time digital naming editions. Payment is captured through PayPal, then the result is delivered on-site with email delivery and order recovery.",
     starterType: "SIMPLE EDITION", starterTitle: "Names and zodiac", perMonth: "",
     starterPoint1: "Three Chinese name options with pinyin",
     starterPoint2: "A concise zodiac and cultural reading",
@@ -16,21 +16,21 @@ const translations = {
     studioPoint2: "Zodiac traits, symbolism, stems, branches, and birth-hour reading",
     studioPoint3: "Full result page, PDF download, and email recovery",
     creditType: "DELIVERY & RECOVERY", creditTitle: "Guest order protection", oneTime: "",
-    creditPoint1: "Guest order recovery is part of the service design",
-    creditPoint2: "After checkout reopens, successful payment will return buyers to the site to continue delivery",
-    creditPoint3: "Order lookup and support remain available after checkout reopens",
+    creditPoint1: "A guest order is created before you leave for PayPal",
+    creditPoint2: "After payment, you return to the site and the result is restored automatically",
+    creditPoint3: "Order lookup and support remain available if the page is lost",
     billingTitle: "What buyers and PayPal reviewers can verify before payment",
     billingPoint1: "One-time digital service only: no wallet balance and no physical shipping",
     billingPoint2: "Displayed prices are USD 2.99 and USD 9.90 for the selected edition",
-    billingPoint3: "Once checkout reopens, successful PayPal payment will unlock on-site delivery with email follow-up",
+    billingPoint3: "Delivery happens after successful PayPal payment on the site, with email follow-up",
     billingPoint4: "Support, refund, cancellation, privacy, and order recovery pages are linked below",
     billingLink: "View Delivery & Fulfillment Policy",
     flowTitle: "How payment and delivery work",
-    flowBody: "The published flow remains visible for buyers and PayPal reviewers. Online checkout is temporarily paused while merchant review is being completed.",
+    flowBody: "The buyer completes the form, pays through PayPal, returns to Mingyu, and can then view the result, download the PDF, or reopen the order from email.",
     flowStep1Title: "Fill the form", flowStep1Body: "The buyer enters name details and a delivery email used for order recovery and support.",
-    flowStep2Title: "Review order details", flowStep2Body: "The site clearly shows the selected edition, price, and digital delivery scope before checkout opens.",
-    flowStep3Title: "Pay with PayPal", flowStep3Body: "After merchant review is complete, PayPal will securely process payment for the selected one-time digital service.",
-    flowStep4Title: "Receive digital delivery", flowStep4Body: "After successful payment confirmation, the result page, PDF access, email delivery, and order recovery flow will be used for fulfillment.",
+    flowStep2Title: "Create guest order", flowStep2Body: "The site saves a pending guest order before redirecting the buyer to the official PayPal page.",
+    flowStep3Title: "Pay on PayPal", flowStep3Body: "PayPal securely processes the payment. If the buyer cancels, PayPal returns them to the site and the order remains saved.",
+    flowStep4Title: "Receive digital delivery", flowStep4Body: "After payment, the site restores the result, offers PDF download, sends an email, and provides an order lookup page.",
     memberStripEyebrow: "MEMBER ACCESS",
     memberStripGuest: "Create account / Sign in",
     memberStripLoggedIn: "Open member center",
@@ -63,19 +63,19 @@ const translations = {
     craftTitle: "An Eastern gift bearing your name", craftSub: "Objects made by artisans, turning your name into a keepsake you can touch.",
     product1: "Custom name seal", product2: "Silk round fan", product3: "Name calligraphy scroll",
     launchTitle: "Current site status",
-    launchBody: "The site currently focuses on one-time digital naming results. PayPal merchant review is in progress, so payment is temporarily paused while delivery, refund, privacy, cancellation, and support information remain public.",
-    demoNote: "Checkout is temporarily paused while PayPal merchant review is being completed.", loading: "Reading the sound, meaning and moment of your name...",
-         paypalInlineTitle: "PayPal checkout is temporarily unavailable",
-         paypalInlineBody: "Merchant review is in progress. You can review pricing, service details, delivery, refund, privacy, and cancellation information on this site.",
-    paypalValidation: "Please complete the required form fields. Online checkout is temporarily unavailable during merchant review.",
-         paypalHostedNote: "PayPal merchant review is in progress. Online checkout is temporarily paused while service details, delivery, refund, cancellation, privacy, and order recovery information remain publicly available.",
-              paypalHostedDialogNote: "Checkout is temporarily paused while PayPal merchant review is being completed.",
-    paypalHostedOpen: "Checkout paused",
-    paypalHostedOpened: "Checkout is temporarily unavailable during merchant review.",
-    guestOrderSavedTitle: "Order recovery information",
-             guestOrderSavedBody: "Online payment is temporarily paused during PayPal merchant review. You can still review service details, support contacts, and order recovery information on this site.",
+    launchBody: "The site currently focuses on one-time guest orders for personalized digital naming results. Payment is handled by PayPal, and delivery happens on-site with email and order recovery support.",
+    demoNote: "Payment is handled by PayPal. Your result will be delivered on this site after successful payment.", loading: "Reading the sound, meaning and moment of your name...",
+         paypalInlineTitle: "Pay with PayPal directly",
+         paypalInlineBody: "Complete the form above, then continue to the official PayPal page. You can pay with a PayPal account or an eligible card. The email you enter on this site is only for delivery and can differ from your PayPal login email.",
+    paypalValidation: "Please complete the required form fields before starting PayPal checkout.",
+         paypalHostedNote: "After your order is prepared, you will be redirected to the official PayPal payment page. You can pay with a PayPal account or an eligible bank card. The email entered on this site is only used to deliver your result and can differ from your PayPal login email. After payment, return to this site through the success page to continue delivery. If you cancel payment, the order will still be kept for later recovery.",
+              paypalHostedDialogNote: "You will be redirected to the official PayPal payment page. After payment, return to Mingyu and continue delivery from the saved order page. If you cancel payment, the order will remain saved for later recovery.",
+    paypalHostedOpen: "Open PayPal checkout",
+    paypalHostedOpened: "Redirecting to the PayPal checkout page...",
+    guestOrderSavedTitle: "Guest order saved",
+             guestOrderSavedBody: "Order {orderId} is ready. Complete payment on PayPal, then return to the saved order page to continue delivery. If you close the page, you can still recover this order later by email and order ID.",
     findOrderLink: "Find my order",
-    guestOrderCreateFailed: "Online checkout is temporarily unavailable during merchant review.",
+    guestOrderCreateFailed: "We could not create your guest order. Please try again.",
     guestOrderRecovered: "Your saved order result has been restored."
   },
   zh: {
@@ -84,7 +84,7 @@ const translations = {
     begin: "开始寻名", introTitle: "不是翻译名字，而是重新认识你。",
     introBody: "中文名字是声音、字形与意义的共同选择。我们以你的身份为起点，参考生肖的文化意象与汉字传统，提供有出处、有解释、可被真实使用的名字。",
     pricingTitle: "清晰透明的一次性数字起名服务",
-    pricingBody: "名屿当前展示两档一次性数字起名服务。由于正在完成 PayPal 商户审核，站点暂时公开服务内容、价格、交付、退款与订单找回信息，在线付款稍后重新开放。",
+    pricingBody: "名屿当前提供两档一次性数字起名服务。买家通过 PayPal 付款后，结果会在站内交付，并同步提供邮件与订单找回。",
     starterType: "简约版", starterTitle: "名字与生肖", perMonth: "",
     starterPoint1: "提供 3 个中文候选名字与拼音",
     starterPoint2: "附带简明生肖与文化解读",
@@ -94,21 +94,21 @@ const translations = {
     studioPoint2: "包含生肖性格、象征寓意、干支五行与出生时辰解读",
     studioPoint3: "提供完整结果页、PDF 下载与邮件找回",
     creditType: "交付与找回", creditTitle: "游客订单保护", oneTime: "",
-    creditPoint1: "游客订单找回仍是整体服务设计的一部分",
-    creditPoint2: "交付、退款、取消与隐私页面已公开，方便审核与买家查看",
-    creditPoint3: "订单找回与客服支持会在恢复收款后继续使用",
+    creditPoint1: "跳转 PayPal 前会先创建游客订单",
+    creditPoint2: "付款完成后会自动回到本站恢复结果",
+    creditPoint3: "即使页面关闭，也能通过订单找回页和客服继续处理",
     billingTitle: "买家与 PayPal 审核都能先看到的关键信息",
     billingPoint1: "当前为一次性数字服务，不是钱包余额，也不涉及实体发货",
     billingPoint2: "页面明确展示两档价格：USD 2.99 与 USD 9.90",
-    billingPoint3: "恢复收款后，付款成功会在本站交付结果，并同步发送邮件",
+    billingPoint3: "付款成功后在本站交付结果，并同步发送邮件",
     billingPoint4: "下方提供交付说明、退款、取消、隐私和订单找回页面",
     billingLink: "查看交付与履约说明",
     flowTitle: "付款与交付如何完成",
-    flowBody: "当前页面继续公开付款与交付逻辑，供买家与 PayPal 审核查看；在线收款在商户审核完成前暂时关闭。",
+    flowBody: "买家先填写资料，再通过 PayPal 付款，返回名屿后即可查看结果、下载 PDF，或通过邮件重新打开订单。",
     flowStep1Title: "填写资料", flowStep1Body: "买家填写姓名信息与交付邮箱。这个邮箱用于订单找回、邮件交付和客服支持。",
-    flowStep2Title: "查看服务详情", flowStep2Body: "站点会明确展示版本、价格与数字交付范围，便于审核和买家理解购买内容。",
-    flowStep3Title: "通过 PayPal 付款", flowStep3Body: "待商户审核完成后，PayPal 将用于处理一次性数字服务付款。",
-    flowStep4Title: "接收数字交付", flowStep4Body: "付款成功后，站内结果页、PDF、邮件交付与订单找回会用于完成交付。",
+    flowStep2Title: "创建游客订单", flowStep2Body: "跳转到 PayPal 之前，网站会先保存一条待支付游客订单。",
+    flowStep3Title: "在 PayPal 付款", flowStep3Body: "PayPal 安全处理付款。若买家取消支付，PayPal 会带其返回本站，订单仍然保留。",
+    flowStep4Title: "接收数字交付", flowStep4Body: "付款完成后，网站恢复结果、提供 PDF 下载、发送邮件，并支持通过订单找回页再次打开。",
     memberStripEyebrow: "会员入口",
     memberStripGuest: "前往注册 / 登录",
     memberStripLoggedIn: "打开会员中心",
@@ -139,19 +139,19 @@ const translations = {
     craftTitle: "一件带着名字的东方礼物", craftSub: "来自手艺人的小物，为名字留下可以触摸的纪念。",
     product1: "定制姓名印章", product2: "缂丝团扇", product3: "姓名书法卷",
     launchTitle: "当前站点状态",
-    launchBody: "当前站点以一次性数字起名结果为主。由于正在完成 PayPal 商户审核，在线付款暂时关闭，但服务说明、交付、退款、取消、隐私与支持信息保持公开。",
-    demoNote: "PayPal 商户审核中，在线付款暂时关闭。", loading: "正在研读你的名字与时辰...",
-         paypalInlineTitle: "PayPal 付款暂时关闭",
-         paypalInlineBody: "当前正在完成 PayPal 商户审核。你仍可查看价格、服务说明、交付方式、退款政策、取消政策与隐私说明。",
-    paypalValidation: "请先完整填写必填信息。由于商户审核中，在线付款暂时关闭。",
-             paypalHostedNote: "当前 PayPal 商户审核进行中，在线付款入口已临时关闭。你仍可查看服务说明、价格、交付政策、退款政策、取消政策与订单找回页面。",
-             paypalHostedDialogNote: "当前正在完成 PayPal 商户审核，在线付款暂时关闭。",
-    paypalHostedOpen: "付款暂未开放",
-    paypalHostedOpened: "由于商户审核中，在线付款暂时不可用。",
-    guestOrderSavedTitle: "订单与支持说明",
-             guestOrderSavedBody: "由于 PayPal 商户审核中，在线付款暂时关闭。你仍可在本站查看服务详情、支持联系方式与订单找回路径。",
+    launchBody: "当前站点以一次性游客订单为主，销售个性化数字起名结果。付款由 PayPal 处理，结果在站内交付，并支持邮件和订单找回。",
+    demoNote: "支付将由 PayPal 处理；付款成功后，结果会在本站交付。", loading: "正在研读你的名字与时辰...",
+         paypalInlineTitle: "使用 PayPal 直接付款",
+         paypalInlineBody: "填写上方信息后，将跳转到 PayPal 官方安全支付页。你可以使用 PayPal 账户登录付款，或选择支持的银行卡支付。你在本站填写的邮箱仅用于接收结果邮件，与 PayPal 登录邮箱可以不同。",
+    paypalValidation: "请先完整填写必填信息，再使用 PayPal 付款。",
+             paypalHostedNote: "当前会先创建游客订单，再跳转到 PayPal 官方安全支付页。你可以使用 PayPal 账户登录付款，或选择支持的银行卡支付。你在本站填写的邮箱仅用于接收结果邮件，与 PayPal 登录邮箱可以不同。付款完成后，请返回本站的成功页继续交付；若中途关闭页面，也可以凭邮箱和订单号稍后找回。",
+             paypalHostedDialogNote: "当前将跳转到 PayPal 官方安全支付页进行付款。付款完成后，请返回名屿并通过已保存的订单继续交付；若你取消支付，订单也会保留，方便稍后找回。",
+    paypalHostedOpen: "打开 PayPal 付款页",
+    paypalHostedOpened: "正在跳转到 PayPal 付款页...",
+    guestOrderSavedTitle: "游客订单已保存",
+             guestOrderSavedBody: "订单号 {orderId} 已创建。请在 PayPal 完成付款后返回本站继续交付；若关闭页面，也可以稍后通过邮箱和订单号找回。",
     findOrderLink: "找回我的订单",
-    guestOrderCreateFailed: "由于商户审核中，在线付款暂时关闭。",
+    guestOrderCreateFailed: "创建游客订单失败，请稍后重试。",
     guestOrderRecovered: "已为你恢复已保存的订单结果。"
   }
 };
@@ -164,11 +164,11 @@ let pendingBody = null;
 let sessionState = { loggedIn: false, user: null, catalog: null };
 // Future switch: set to true when the account, membership, and credits experience should return to the homepage.
 const membershipPreviewEnabled = false;
-const checkoutPaused = true;
     let paypalConfig = { enabled: false, clientId: null, currency: "USD", hostedLinks: { simple: null, complete: null } };
 let paypalSdkPromise = null;
 let paypalButtonsInstance = null;
 let inlinePayPalRendered = false;
+let activeGuestPayPalOrder = null;
 const guestCheckoutKey = "mingyu_guest_checkout";
     let hostedPayPalLinks = { simple: null, complete: null };
 let guestOrderMeta = null;
@@ -179,12 +179,12 @@ const creditCosts = { simple: 1, complete: 3 };
 const tierCopy = {
   simple: {
     price: "$2.99",
-    zh: { title: "确认生成简约版", eyebrow: "简约版 · SIMPLE EDITION", button: "审核中暂不开放付款", benefits: ["生成 3 个中文候选名字及拼音", "展示对应的固定十二生肖", "结果保存到订单并支持 PDF 下载"] },
+    zh: { title: "确认生成简约版", eyebrow: "简约版 · SIMPLE EDITION", button: "支付并生成 · $2.99", benefits: ["生成 3 个中文候选名字及拼音", "展示对应的固定十二生肖", "结果保存到订单并支持 PDF 下载"] },
     en: { title: "Confirm Simple Edition", eyebrow: "SIMPLE EDITION", button: "Pay & generate · $2.99", benefits: ["Three Chinese name options with pinyin", "Your fixed Chinese zodiac sign", "Saved to your order with PDF download access"] }
   },
   complete: {
     price: "$9.90",
-        zh: { title: "确认生成完整版", eyebrow: "完整版 · COMPLETE EDITION", button: "审核中暂不开放付款", benefits: ["全部名字释义与中英双语解读", "生肖性格、象征寓意、干支五行与时辰", "完整结果可保存为 A4 PDF"] },
+        zh: { title: "确认生成完整版", eyebrow: "完整版 · COMPLETE EDITION", button: "支付并生成 · $9.90", benefits: ["全部名字释义与中英双语解读", "生肖性格、象征寓意、干支五行与时辰", "完整结果可保存为 A4 PDF"] },
         en: { title: "Confirm Complete Edition", eyebrow: "COMPLETE EDITION", button: "Pay & generate · $9.90", benefits: ["Complete bilingual name interpretations", "Zodiac traits, symbolism, stems, branches and elements", "Save the full result as an A4 PDF"] }
   }
 };
@@ -281,10 +281,6 @@ $("#nameForm").addEventListener("submit", async event => {
     form.reportValidity();
     return;
   }
-  if (checkoutPaused) {
-    $("#formMessage").textContent = translations[lang].guestOrderCreateFailed;
-    return;
-  }
   pendingTier = event.submitter?.value === "complete" ? "complete" : "simple";
   pendingBody = { ...Object.fromEntries(new FormData(form)), tier: pendingTier };
   if (sessionState.loggedIn && sessionState.user && sessionState.user.creditsBalance >= creditCosts[pendingTier]) {
@@ -325,10 +321,6 @@ function updatePaymentDialog() {
 }
 
 $("#confirmPurchase").onclick = async () => {
-  if (checkoutPaused) {
-    $("#paymentNote").textContent = translations[lang].paypalHostedDialogNote;
-    return;
-  }
   if (paypalConfig.enabled) return;
   dialog.close();
   $("#loading").hidden = false;
@@ -496,6 +488,10 @@ async function bindHostedCheckoutLink(selector, tier) {
 }
 
 async function capturePayPalOrder(orderID, tier) {
+  if (activeGuestPayPalOrder?.paypalOrderId === orderID) {
+    window.location.assign(activeGuestPayPalOrder.successUrl);
+    return;
+  }
   $("#loading").hidden = false;
   try {
     const response = await fetch("/api/paypal/capture-order", {
@@ -575,17 +571,10 @@ async function startMemberGeneration() {
 }
 
 async function createPayPalOrderForTier(tier) {
-  const body = collectFormBody(tier, true);
-  pendingTier = tier;
-  pendingBody = body;
-  const response = await fetch("/api/paypal/create-order", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Unable to create PayPal order.");
-  return data.id;
+  const order = await createGuestOrderForTier(tier);
+  if (!order.paypalOrderId) throw new Error("PayPal did not return a checkout order ID.");
+  activeGuestPayPalOrder = order;
+  return order.paypalOrderId;
 }
 
 async function renderPayPalButtons() {
@@ -656,10 +645,6 @@ async function renderInlinePayPalButtons() {
 
 function renderHostedCheckoutLinks() {
   if (!$("#paypalInline")) return;
-  if (checkoutPaused) {
-    $("#paypalInline").hidden = true;
-    return;
-  }
       const hasHostedCheckout = Boolean(hostedPayPalLinks.simple || hostedPayPalLinks.complete);
       if (!hasHostedCheckout && !paypalConfig.enabled) {
     $("#paypalInline").hidden = true;
@@ -668,7 +653,12 @@ function renderHostedCheckoutLinks() {
   $("#paypalInline").hidden = false;
       if (hostedPayPalLinks.simple) bindHostedCheckoutLink("#hostedSimpleLink", "simple");
       if (hostedPayPalLinks.complete) bindHostedCheckoutLink("#hostedCompleteLink", "complete");
-  inlinePayPalRendered = true;
+  if (!hasHostedCheckout && paypalConfig.enabled) {
+    renderInlinePayPalButtons().catch(error => {
+      console.error("PayPal inline checkout initialization failed:", error);
+      $("#paypalInline").hidden = true;
+    });
+  }
 }
 
 async function restoreGuestOrderResultFromUrl() {
