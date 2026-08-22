@@ -208,19 +208,6 @@ function updateMemberExperience() {
 
   if (!simplePrice || !completePrice || !simpleCaption || !completeCaption) return;
 
-      if (!membershipPreviewEnabled) {
-    if (accountLink) {
-      accountLink.hidden = true;
-      accountLink.style.display = "none";
-    }
-    if ($("#memberStrip")) $("#memberStrip").hidden = true;
-    simplePrice.textContent = "$2.99";
-    completePrice.textContent = "$9.90";
-    simpleCaption.textContent = translations[lang].simpleNoPdf;
-    completeCaption.textContent = translations[lang].completeWithPdf;
-    return;
-  }
-
   if (!accountLink || !memberStripText || !memberStripLink) return;
   accountLink.hidden = false;
   accountLink.style.display = "";
@@ -859,6 +846,11 @@ fetch("/api/paypal-config")
   });
 
 applyLanguage();
+if ($("#accountLink")) {
+  $("#accountLink").hidden = false;
+  $("#accountLink").style.display = "";
+}
+if ($("#memberStrip")) $("#memberStrip").hidden = false;
 refreshSession().then(() => {
   try {
     const intent = JSON.parse(sessionStorage.getItem(pendingServiceIntentKey) || "null");
