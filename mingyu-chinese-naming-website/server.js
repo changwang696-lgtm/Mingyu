@@ -39,6 +39,7 @@ const memberPlans = {
     id: "starter",
     name: "Starter Membership",
     price: "$19/month",
+    payPalValue: "19.00",
     credits: 30,
     interval: "month"
   },
@@ -46,6 +47,7 @@ const memberPlans = {
     id: "studio",
     name: "Studio Membership",
     price: "$39/month",
+    payPalValue: "39.00",
     credits: 80,
     interval: "month"
   },
@@ -53,6 +55,7 @@ const memberPlans = {
     id: "credit-pack-50",
     name: "Credit Pack",
     price: "$29 one-time",
+    payPalValue: "29.00",
     credits: 50,
     interval: "one-time"
   }
@@ -112,7 +115,7 @@ const placeTimeZones = [
 ];
 
 function createDefaultDatabase() {
-  return { users: [], sessions: [], reports: [], guestOrders: [] };
+  return { users: [], sessions: [], reports: [], guestOrders: [], memberOrders: [] };
 }
 
 function ensureDatabaseFile() {
@@ -128,7 +131,8 @@ function loadDatabase() {
       users: Array.isArray(parsed.users) ? parsed.users : [],
       sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
         reports: Array.isArray(parsed.reports) ? parsed.reports : [],
-        guestOrders: Array.isArray(parsed.guestOrders) ? parsed.guestOrders : []
+        guestOrders: Array.isArray(parsed.guestOrders) ? parsed.guestOrders : [],
+        memberOrders: Array.isArray(parsed.memberOrders) ? parsed.memberOrders : []
     };
   } catch {
     const fallback = createDefaultDatabase();
@@ -330,13 +334,16 @@ function mapReportSummaryRow(row) {
     inputName: row.input_name,
     createdAt: row.created_at,
     zodiac: row.zodiac,
-    previewNames: Array.isArray(row.preview_names) ? row.preview_names : []
+    previewNames: Array.isArray(row.preview_names) ? row.preview_names : [],
+    resultUrl: buildMemberReportResultUrl(row.id),
+    pdfUrl: buildMemberReportPdfUrl(row.id)
   };
 }
 
 function mapGuestOrderRow(row) {
   return {
     id: row.id,
+    userId: row.user_id || null,
     accessToken: row.access_token,
     email: row.email,
     tier: row.tier,
@@ -361,6 +368,31 @@ function mapGuestOrderRow(row) {
     emailDeliveryStatus: row.email_delivery_status || null,
     emailDeliveryError: row.email_delivery_error || null
   };
+}
+
+function mapMemberOrderRow(row) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    itemType: row.item_type,
+    itemId: row.item_id,
+    itemName: row.item_name,
+    amount: row.amount,
+    currency: row.currency || "USD",
+    creditsDelta: Number(row.credits_delta) || 0,
+    status: row.status || "pending_payment",
+    paypalOrderId: row.paypal_order_id || null,
+    paypalCaptureId: row.paypal_capture_id || null,
+    membershipPlanId: row.membership_plan_id || null,
+    membershipPlanName: row.membership_plan_name || null,
+    membershipRenewalAt: row.membership_renewal_at || null,
+    createdAt: row.created_at,
+    completedAt: row.completed_at || null
+  };
+}
+
+function getMemberPlan(planId) {
+  return Object.values(memberPlans).find(plan => plan.id === planId) || null;
 }
 
 function getPublicCatalog() {
@@ -490,12 +522,13 @@ async function getUserReportSummaries(userId, limit = 12) {
   return rows.map(mapReportSummaryRow);
 }
 
-function createGuestOrderRecord(email, formBody) {
+function createGuestOrderRecord(userId, email, formBody) {
   const tier = normalizeTier(formBody.tier);
   const pricing = tierPricing[tier];
   const orderId = nextId("guest_");
   return {
     id: orderId,
+    userId: userId || null,
     accessToken: nextId("gtok_"),
     email,
     tier,
@@ -519,6 +552,28 @@ function createGuestOrderRecord(email, formBody) {
     emailSentAt: null,
     emailDeliveryStatus: "pending",
     emailDeliveryError: null
+  };
+}
+
+function createMemberOrderRecord(user, plan) {
+  const orderId = nextId("mord_");
+  return {
+    id: orderId,
+    userId: user.id,
+    itemType: plan.interval === "month" ? "membership" : "credit_pack",
+    itemId: plan.id,
+    itemName: plan.name,
+    amount: plan.payPalValue,
+    currency: "USD",
+    creditsDelta: plan.credits,
+    status: "pending_payment",
+    paypalOrderId: null,
+    paypalCaptureId: null,
+    membershipPlanId: plan.interval === "month" ? plan.id : null,
+    membershipPlanName: plan.interval === "month" ? plan.name : null,
+    membershipRenewalAt: null,
+    createdAt: nowIso(),
+    completedAt: null
   };
 }
 
@@ -578,6 +633,7 @@ async function insertGuestOrder(order) {
     method: "POST",
     body: {
       id: order.id,
+      user_id: order.userId,
       access_token: order.accessToken,
       email: order.email,
       tier: order.tier,
@@ -657,6 +713,129 @@ async function listGuestOrders({ status, limit = 100 } = {}) {
   return rows.map(mapGuestOrderRow);
 }
 
+async function listUserServiceOrders(userId, limit = 12) {
+  const normalizedLimit = Math.max(1, Math.min(Number(limit) || 12, 50));
+  if (!useSupabase) {
+    return database.guestOrders
+      .filter(item => item.userId === userId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, normalizedLimit)
+      .map(summarizeGuestOrder);
+  }
+  const rows = await supabaseRequest("guest_orders", {
+    searchParams: {
+      select: "*",
+      user_id: `eq.${userId}`,
+      order: "created_at.desc",
+      limit: normalizedLimit
+    }
+  });
+  return rows.map(mapGuestOrderRow).map(summarizeGuestOrder);
+}
+
+async function getMemberOrderById(orderId) {
+  if (!useSupabase) {
+    return database.memberOrders.find(item => item.id === orderId) || null;
+  }
+  const rows = await supabaseRequest("member_orders", {
+    searchParams: {
+      select: "*",
+      id: `eq.${orderId}`,
+      limit: 1
+    }
+  });
+  return rows[0] ? mapMemberOrderRow(rows[0]) : null;
+}
+
+async function getMemberOrderByPayPalOrderId(payPalOrderId) {
+  if (!useSupabase) {
+    return database.memberOrders.find(item => item.paypalOrderId === payPalOrderId) || null;
+  }
+  const rows = await supabaseRequest("member_orders", {
+    searchParams: {
+      select: "*",
+      paypal_order_id: `eq.${payPalOrderId}`,
+      limit: 1
+    }
+  });
+  return rows[0] ? mapMemberOrderRow(rows[0]) : null;
+}
+
+async function insertMemberOrder(order) {
+  if (!useSupabase) {
+    database.memberOrders.unshift(order);
+    database.memberOrders = database.memberOrders.slice(0, 500);
+    saveDatabase();
+    return order;
+  }
+  const rows = await supabaseRequest("member_orders", {
+    method: "POST",
+    body: {
+      id: order.id,
+      user_id: order.userId,
+      item_type: order.itemType,
+      item_id: order.itemId,
+      item_name: order.itemName,
+      amount: order.amount,
+      currency: order.currency,
+      credits_delta: order.creditsDelta,
+      status: order.status,
+      paypal_order_id: order.paypalOrderId,
+      paypal_capture_id: order.paypalCaptureId,
+      membership_plan_id: order.membershipPlanId,
+      membership_plan_name: order.membershipPlanName,
+      membership_renewal_at: order.membershipRenewalAt,
+      created_at: order.createdAt,
+      completed_at: order.completedAt
+    }
+  });
+  return rows[0] ? mapMemberOrderRow(rows[0]) : order;
+}
+
+async function updateMemberOrder(orderId, updates) {
+  if (!useSupabase) {
+    const index = database.memberOrders.findIndex(item => item.id === orderId);
+    if (index === -1) return null;
+    database.memberOrders[index] = { ...database.memberOrders[index], ...updates };
+    saveDatabase();
+    return database.memberOrders[index];
+  }
+  const rows = await supabaseRequest("member_orders", {
+    method: "PATCH",
+    searchParams: {
+      id: `eq.${orderId}`
+    },
+    body: {
+      ...(updates.status !== undefined ? { status: updates.status } : {}),
+      ...(updates.paypalOrderId !== undefined ? { paypal_order_id: updates.paypalOrderId } : {}),
+      ...(updates.paypalCaptureId !== undefined ? { paypal_capture_id: updates.paypalCaptureId } : {}),
+      ...(updates.membershipRenewalAt !== undefined ? { membership_renewal_at: updates.membershipRenewalAt } : {}),
+      ...(updates.completedAt !== undefined ? { completed_at: updates.completedAt } : {})
+    },
+    allowEmpty: true
+  });
+  return rows?.[0] ? mapMemberOrderRow(rows[0]) : null;
+}
+
+async function listUserMemberOrders(userId, limit = 12) {
+  const normalizedLimit = Math.max(1, Math.min(Number(limit) || 12, 50));
+  if (!useSupabase) {
+    return database.memberOrders
+      .filter(item => item.userId === userId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, normalizedLimit);
+  }
+  const rows = await supabaseRequest("member_orders", {
+    searchParams: {
+      select: "*",
+      user_id: `eq.${userId}`,
+      order: "created_at.desc",
+      limit: normalizedLimit
+    }
+  });
+  return rows.map(mapMemberOrderRow);
+}
+
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -682,6 +861,27 @@ function buildGuestOrderDeliveryUrl(order) {
 
 function buildGuestOrderPdfUrl(order) {
   return getAbsoluteUrl(`/api/guest-orders/pdf?order=${encodeURIComponent(order.id)}&token=${encodeURIComponent(order.accessToken)}`);
+}
+
+function buildMemberReportResultUrl(reportId) {
+  return getAbsoluteUrl(`/?memberReport=${encodeURIComponent(reportId)}`);
+}
+
+function buildMemberReportPdfUrl(reportId) {
+  return getAbsoluteUrl(`/api/member/report/pdf?id=${encodeURIComponent(reportId)}`);
+}
+
+function summarizeMemberReport(report) {
+  return {
+    id: report.id,
+    tier: report.tier,
+    inputName: report.inputName,
+    createdAt: report.createdAt,
+    zodiac: report.zodiac,
+    previewNames: Array.isArray(report.previewNames) ? report.previewNames : [],
+    resultUrl: buildMemberReportResultUrl(report.id),
+    pdfUrl: buildMemberReportPdfUrl(report.id)
+  };
 }
 
 function isMailConfigured() {
@@ -713,6 +913,26 @@ function summarizeGuestOrder(order) {
     pdfUrl: order.pdfBase64 ? buildGuestOrderPdfUrl(order) : null,
     deliveryUrl: order.result ? buildGuestOrderDeliveryUrl(order) : null,
     successUrl: buildGuestOrderSuccessUrl(order)
+  };
+}
+
+function summarizeMemberOrder(order) {
+  return {
+    id: order.id,
+    itemType: order.itemType,
+    itemId: order.itemId,
+    itemName: order.itemName,
+    amount: order.amount,
+    currency: order.currency || "USD",
+    creditsDelta: Number(order.creditsDelta) || 0,
+    status: order.status,
+    paypalOrderId: order.paypalOrderId || null,
+    paypalCaptureId: order.paypalCaptureId || null,
+    membershipPlanId: order.membershipPlanId || null,
+    membershipPlanName: order.membershipPlanName || null,
+    membershipRenewalAt: order.membershipRenewalAt || null,
+    createdAt: order.createdAt,
+    completedAt: order.completedAt || null
   };
 }
 
@@ -831,6 +1051,81 @@ async function buildGuestOrderPdfBytes(order) {
 
   drawSectionTitle("Access");
   drawParagraph(`Order ID: ${order.id}\nResult page: ${buildGuestOrderDeliveryUrl(order)}\nPDF download: ${downloadUrl}`, { size: 10, color: colors.soft, gapAfter: 0 });
+
+  return Buffer.from(await pdfDoc.save());
+}
+
+async function buildMemberReportPdfBytes(report, user) {
+  const pdfDoc = await PDFDocument.create();
+  pdfDoc.registerFontkit(fontkit);
+  const font = await pdfDoc.embedFont(await getPdfFontBytes(), { subset: true });
+  const pageSize = [595.28, 841.89];
+  const margin = 48;
+  const maxWidth = pageSize[0] - margin * 2;
+  const lineGap = 6;
+  const colors = {
+    ink: rgb(0.04, 0.11, 0.19),
+    warm: rgb(0.62, 0.22, 0.17),
+    soft: rgb(0.33, 0.27, 0.23)
+  };
+  let page = pdfDoc.addPage(pageSize);
+  let y = page.getHeight() - margin;
+
+  const ensureSpace = neededHeight => {
+    if (y - neededHeight >= margin) return;
+    page = pdfDoc.addPage(pageSize);
+    y = page.getHeight() - margin;
+  };
+
+  const drawTextLine = (text, { size = 11, color = colors.soft, x = margin } = {}) => {
+    ensureSpace(size + lineGap);
+    page.drawText(String(text || ""), { x, y, size, font, color });
+    y -= size + lineGap;
+  };
+
+  const drawParagraph = (text, { size = 11, color = colors.soft, x = margin, gapAfter = 8 } = {}) => {
+    const lines = wrapPdfText(text, font, size, maxWidth - (x - margin));
+    for (const line of lines) drawTextLine(line || " ", { size, color, x });
+    y -= gapAfter;
+  };
+
+  const drawSectionTitle = text => {
+    drawTextLine(text, { size: 15, color: colors.warm });
+    y -= 2;
+  };
+
+  const result = report.result || {};
+  const culture = result.traditionalCulture || {};
+  const editionLabel = report.tier === "simple" ? "Simple Edition" : "Complete Edition";
+  const resultUrl = buildMemberReportResultUrl(report.id);
+  const pdfUrl = buildMemberReportPdfUrl(report.id);
+
+  drawTextLine("Mingyu Chinese Naming Report", { size: 22, color: colors.ink });
+  drawTextLine(`Member Report · ${report.id}`, { size: 12, color: colors.warm });
+  y -= 8;
+
+  drawParagraph(`Member: ${user.displayName || user.email}\nAccount email: ${user.email}\nEdition: ${editionLabel}\nGenerated date: ${formatReportDate(report.createdAt)}`, { size: 11, color: colors.soft, gapAfter: 12 });
+
+  drawSectionTitle("Overview");
+  drawParagraph(`Input name: ${result.inputName || report.inputName || "-"}`, { size: 11, color: colors.soft, gapAfter: 4 });
+  drawParagraph(result.summary || "", { size: 11, color: colors.soft, gapAfter: 4 });
+  drawParagraph(result.summaryEn || "", { size: 10, color: colors.soft, gapAfter: 12 });
+
+  drawSectionTitle("Name Options");
+  for (const option of Array.isArray(result.names) ? result.names : []) {
+    drawTextLine(`${option.hanzi || ""}  ${option.pinyin || ""}`.trim(), { size: 14, color: colors.ink });
+    if (option.tone) drawTextLine(`Tone: ${option.tone}`, { size: 10, color: colors.warm, x: margin + 6 });
+    drawParagraph(option.meaning || "", { size: 11, color: colors.soft, x: margin + 6, gapAfter: 2 });
+    drawParagraph(option.meaningEn || "", { size: 10, color: colors.soft, x: margin + 6, gapAfter: 10 });
+  }
+
+  drawSectionTitle("Zodiac & Traditional Culture");
+  drawParagraph(`Zodiac: ${result.zodiac?.animal || "-"} · ${result.zodiac?.animalEn || "-"}\nYear pillar: ${culture.pillar || "-"}\nBirth hour: ${culture.hourBranch?.char || "-"}时 · ${culture.hourBranch?.range || "-"}`, { size: 11, color: colors.soft, gapAfter: 4 });
+  drawParagraph(culture.note || result.culturalNote || "", { size: 11, color: colors.soft, gapAfter: 4 });
+  drawParagraph(culture.noteEn || result.culturalNoteEn || "", { size: 10, color: colors.soft, gapAfter: 12 });
+
+  drawSectionTitle("Access");
+  drawParagraph(`Report ID: ${report.id}\nResult page: ${resultUrl}\nPDF download: ${pdfUrl}`, { size: 10, color: colors.soft, gapAfter: 0 });
 
   return Buffer.from(await pdfDoc.save());
 }
@@ -1098,14 +1393,7 @@ function listUserReports(user) {
     .filter(Boolean)
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 12)
-    .map(report => ({
-      id: report.id,
-      tier: report.tier,
-      inputName: report.inputName,
-      createdAt: report.createdAt,
-      zodiac: report.zodiac,
-      previewNames: report.previewNames
-    }));
+    .map(summarizeMemberReport);
 }
 
 function send(res, status, data, type = "application/json; charset=utf-8", extraHeaders = {}) {
@@ -1530,6 +1818,15 @@ function getGuestOrderCancelUrl(order) {
   return `${successUrl}${successUrl.includes("?") ? "&" : "?"}cancelled=1`;
 }
 
+function buildMemberOrderReturnUrl(order) {
+  return getAbsoluteUrl(`/account.html?memberOrder=${encodeURIComponent(order.id)}`);
+}
+
+function buildMemberOrderCancelUrl(order) {
+  const returnUrl = buildMemberOrderReturnUrl(order);
+  return `${returnUrl}${returnUrl.includes("?") ? "&" : "?"}cancelled=1`;
+}
+
 function getPayPalApprovalLink(payPalOrder) {
   return payPalOrder?.links?.find(link => link.rel === "payer-action" || link.rel === "approve")?.href || null;
 }
@@ -1574,6 +1871,20 @@ function assertPayPalOrderMatchesGuestOrder(order, payPalOrder) {
   return capture;
 }
 
+function assertPayPalOrderMatchesMemberOrder(order, payPalOrder) {
+  const capture = extractPayPalCapture(payPalOrder);
+  if (capture.customId && capture.customId !== order.id) {
+    throw new Error("The PayPal payment does not match this member order.");
+  }
+  if (capture.amount && String(capture.amount) !== String(order.amount)) {
+    throw new Error("The paid amount does not match this member order.");
+  }
+  if (capture.currency && String(capture.currency).toUpperCase() !== String(order.currency || "USD").toUpperCase()) {
+    throw new Error("The paid currency does not match this member order.");
+  }
+  return capture;
+}
+
 async function createPayPalGuestCheckout(order) {
   const config = getPayPalConfig();
   if (!config) throw new Error("PayPal is not configured yet.");
@@ -1611,6 +1922,196 @@ async function createPayPalGuestCheckout(order) {
     paypalOrderId: created.id,
     paypalLink: approvalUrl,
     paymentStatus: String(created.status || "CREATED").toLowerCase()
+  };
+}
+
+async function createPayPalMemberCheckout(order) {
+  const config = getPayPalConfig();
+  if (!config) throw new Error("PayPal is not configured yet.");
+  const created = await fetchPayPalJson(config, "/v2/checkout/orders", {
+    method: "POST",
+    body: JSON.stringify({
+      intent: "CAPTURE",
+      purchase_units: [{
+        custom_id: order.id,
+        invoice_id: order.id,
+        description: order.itemName,
+        amount: {
+          currency_code: order.currency || "USD",
+          value: order.amount
+        }
+      }],
+      payment_source: {
+        paypal: {
+          experience_context: {
+            brand_name: "Mingyu",
+            landing_page: "LOGIN",
+            shipping_preference: "NO_SHIPPING",
+            user_action: "PAY_NOW",
+            return_url: buildMemberOrderReturnUrl(order),
+            cancel_url: buildMemberOrderCancelUrl(order)
+          }
+        }
+      }
+    })
+  }, "PayPal order creation failed");
+  const approvalUrl = getPayPalApprovalLink(created);
+  if (!approvalUrl) throw new Error("PayPal did not return an approval URL.");
+  assertPayPalApprovalLinkMatchesMode(config, approvalUrl);
+  return {
+    paypalOrderId: created.id,
+    paypalLink: approvalUrl,
+    paymentStatus: String(created.status || "CREATED").toLowerCase()
+  };
+}
+
+function getRenewalAtFromNow(days = 30) {
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+async function applyMemberOrderPurchase(order) {
+  const user = await getUserById(order.userId);
+  if (!user) throw new Error("Account not found.");
+
+  const completedAt = order.completedAt || nowIso();
+  const renewalAt = order.membershipPlanId ? getRenewalAtFromNow(30) : null;
+  const purchaseDescription = order.itemType === "membership"
+    ? `${order.itemName} activated`
+    : `${order.itemName} purchased`;
+
+  if (!useSupabase) {
+    const liveUser = database.users.find(item => item.id === order.userId);
+    if (!liveUser) throw new Error("Account not found.");
+    if (order.membershipPlanId) {
+      liveUser.membership = {
+        planId: order.membershipPlanId,
+        planName: order.membershipPlanName || order.itemName,
+        status: "active",
+        renewalAt,
+        cancelAtPeriodEnd: false
+      };
+    }
+    addLedgerEntry(liveUser, {
+      type: "grant",
+      source: "purchase",
+      description: `${purchaseDescription} · ${order.creditsDelta} credits added`,
+      creditsDelta: order.creditsDelta,
+      referenceId: order.id
+    });
+    saveDatabase();
+    return {
+      user: publicUser(liveUser),
+      remainingCredits: liveUser.creditsBalance,
+      membershipRenewalAt: renewalAt
+    };
+  }
+
+  const nextBalance = (Number(user.creditsBalance) || 0) + (Number(order.creditsDelta) || 0);
+  const nextMembership = order.membershipPlanId
+    ? {
+        planId: order.membershipPlanId,
+        planName: order.membershipPlanName || order.itemName,
+        status: "active",
+        renewalAt,
+        cancelAtPeriodEnd: false
+      }
+    : sanitizeMembership(user.membership);
+
+  await supabaseRequest("app_users", {
+    method: "PATCH",
+    searchParams: {
+      id: `eq.${order.userId}`
+    },
+    body: {
+      credits_balance: nextBalance,
+      membership: nextMembership
+    },
+    allowEmpty: true
+  });
+  await supabaseRequest("credit_ledger", {
+    method: "POST",
+    body: {
+      id: nextId("ledger_"),
+      user_id: order.userId,
+      entry_type: "grant",
+      source: "purchase",
+      description: `${purchaseDescription} · ${order.creditsDelta} credits added`,
+      credits_delta: order.creditsDelta,
+      credits_balance_after: nextBalance,
+      reference_id: order.id
+    }
+  });
+  const updatedUser = await getUserById(order.userId);
+  return {
+    user: publicUser(updatedUser || { ...user, creditsBalance: nextBalance, membership: nextMembership }),
+    remainingCredits: nextBalance,
+    membershipRenewalAt: renewalAt
+  };
+}
+
+async function confirmMemberOrderPayment(order, requestedPayPalOrderId = null) {
+  const config = getPayPalConfig();
+  if (!config) throw new Error("PayPal is not configured yet.");
+  const payPalOrderId = requestedPayPalOrderId || order.paypalOrderId;
+  if (!payPalOrderId) throw new Error("The PayPal order ID is missing for this member order.");
+  if (order.paypalOrderId && requestedPayPalOrderId && order.paypalOrderId !== requestedPayPalOrderId) {
+    throw new Error("This PayPal return does not match the current member order.");
+  }
+
+  const fetched = await fetchPayPalJson(config, `/v2/checkout/orders/${encodeURIComponent(payPalOrderId)}`, {
+    method: "GET"
+  }, "PayPal order lookup failed");
+  let capture = assertPayPalOrderMatchesMemberOrder(order, fetched);
+  let payPalOrder = fetched;
+
+  if (capture.status !== "COMPLETED") {
+    if (String(fetched.status || "").toUpperCase() !== "APPROVED") {
+      throw new Error("PayPal payment has not been approved yet.");
+    }
+    payPalOrder = await fetchPayPalJson(config, `/v2/checkout/orders/${encodeURIComponent(payPalOrderId)}/capture`, {
+      method: "POST",
+      body: JSON.stringify({})
+    }, "PayPal capture failed");
+    capture = assertPayPalOrderMatchesMemberOrder(order, payPalOrder);
+  }
+
+  if (capture.status !== "COMPLETED") {
+    throw new Error("PayPal payment is not completed yet.");
+  }
+
+  const updated = await updateMemberOrder(order.id, {
+    status: "paid",
+    paypalOrderId: payPalOrderId,
+    paypalCaptureId: capture.captureId
+  });
+  return updated || { ...order, status: "paid", paypalOrderId: payPalOrderId, paypalCaptureId: capture.captureId };
+}
+
+async function ensureMemberOrderCompleted(order, requestedPayPalOrderId = null) {
+  let liveOrder = order;
+  if (liveOrder.status !== "completed") {
+    if (liveOrder.status !== "paid") {
+      liveOrder = await confirmMemberOrderPayment(liveOrder, requestedPayPalOrderId);
+    }
+    const completedAt = liveOrder.completedAt || nowIso();
+    const applied = await applyMemberOrderPurchase(liveOrder);
+    liveOrder = await updateMemberOrder(liveOrder.id, {
+      status: "completed",
+      membershipRenewalAt: applied.membershipRenewalAt,
+      completedAt
+    }) || { ...liveOrder, status: "completed", membershipRenewalAt: applied.membershipRenewalAt, completedAt };
+    return {
+      order: liveOrder,
+      user: applied.user,
+      remainingCredits: applied.remainingCredits
+    };
+  }
+
+  const currentUser = await getUserById(liveOrder.userId);
+  return {
+    order: liveOrder,
+    user: publicUser(currentUser || { ...order, creditsBalance: 0 }),
+    remainingCredits: currentUser?.creditsBalance ?? 0
   };
 }
 
@@ -1703,19 +2204,12 @@ async function ensureGuestOrderFulfilled(order, requestedPayPalOrderId = null) {
     liveOrder = await updateGuestOrder(liveOrder.id, liveOrder.accessToken, updates) || { ...liveOrder, ...updates };
   }
 
-  if (isMailConfigured() && liveOrder.emailDeliveryStatus !== "sent") {
-    try {
-      liveOrder = await sendGuestOrderEmail(liveOrder, { force: false });
-    } catch (error) {
-      liveOrder = await getGuestOrderByIdAndToken(liveOrder.id, liveOrder.accessToken) || liveOrder;
-      console.error("Guest order email delivery failed:", error.message);
-    }
-  }
-
   return liveOrder;
 }
 
 async function handleGenerate(req, res) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return send(res, 401, { error: "Please sign in before using the naming service." });
   const body = await readJsonBody(req, res);
   if (!body) return;
   const validationError = validateGenerationBody(body);
@@ -1758,13 +2252,15 @@ async function handlePayPalConfig(req, res) {
 async function handleGuestOrderStart(req, res) {
   let created = null;
   try {
+    const user = await getAuthenticatedUser(req);
+    if (!user) return send(res, 401, { error: "Please sign in before starting a naming order." });
     const rawBody = await readJsonBody(req, res);
     if (!rawBody) return;
     const validationError = validateGuestCheckoutBody(rawBody);
     if (validationError) return send(res, 422, { error: validationError });
 
     const formBody = compactBody(rawBody);
-    created = await insertGuestOrder(createGuestOrderRecord(normalizeEmail(rawBody.deliveryEmail || rawBody.email), formBody));
+    created = await insertGuestOrder(createGuestOrderRecord(user.id, normalizeEmail(rawBody.deliveryEmail || rawBody.email), formBody));
       const hostedLink = getHostedPayPalLink(created.tier);
       const payPalCheckout = hostedLink
         ? {
@@ -1989,6 +2485,8 @@ async function handleAdminGuestOrderSendEmail(req, res) {
 }
 
 async function handleCreatePayPalOrder(req, res) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return send(res, 401, { error: "Please sign in before starting checkout." });
   const config = getPayPalConfig();
   if (!config) return send(res, 503, { error: "PayPal is not configured yet." });
 
@@ -2020,6 +2518,8 @@ async function handleCreatePayPalOrder(req, res) {
 }
 
 async function handleCapturePayPalOrder(req, res) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return send(res, 401, { error: "Please sign in before completing checkout." });
   const config = getPayPalConfig();
   if (!config) return send(res, 503, { error: "PayPal is not configured yet." });
 
@@ -2119,7 +2619,9 @@ async function handleMemberOverview(req, res) {
     user: publicUser(user),
     catalog: getPublicCatalog(),
     ledger: await getUserLedger(user.id, 20),
-    reports: await getUserReportSummaries(user.id, 12)
+    reports: await getUserReportSummaries(user.id, 12),
+    memberOrders: (await listUserMemberOrders(user.id, 12)).map(summarizeMemberOrder),
+    serviceOrders: await listUserServiceOrders(user.id, 12)
   });
 }
 
@@ -2188,7 +2690,9 @@ async function handleMemberGenerate(req, res) {
     result.membership = {
       consumedCredits: creditCost,
       remainingCredits,
-      reportId
+      reportId,
+      resultUrl: buildMemberReportResultUrl(reportId),
+      pdfUrl: buildMemberReportPdfUrl(reportId)
     };
     send(res, 200, result);
   } catch (error) {
@@ -2205,19 +2709,130 @@ async function handleMemberReport(req, res, url) {
   if (!useSupabase) {
     const report = database.reports.find(item => item.id === reportId && item.userId === user.id);
     if (!report) return send(res, 404, { error: "Report not found." });
-    send(res, 200, report.result);
+    send(res, 200, {
+      report: summarizeMemberReport(report),
+      result: report.result
+    });
     return;
   }
   const rows = await supabaseRequest("naming_reports", {
     searchParams: {
-      select: "result",
+      select: "id,tier,input_name,created_at,zodiac,preview_names,result",
       id: `eq.${reportId}`,
       user_id: `eq.${user.id}`,
       limit: 1
     }
   });
   if (!rows[0]) return send(res, 404, { error: "Report not found." });
-  send(res, 200, rows[0].result);
+  send(res, 200, {
+    report: mapReportSummaryRow(rows[0]),
+    result: rows[0].result
+  });
+}
+
+async function handleMemberReportPdf(req, res, url) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return send(res, 401, { error: "Please sign in first." });
+  const reportId = String(url.searchParams.get("id") || "").trim();
+  if (!reportId) return send(res, 422, { error: "Report ID is required." });
+
+  let report = null;
+  if (!useSupabase) {
+    const localReport = database.reports.find(item => item.id === reportId && item.userId === user.id);
+    if (localReport) {
+      report = {
+        id: localReport.id,
+        tier: localReport.tier,
+        inputName: localReport.inputName,
+        createdAt: localReport.createdAt,
+        result: localReport.result
+      };
+    }
+  } else {
+    const rows = await supabaseRequest("naming_reports", {
+      searchParams: {
+        select: "id,tier,input_name,created_at,result",
+        id: `eq.${reportId}`,
+        user_id: `eq.${user.id}`,
+        limit: 1
+      }
+    });
+    if (rows[0]) {
+      report = {
+        id: rows[0].id,
+        tier: rows[0].tier,
+        inputName: rows[0].input_name,
+        createdAt: rows[0].created_at,
+        result: rows[0].result
+      };
+    }
+  }
+
+  if (!report) return send(res, 404, { error: "Report not found." });
+  const fileBuffer = await buildMemberReportPdfBytes(report, user);
+  send(res, 200, fileBuffer, "application/pdf", {
+    "Content-Disposition": `attachment; filename=\"${report.id}.pdf\"`,
+    "Cache-Control": "private, max-age=60"
+  });
+}
+
+async function handleMemberPurchaseStart(req, res) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return send(res, 401, { error: "Please sign in first." });
+
+  let created = null;
+  try {
+    const body = await readJsonBody(req, res);
+    if (!body) return;
+    const planId = String(body.planId || "").trim();
+    const plan = getMemberPlan(planId);
+    if (!plan) return send(res, 422, { error: "Selected plan is invalid." });
+
+    created = await insertMemberOrder(createMemberOrderRecord(user, plan));
+    const payPalCheckout = await createPayPalMemberCheckout(created);
+    const order = await updateMemberOrder(created.id, {
+      paypalOrderId: payPalCheckout.paypalOrderId,
+      status: "pending_payment"
+    }) || { ...created, paypalOrderId: payPalCheckout.paypalOrderId, status: "pending_payment" };
+
+    send(res, 201, {
+      orderId: order.id,
+      approvalUrl: payPalCheckout.paypalLink,
+      paypalOrderId: payPalCheckout.paypalOrderId,
+      order: summarizeMemberOrder(order)
+    });
+  } catch (error) {
+    if (created?.id) {
+      await updateMemberOrder(created.id, { status: "payment_error" });
+    }
+    send(res, 500, { error: error.message || "Failed to start member purchase." });
+  }
+}
+
+async function handleMemberPurchaseCapture(req, res) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return send(res, 401, { error: "Please sign in first." });
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+
+  const memberOrderId = String(body.memberOrderId || "").trim();
+  const payPalOrderId = String(body.payPalOrderId || body.paypalOrderId || "").trim() || null;
+  if (!memberOrderId) return send(res, 422, { error: "Member order ID is required." });
+
+  const order = await getMemberOrderById(memberOrderId);
+  if (!order || order.userId !== user.id) return send(res, 404, { error: "Member order not found." });
+
+  try {
+    const completed = await ensureMemberOrderCompleted(order, payPalOrderId);
+    send(res, 200, {
+      message: "Purchase completed successfully.",
+      user: completed.user,
+      remainingCredits: completed.remainingCredits,
+      order: summarizeMemberOrder(completed.order)
+    });
+  } catch (error) {
+    send(res, 502, { error: error.message });
+  }
 }
 
 http.createServer((req, res) => {
@@ -2248,8 +2863,11 @@ http.createServer((req, res) => {
     if (req.method === "GET" && pathname === "/api/auth/session") return handleSession(req, res);
 
     if (req.method === "GET" && pathname === "/api/member/overview") return handleMemberOverview(req, res);
+    if (req.method === "POST" && pathname === "/api/member/purchase/start") return handleMemberPurchaseStart(req, res);
+    if (req.method === "POST" && pathname === "/api/member/purchase/capture") return handleMemberPurchaseCapture(req, res);
     if (req.method === "POST" && pathname === "/api/member/generate") return handleMemberGenerate(req, res);
     if (req.method === "GET" && pathname === "/api/member/report") return handleMemberReport(req, res, url);
+    if (req.method === "GET" && pathname === "/api/member/report/pdf") return handleMemberReportPdf(req, res, url);
 
     const safePath = pathname === "/" ? "/index.html" : pathname;
     const file = path.normalize(path.join(root, safePath));

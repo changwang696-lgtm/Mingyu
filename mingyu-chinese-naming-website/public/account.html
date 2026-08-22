@@ -18,11 +18,11 @@
 
     <section class="hero">
       <p class="eyebrow">MEMBER CENTER</p>
-      <h1>Accounts, credits, and saved naming history</h1>
-      <p>This first version gives you a real member identity, welcome credits, saved activity, and a foundation for future subscription billing.</p>
+      <h1>注册、订阅、订单与报告都在这里</h1>
+      <p>登录后，你可以购买会员或 credits、查看生成记录与订单记录，并直接打开结果或下载 PDF。首页生成服务现在会优先要求登录后再继续。</p>
       <div class="hero-note">
         <strong>Welcome credit policy</strong>
-        <span>New accounts receive 3 credits so you can test the member workflow immediately after registration.</span>
+        <span>新注册账户默认获得 3 credits，可立即测试会员生成流程；后续可继续购买会员套餐或一次性 credits 包。</span>
       </div>
     </section>
 
@@ -108,15 +108,38 @@
           <div class="report-list" id="reportList"></div>
         </article>
       </div>
+
+      <div class="content-grid">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">PURCHASE ORDERS</p>
+              <h3>Membership & credit pack orders</h3>
+            </div>
+          </div>
+          <div class="report-list" id="memberOrderList"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">SERVICE ORDERS</p>
+              <h3>Paid naming orders</h3>
+            </div>
+          </div>
+          <div class="report-list" id="serviceOrderList"></div>
+        </article>
+      </div>
     </section>
 
     <section class="plan-preview" id="planPreview">
       <div class="panel-head">
         <div>
-          <p class="eyebrow">PRICING STRUCTURE</p>
-          <h2>Plans this member system is designed for</h2>
+          <p class="eyebrow">BUY MEMBERSHIP</p>
+          <h2>Choose a membership or one-time credit pack</h2>
         </div>
       </div>
+      <p class="inline-note">购买后会跳转到 PayPal，完成付款后自动返回本页入账。</p>
       <div class="plan-grid" id="planGrid"></div>
     </section>
   </main>

@@ -68,13 +68,6 @@
   background: rgba(23, 109, 104, .08);
 }
 
-.guest-note {
-  margin-top: 18px;
-  padding: 14px 16px;
-  border: 1px solid rgba(158, 57, 43, .18);
-  background: rgba(158, 57, 43, .06);
-}
-
 .guest-meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

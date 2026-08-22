@@ -163,6 +163,11 @@ button,
   text-decoration: none;
 }
 
+button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
 .secondary {
   color: var(--ink);
   background: transparent;
@@ -262,6 +267,29 @@ button,
 
 .plan-card p {
   margin: 10px 0 0;
+  color: #5d5042;
+  line-height: 1.7;
+}
+
+.plan-card button {
+  margin-top: 14px;
+  width: 100%;
+}
+
+.item-meta {
+  color: #5d5042;
+  line-height: 1.7;
+}
+
+.item-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.inline-note {
+  margin: 0 0 18px;
   color: #5d5042;
   line-height: 1.7;
 }

@@ -73,8 +73,8 @@ async function loadStatus() {
   if (order.hasResult) {
     setStatus("该订单的结果已经保存。你可以直接重新打开结果。");
   } else if (!order.paypalOrderId && order.paymentStatus !== "completed" && order.paymentStatus !== "hosted_link_confirmed") {
-    setStatus("订单已记录。当前页面用于恢复历史订单，或展示审核通过后的付款后交付路径。");
-    setMessage("当前 PayPal 商户审核进行中，新付款入口暂时关闭；若这是你之前已保存的订单，可保留订单号并稍后继续处理。");
+    setStatus("订单已记录。若你刚刚已通过固定 PayPal 链接完成付款，请点击下方按钮继续交付。");
+    setMessage("这是轻量收款模式。本站已保存订单号；付款完成后，请回到这里继续生成结果。");
   } else {
     setStatus("订单已记录。系统将自动为你恢复并保存结果。");
   }
@@ -140,8 +140,8 @@ async function initializeSuccessPage() {
     const order = await loadStatus();
     const current = resolveCurrentOrder();
     if (current.cancelled) {
-      setStatus("你已返回本站。订单记录仍会保留，便于后续找回或客服协助。");
-      setMessage("当前 PayPal 商户审核进行中，新付款入口暂时关闭；你仍可查看服务说明、交付政策和订单找回方式。");
+      setStatus("你已取消 PayPal 付款。订单仍然保留，你可以稍后重新发起支付。");
+      setMessage("你已经回到本站。本站填写的邮箱仅用于接收结果邮件；如需继续，可返回首页重新发起，或保留订单号稍后找回。");
       return;
     }
     if (!order || order.hasResult || autoUnlockStarted) return;

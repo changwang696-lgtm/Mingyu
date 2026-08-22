@@ -163,7 +163,8 @@ let pendingTier = "simple";
 let pendingBody = null;
 let sessionState = { loggedIn: false, user: null, catalog: null };
 // Future switch: set to true when the account, membership, and credits experience should return to the homepage.
-const membershipPreviewEnabled = false;
+const membershipPreviewEnabled = true;
+const pendingServiceIntentKey = "mingyu_pending_service_intent";
     let paypalConfig = { enabled: false, clientId: null, currency: "USD", hostedLinks: { simple: null, complete: null } };
 let paypalSdkPromise = null;
 let paypalButtonsInstance = null;
@@ -172,6 +173,8 @@ let activeGuestPayPalOrder = null;
 const guestCheckoutKey = "mingyu_guest_checkout";
     let hostedPayPalLinks = { simple: null, complete: null };
 let guestOrderMeta = null;
+let memberReportMeta = null;
+let lastRequestedTier = "simple";
 const $ = selector => document.querySelector(selector);
 const dialog = $("#payment");
 const creditCosts = { simple: 1, complete: 3 };
@@ -249,6 +252,7 @@ function updateMemberExperience() {
     simpleCaption.textContent = translations[lang].simpleNoPdf;
     completeCaption.textContent = translations[lang].completeWithPdf;
   }
+  if ($("#paypalInline")) $("#paypalInline").hidden = !sessionState.loggedIn;
 }
 
 function applyLanguage() {
@@ -274,6 +278,57 @@ $("#langBtn").onclick = () => {
   applyLanguage();
 };
 
+function rememberRequestedTier(tier) {
+  if (tier === "simple" || tier === "complete") lastRequestedTier = tier;
+}
+
+document.querySelectorAll("#nameForm .plan-button[name=\"tier\"]").forEach(button => {
+  const remember = () => rememberRequestedTier(button.value);
+  button.addEventListener("pointerdown", remember);
+  button.addEventListener("click", remember);
+  button.addEventListener("keydown", event => {
+    if (event.key === "Enter" || event.key === " ") remember();
+  });
+});
+
+function resolveSubmittedTier(event) {
+  const submitterTier = event.submitter?.value;
+  if (submitterTier === "simple" || submitterTier === "complete") {
+    rememberRequestedTier(submitterTier);
+    return submitterTier;
+  }
+  const activeTierValue = document.activeElement?.getAttribute?.("value");
+  if (activeTierValue === "simple" || activeTierValue === "complete") {
+    rememberRequestedTier(activeTierValue);
+    return activeTierValue;
+  }
+  return lastRequestedTier;
+}
+
+function openPaymentDialogWithFallback() {
+  updatePaymentDialog();
+  try {
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+      return true;
+    }
+  } catch (error) {
+    console.warn("Payment dialog open failed:", error);
+  }
+  const inlineCheckout = $("#paypalInline");
+  if (paypalConfig.enabled && inlineCheckout && !inlineCheckout.hidden) {
+    $("#formMessage").textContent = lang === "zh"
+      ? "当前手机浏览器无法打开付款弹窗，请直接使用下方 PayPal 按钮完成付款。"
+      : "This mobile browser could not open the payment dialog. Please use the PayPal buttons below instead.";
+    inlineCheckout.scrollIntoView({ behavior: "smooth", block: "center" });
+    return false;
+  }
+  $("#formMessage").textContent = lang === "zh"
+    ? "当前浏览器暂时无法打开付款弹窗，请稍后重试。"
+    : "This browser could not open the payment dialog. Please try again.";
+  return false;
+}
+
 $("#nameForm").addEventListener("submit", async event => {
   event.preventDefault();
   const form = event.currentTarget;
@@ -281,8 +336,15 @@ $("#nameForm").addEventListener("submit", async event => {
     form.reportValidity();
     return;
   }
-  pendingTier = event.submitter?.value === "complete" ? "complete" : "simple";
+  pendingTier = resolveSubmittedTier(event);
   pendingBody = { ...Object.fromEntries(new FormData(form)), tier: pendingTier };
+  if (!sessionState.loggedIn) {
+    try {
+      sessionStorage.setItem(pendingServiceIntentKey, JSON.stringify({ tier: pendingTier, body: pendingBody }));
+    } catch {}
+    window.location.assign(`/account.html?next=${encodeURIComponent("/")}`);
+    return;
+  }
   if (sessionState.loggedIn && sessionState.user && sessionState.user.creditsBalance >= creditCosts[pendingTier]) {
     startMemberGeneration();
     return;
@@ -296,8 +358,7 @@ $("#nameForm").addEventListener("submit", async event => {
     }
   }
   if (sessionState.loggedIn && sessionState.user) $("#formMessage").textContent = translations[lang].memberPaymentFallback;
-  updatePaymentDialog();
-  dialog.showModal();
+  openPaymentDialogWithFallback();
 });
 
 function updatePaymentDialog() {
@@ -502,6 +563,7 @@ async function capturePayPalOrder(orderID, tier) {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Unable to capture PayPal order.");
     activeTier = tier;
+    memberReportMeta = null;
     latest = result;
     render(result);
     if (result.membership?.remainingCredits != null && sessionState.user) {
@@ -528,9 +590,11 @@ async function refreshSession() {
     const data = await response.json();
     sessionState = data;
     updateMemberExperience();
+    renderHostedCheckoutLinks();
   } catch {
     sessionState = { loggedIn: false, user: null, catalog: null };
     updateMemberExperience();
+    renderHostedCheckoutLinks();
   }
 }
 
@@ -549,6 +613,14 @@ async function startMemberGeneration() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Request failed");
     activeTier = pendingTier;
+    guestOrderMeta = null;
+    memberReportMeta = data.membership?.reportId
+      ? {
+          reportId: data.membership.reportId,
+          resultUrl: data.membership.resultUrl || `/?memberReport=${encodeURIComponent(data.membership.reportId)}`,
+          pdfUrl: data.membership.pdfUrl || `/api/member/report/pdf?id=${encodeURIComponent(data.membership.reportId)}`
+        }
+      : null;
     latest = data;
     render(data);
     if (sessionState.user && data.membership?.remainingCredits != null) {
@@ -645,6 +717,10 @@ async function renderInlinePayPalButtons() {
 
 function renderHostedCheckoutLinks() {
   if (!$("#paypalInline")) return;
+  if (!sessionState.loggedIn) {
+    $("#paypalInline").hidden = true;
+    return;
+  }
       const hasHostedCheckout = Boolean(hostedPayPalLinks.simple || hostedPayPalLinks.complete);
       if (!hasHostedCheckout && !paypalConfig.enabled) {
     $("#paypalInline").hidden = true;
@@ -675,6 +751,7 @@ async function restoreGuestOrderResultFromUrl() {
       token,
       pdfUrl: data.pdfUrl || null
     };
+    memberReportMeta = null;
     activeTier = data.tier;
     latest = data.result;
     render(data.result);
@@ -684,6 +761,31 @@ async function restoreGuestOrderResultFromUrl() {
       orderId: data.orderId,
       successUrl: `/checkout-success.html?order=${encodeURIComponent(data.orderId)}&access=${encodeURIComponent(token)}`
     });
+    $("#result").scrollIntoView({ behavior: "smooth" });
+  } catch {
+    // Ignore silently and leave the normal page flow intact.
+  }
+}
+
+async function restoreMemberReportFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const reportId = params.get("memberReport");
+  if (!reportId) return;
+  try {
+    const response = await fetch(`/api/member/report?id=${encodeURIComponent(reportId)}`);
+    const data = await response.json();
+    if (!response.ok || !data?.result) return;
+    memberReportMeta = {
+      reportId,
+      resultUrl: data.report?.resultUrl || `/?memberReport=${encodeURIComponent(reportId)}`,
+      pdfUrl: data.report?.pdfUrl || `/api/member/report/pdf?id=${encodeURIComponent(reportId)}`
+    };
+    guestOrderMeta = null;
+    activeTier = data.report?.tier === "simple" ? "simple" : "complete";
+    latest = data.result;
+    render(data.result);
+    $("#result").hidden = false;
+    $("#formMessage").textContent = lang === "zh" ? "已为你恢复会员报告，可继续下载 PDF。" : "Your member report has been restored. You can download the PDF now.";
     $("#result").scrollIntoView({ behavior: "smooth" });
   } catch {
     // Ignore silently and leave the normal page flow intact.
@@ -730,6 +832,10 @@ $("#restart").onclick = () => {
 };
 dialog.querySelector(".close").onclick = () => dialog.close();
 $("#savePdf").onclick = () => {
+  if (memberReportMeta?.pdfUrl) {
+    window.location.assign(memberReportMeta.pdfUrl);
+    return;
+  }
   if (guestOrderMeta?.pdfUrl) {
     window.location.assign(guestOrderMeta.pdfUrl);
     return;
@@ -753,5 +859,24 @@ fetch("/api/paypal-config")
   });
 
 applyLanguage();
-refreshSession();
+refreshSession().then(() => {
+  try {
+    const intent = JSON.parse(sessionStorage.getItem(pendingServiceIntentKey) || "null");
+    if (intent?.body && sessionState.loggedIn) {
+      const form = $("#nameForm");
+      for (const [key, value] of Object.entries(intent.body)) {
+        if (key === "tier") continue;
+        const field = form?.elements?.namedItem(key);
+        if (field) field.value = value;
+      }
+      pendingTier = intent.tier === "complete" ? "complete" : "simple";
+      pendingBody = { ...intent.body, tier: pendingTier };
+      sessionStorage.removeItem(pendingServiceIntentKey);
+      $("#formMessage").textContent = lang === "zh" ? "资料已恢复，请再次点击套餐继续。" : "Your form was restored. Select the package again to continue.";
+    }
+  } catch {
+    sessionStorage.removeItem(pendingServiceIntentKey);
+  }
+});
 restoreGuestOrderResultFromUrl();
+restoreMemberReportFromUrl();
