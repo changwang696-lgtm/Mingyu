@@ -10,6 +10,7 @@ const dataDir = path.join(__dirname, "data");
 const databaseFile = path.join(dataDir, "membership-db.json");
 const fontCacheDir = path.join(dataDir, "fonts");
 const pdfFontCacheFile = path.join(fontCacheDir, "NotoSansCJKsc-Regular.otf");
+const pdfAssetCache = new Map();
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "";
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -981,26 +982,106 @@ function wrapPdfText(text, font, size, maxWidth) {
   return lines;
 }
 
-async function buildGuestOrderPdfBytes(order) {
+function getPdfAssetBuffer(relativePath) {
+  const normalized = String(relativePath || "").replace(/^[/\\]+/, "");
+  if (!normalized) return null;
+  const rootPath = path.resolve(root);
+  const filePath = path.resolve(root, normalized);
+  if (filePath !== rootPath && !filePath.startsWith(`${rootPath}${path.sep}`)) return null;
+  if (pdfAssetCache.has(filePath)) return pdfAssetCache.get(filePath);
+  if (!fs.existsSync(filePath)) return null;
+  const buffer = fs.readFileSync(filePath);
+  pdfAssetCache.set(filePath, buffer);
+  return buffer;
+}
+
+async function embedPdfAsset(pdfDoc, relativePath) {
+  const buffer = getPdfAssetBuffer(relativePath);
+  if (!buffer) return null;
+  const extension = path.extname(String(relativePath || "")).toLowerCase();
+  try {
+    const image = extension === ".png" ? await pdfDoc.embedPng(buffer) : await pdfDoc.embedJpg(buffer);
+    return { image, width: image.width, height: image.height };
+  } catch {
+    return null;
+  }
+}
+
+function fitPdfImage(asset, maxWidth, maxHeight) {
+  if (!asset?.width || !asset?.height) return { width: 0, height: 0 };
+  const scale = Math.min(maxWidth / asset.width, maxHeight / asset.height);
+  return {
+    width: asset.width * scale,
+    height: asset.height * scale
+  };
+}
+
+function getZodiacAssetRelativePath(result) {
+  const animalKey = String(result?.zodiac?.animalEn || "").trim().toLowerCase();
+  return animalKey ? `/assets/zodiac/${animalKey}.jpg` : null;
+}
+
+async function buildNamingReportPdfBytes({
+  reportId,
+  editionLabel,
+  ownerLabel,
+  generatedDate,
+  result,
+  accessLines,
+  isComplete
+}) {
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
   const font = await pdfDoc.embedFont(await getPdfFontBytes(), { subset: true });
   const pageSize = [595.28, 841.89];
+  const pageWidth = pageSize[0];
+  const pageHeight = pageSize[1];
   const margin = 48;
-  const maxWidth = pageSize[0] - margin * 2;
+  const maxWidth = pageWidth - margin * 2;
   const lineGap = 6;
   const colors = {
     ink: rgb(0.04, 0.11, 0.19),
     warm: rgb(0.62, 0.22, 0.17),
-    soft: rgb(0.33, 0.27, 0.23)
+    soft: rgb(0.33, 0.27, 0.23),
+    line: rgb(0.82, 0.74, 0.6),
+    panel: rgb(0.97, 0.94, 0.88),
+    paper: rgb(0.95, 0.92, 0.84)
   };
+
+  const resultData = result || {};
+  const culture = resultData.traditionalCulture || {};
+  const zodiacTraits = Array.isArray(resultData.zodiac?.traits) ? resultData.zodiac.traits : [];
+  const profile = culture.zodiacProfile || {};
+  const zodiacImage = await embedPdfAsset(pdfDoc, getZodiacAssetRelativePath(resultData));
+  const reportPreview = isComplete ? await embedPdfAsset(pdfDoc, "/assets/zodiac/report-overview.jpg") : null;
+
   let page = pdfDoc.addPage(pageSize);
-  let y = page.getHeight() - margin;
+  let y = pageHeight - margin;
+
+  const beginNewPage = withHeader => {
+    page = pdfDoc.addPage(pageSize);
+    y = pageHeight - margin;
+    if (!withHeader) return;
+    page.drawText("Mingyu Chinese Naming Report", {
+      x: margin,
+      y,
+      size: 12,
+      font,
+      color: colors.warm
+    });
+    y -= 18;
+    page.drawLine({
+      start: { x: margin, y },
+      end: { x: pageWidth - margin, y },
+      thickness: 1,
+      color: colors.line
+    });
+    y -= 18;
+  };
 
   const ensureSpace = neededHeight => {
     if (y - neededHeight >= margin) return;
-    page = pdfDoc.addPage(pageSize);
-    y = page.getHeight() - margin;
+    beginNewPage(true);
   };
 
   const drawTextLine = (text, { size = 11, color = colors.soft, x = margin } = {}) => {
@@ -1009,125 +1090,246 @@ async function buildGuestOrderPdfBytes(order) {
     y -= size + lineGap;
   };
 
-  const drawParagraph = (text, { size = 11, color = colors.soft, x = margin, gapAfter = 8 } = {}) => {
-    const lines = wrapPdfText(text, font, size, maxWidth - (x - margin));
+  const drawParagraph = (text, { size = 11, color = colors.soft, x = margin, gapAfter = 8, width = maxWidth - (x - margin) } = {}) => {
+    const lines = wrapPdfText(text, font, size, width);
     for (const line of lines) drawTextLine(line || " ", { size, color, x });
     y -= gapAfter;
   };
 
-  const drawSectionTitle = text => {
-    drawTextLine(text, { size: 15, color: colors.warm });
-    y -= 2;
+  const drawDivider = (gapAfter = 14) => {
+    ensureSpace(12);
+    page.drawLine({
+      start: { x: margin, y: y - 2 },
+      end: { x: pageWidth - margin, y: y - 2 },
+      thickness: 1,
+      color: colors.line
+    });
+    y -= gapAfter;
   };
 
-  const result = order.result || {};
-  const culture = result.traditionalCulture || {};
-  const editionLabel = order.tier === "simple" ? "Simple Edition" : "Complete Edition";
-  const downloadUrl = buildGuestOrderPdfUrl(order);
+  const drawSectionTitle = (title, subtitle = "") => {
+    drawTextLine(title, { size: 16, color: colors.ink });
+    if (subtitle) drawTextLine(subtitle, { size: 10, color: colors.warm });
+    y -= 4;
+  };
 
-  drawTextLine("Mingyu Chinese Naming Report", { size: 22, color: colors.ink });
-  drawTextLine(`Guest Order · ${order.id}`, { size: 12, color: colors.warm });
-  y -= 8;
+  const drawCenteredAsset = (asset, maxAssetWidth, maxAssetHeight, gapAfter = 12) => {
+    if (!asset) return;
+    const dimensions = fitPdfImage(asset, maxAssetWidth, maxAssetHeight);
+    ensureSpace(dimensions.height + gapAfter + 6);
+    page.drawImage(asset.image, {
+      x: (pageWidth - dimensions.width) / 2,
+      y: y - dimensions.height,
+      width: dimensions.width,
+      height: dimensions.height
+    });
+    page.drawRectangle({
+      x: (pageWidth - dimensions.width) / 2,
+      y: y - dimensions.height,
+      width: dimensions.width,
+      height: dimensions.height,
+      borderWidth: 1,
+      borderColor: colors.line
+    });
+    y -= dimensions.height + gapAfter;
+  };
 
-  drawParagraph(`Delivery email: ${order.email}\nEdition: ${editionLabel} · USD ${order.priceValue}\nGenerated date: ${formatReportDate(order.fulfilledAt || order.createdAt)}`, { size: 11, color: colors.soft, gapAfter: 12 });
+  page.drawRectangle({
+    x: 0,
+    y: pageHeight - 190,
+    width: pageWidth,
+    height: 190,
+    color: colors.ink
+  });
 
-  drawSectionTitle("Overview");
-  drawParagraph(`Input name: ${result.inputName || order.inputName || order.formBody?.name || "-"}`, { size: 11, color: colors.soft, gapAfter: 4 });
-  drawParagraph(result.summary || "", { size: 11, color: colors.soft, gapAfter: 4 });
-  drawParagraph(result.summaryEn || "", { size: 10, color: colors.soft, gapAfter: 12 });
+  page.drawText("名屿 Mingyu", {
+    x: margin,
+    y: pageHeight - 54,
+    size: 14,
+    font,
+    color: colors.paper
+  });
+  page.drawText("Chinese Naming Report", {
+    x: margin,
+    y: pageHeight - 88,
+    size: 24,
+    font,
+    color: colors.paper
+  });
+  page.drawText(editionLabel, {
+    x: margin,
+    y: pageHeight - 118,
+    size: 13,
+    font,
+    color: colors.paper
+  });
+  page.drawText(reportId, {
+    x: margin,
+    y: pageHeight - 144,
+    size: 10,
+    font,
+    color: colors.paper
+  });
+  y = pageHeight - 216;
 
-  drawSectionTitle("Name Options");
-  for (const option of Array.isArray(result.names) ? result.names : []) {
-    drawTextLine(`${option.hanzi || ""}  ${option.pinyin || ""}`.trim(), { size: 14, color: colors.ink });
-    if (option.tone) drawTextLine(`Tone: ${option.tone}`, { size: 10, color: colors.warm, x: margin + 6 });
-    drawParagraph(option.meaning || "", { size: 11, color: colors.soft, x: margin + 6, gapAfter: 2 });
-    drawParagraph(option.meaningEn || "", { size: 10, color: colors.soft, x: margin + 6, gapAfter: 10 });
+  drawParagraph(`${ownerLabel}\n生成日期 / Generated date: ${generatedDate}\n输入姓名 / Input name: ${resultData.inputName || "-"}`, {
+    size: 11,
+    color: colors.soft,
+    gapAfter: 12
+  });
+
+  if (reportPreview) {
+    drawSectionTitle("报告预览 / Report Preview", "完整版会保留与网页结果一致的核心视觉内容");
+    drawCenteredAsset(reportPreview, 260, 320, 18);
   }
 
-  drawSectionTitle("Zodiac & Traditional Culture");
-  drawParagraph(`Zodiac: ${result.zodiac?.animal || "-"} · ${result.zodiac?.animalEn || "-"}\nYear pillar: ${culture.pillar || "-"}\nBirth hour: ${culture.hourBranch?.char || "-"}时 · ${culture.hourBranch?.range || "-"}`, { size: 11, color: colors.soft, gapAfter: 4 });
-  drawParagraph(culture.note || result.culturalNote || "", { size: 11, color: colors.soft, gapAfter: 4 });
-  drawParagraph(culture.noteEn || result.culturalNoteEn || "", { size: 10, color: colors.soft, gapAfter: 12 });
+  drawSectionTitle("你的生肖意象 / Zodiac", "网页上的生肖图现在也会进入 PDF");
+  drawCenteredAsset(zodiacImage, 130, 130, 14);
+  drawTextLine(`${resultData.zodiac?.years || "-"} · ${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
+    size: 15,
+    color: colors.ink
+  });
+  if (zodiacTraits.length) {
+    drawParagraph(`Traits / 特征: ${zodiacTraits.join(" · ")}`, {
+      size: 10,
+      color: colors.warm,
+      gapAfter: 6
+    });
+  }
+  drawParagraph(resultData.summary || "暂无概览说明。", {
+    size: 11,
+    color: colors.soft,
+    gapAfter: 10
+  });
+  drawDivider();
 
-  drawSectionTitle("Access");
-  drawParagraph(`Order ID: ${order.id}\nResult page: ${buildGuestOrderDeliveryUrl(order)}\nPDF download: ${downloadUrl}`, { size: 10, color: colors.soft, gapAfter: 0 });
+  drawSectionTitle("候选名字 / Name Options", "与网页结果保持同一批候选名字");
+  for (const option of Array.isArray(resultData.names) ? resultData.names : []) {
+    ensureSpace(84);
+    page.drawRectangle({
+      x: margin,
+      y: y - 72,
+      width: maxWidth,
+      height: 72,
+      color: colors.panel,
+      borderWidth: 1,
+      borderColor: colors.line
+    });
+    y -= 14;
+    drawTextLine(`${option.hanzi || ""}  ${option.pinyin || ""}`.trim(), { size: 14, color: colors.ink, x: margin + 12 });
+    if (option.seal) drawTextLine(`Seal / 印记: ${option.seal}`, { size: 10, color: colors.warm, x: margin + 12 });
+    if (option.tone) drawTextLine(`Tone / 声调: ${option.tone}`, { size: 10, color: colors.warm, x: margin + 12 });
+    drawParagraph(option.meaning || "", {
+      size: 10,
+      color: colors.soft,
+      x: margin + 12,
+      width: maxWidth - 24,
+      gapAfter: 10
+    });
+  }
+
+  if (isComplete) {
+    drawDivider();
+    drawSectionTitle("生肖文化详解 / Zodiac Culture", "完整版包含网页中的完整生肖文化解读");
+    if (Array.isArray(profile.personality) && profile.personality.length) {
+      drawParagraph(`性格特征 / Personality: ${profile.personality.join(" · ")}`, {
+        size: 11,
+        color: colors.soft,
+        gapAfter: 6
+      });
+    }
+    drawParagraph(profile.symbolism || "暂无生肖文化说明。", {
+      size: 11,
+      color: colors.soft,
+      gapAfter: 12
+    });
+
+    drawSectionTitle("传统时序文化解读 / Traditional Reading", "对应网页中的年柱、时辰与文化注解");
+    drawParagraph(
+      [
+        `年柱 / Year pillar: ${culture.pillar || "-"}`,
+        `天干 / Heavenly stem: ${culture.stem?.char || "-"} · ${culture.stem?.polarity || "-"}${culture.stem?.element || ""}`,
+        `地支与生肖 / Earthly branch: ${culture.branch?.char || "-"} · ${culture.branch?.element || "-"} · ${culture.branch?.zodiac || "-"}`,
+        `出生时辰 / Birth hour: ${culture.hourBranch?.char || "-"}时 · ${culture.hourBranch?.range || "-"}`,
+        `时区换算 / Timezone: ${culture.sourceTimeZone || "-"} -> ${culture.chinaBirthLabel || "-"}`
+      ].join("\n"),
+      {
+        size: 11,
+        color: colors.soft,
+        gapAfter: 8
+      }
+    );
+    drawParagraph(culture.note || resultData.culturalNote || "暂无文化说明。", {
+      size: 11,
+      color: colors.soft,
+      gapAfter: 10
+    });
+  } else if (resultData.culturalNote) {
+    drawDivider();
+    drawSectionTitle("文化说明 / Cultural Note");
+    drawParagraph(resultData.culturalNote, {
+      size: 11,
+      color: colors.soft,
+      gapAfter: 10
+    });
+  }
+
+  drawDivider();
+  drawSectionTitle("访问方式 / Access");
+  drawParagraph(accessLines.join("\n"), {
+    size: 10,
+    color: colors.soft,
+    gapAfter: 0
+  });
 
   return Buffer.from(await pdfDoc.save());
 }
 
-async function buildMemberReportPdfBytes(report, user) {
-  const pdfDoc = await PDFDocument.create();
-  pdfDoc.registerFontkit(fontkit);
-  const font = await pdfDoc.embedFont(await getPdfFontBytes(), { subset: true });
-  const pageSize = [595.28, 841.89];
-  const margin = 48;
-  const maxWidth = pageSize[0] - margin * 2;
-  const lineGap = 6;
-  const colors = {
-    ink: rgb(0.04, 0.11, 0.19),
-    warm: rgb(0.62, 0.22, 0.17),
-    soft: rgb(0.33, 0.27, 0.23)
-  };
-  let page = pdfDoc.addPage(pageSize);
-  let y = page.getHeight() - margin;
-
-  const ensureSpace = neededHeight => {
-    if (y - neededHeight >= margin) return;
-    page = pdfDoc.addPage(pageSize);
-    y = page.getHeight() - margin;
-  };
-
-  const drawTextLine = (text, { size = 11, color = colors.soft, x = margin } = {}) => {
-    ensureSpace(size + lineGap);
-    page.drawText(String(text || ""), { x, y, size, font, color });
-    y -= size + lineGap;
-  };
-
-  const drawParagraph = (text, { size = 11, color = colors.soft, x = margin, gapAfter = 8 } = {}) => {
-    const lines = wrapPdfText(text, font, size, maxWidth - (x - margin));
-    for (const line of lines) drawTextLine(line || " ", { size, color, x });
-    y -= gapAfter;
-  };
-
-  const drawSectionTitle = text => {
-    drawTextLine(text, { size: 15, color: colors.warm });
-    y -= 2;
-  };
-
-  const result = report.result || {};
+async function buildGuestOrderPdfBytes(order) {
+  const result = order.result || {};
   const culture = result.traditionalCulture || {};
-  const editionLabel = report.tier === "simple" ? "Simple Edition" : "Complete Edition";
+  const editionLabel = order.tier === "simple" ? "简约版 · Simple Edition" : "完整版 · Complete Edition";
+  const downloadUrl = buildGuestOrderPdfUrl(order);
+  return buildNamingReportPdfBytes({
+    reportId: `Guest Order · ${order.id}`,
+    editionLabel,
+    ownerLabel: `交付邮箱 / Delivery email: ${order.email}\n价格 / Price: USD ${order.priceValue}`,
+    generatedDate: formatReportDate(order.fulfilledAt || order.createdAt),
+    result: {
+      ...result,
+      inputName: result.inputName || order.inputName || order.formBody?.name || "-",
+      traditionalCulture: culture
+    },
+    accessLines: [
+      `Order ID: ${order.id}`,
+      `Result page: ${buildGuestOrderDeliveryUrl(order)}`,
+      `PDF download: ${downloadUrl}`
+    ],
+    isComplete: order.tier !== "simple"
+  });
+}
+
+async function buildMemberReportPdfBytes(report, user) {
+  const result = report.result || {};
+  const editionLabel = report.tier === "simple" ? "简约版 · Simple Edition" : "完整版 · Complete Edition";
   const resultUrl = buildMemberReportResultUrl(report.id);
   const pdfUrl = buildMemberReportPdfUrl(report.id);
-
-  drawTextLine("Mingyu Chinese Naming Report", { size: 22, color: colors.ink });
-  drawTextLine(`Member Report · ${report.id}`, { size: 12, color: colors.warm });
-  y -= 8;
-
-  drawParagraph(`Member: ${user.displayName || user.email}\nAccount email: ${user.email}\nEdition: ${editionLabel}\nGenerated date: ${formatReportDate(report.createdAt)}`, { size: 11, color: colors.soft, gapAfter: 12 });
-
-  drawSectionTitle("Overview");
-  drawParagraph(`Input name: ${result.inputName || report.inputName || "-"}`, { size: 11, color: colors.soft, gapAfter: 4 });
-  drawParagraph(result.summary || "", { size: 11, color: colors.soft, gapAfter: 4 });
-  drawParagraph(result.summaryEn || "", { size: 10, color: colors.soft, gapAfter: 12 });
-
-  drawSectionTitle("Name Options");
-  for (const option of Array.isArray(result.names) ? result.names : []) {
-    drawTextLine(`${option.hanzi || ""}  ${option.pinyin || ""}`.trim(), { size: 14, color: colors.ink });
-    if (option.tone) drawTextLine(`Tone: ${option.tone}`, { size: 10, color: colors.warm, x: margin + 6 });
-    drawParagraph(option.meaning || "", { size: 11, color: colors.soft, x: margin + 6, gapAfter: 2 });
-    drawParagraph(option.meaningEn || "", { size: 10, color: colors.soft, x: margin + 6, gapAfter: 10 });
-  }
-
-  drawSectionTitle("Zodiac & Traditional Culture");
-  drawParagraph(`Zodiac: ${result.zodiac?.animal || "-"} · ${result.zodiac?.animalEn || "-"}\nYear pillar: ${culture.pillar || "-"}\nBirth hour: ${culture.hourBranch?.char || "-"}时 · ${culture.hourBranch?.range || "-"}`, { size: 11, color: colors.soft, gapAfter: 4 });
-  drawParagraph(culture.note || result.culturalNote || "", { size: 11, color: colors.soft, gapAfter: 4 });
-  drawParagraph(culture.noteEn || result.culturalNoteEn || "", { size: 10, color: colors.soft, gapAfter: 12 });
-
-  drawSectionTitle("Access");
-  drawParagraph(`Report ID: ${report.id}\nResult page: ${resultUrl}\nPDF download: ${pdfUrl}`, { size: 10, color: colors.soft, gapAfter: 0 });
-
-  return Buffer.from(await pdfDoc.save());
+  return buildNamingReportPdfBytes({
+    reportId: `Member Report · ${report.id}`,
+    editionLabel,
+    ownerLabel: `会员 / Member: ${user.displayName || user.email}\n账户邮箱 / Account email: ${user.email}`,
+    generatedDate: formatReportDate(report.createdAt),
+    result: {
+      ...result,
+      inputName: result.inputName || report.inputName || "-"
+    },
+    accessLines: [
+      `Report ID: ${report.id}`,
+      `Result page: ${resultUrl}`,
+      `PDF download: ${pdfUrl}`
+    ],
+    isComplete: report.tier !== "simple"
+  });
 }
 
 function buildGuestOrderEmail(order) {
@@ -2391,9 +2593,17 @@ async function handleGuestOrderPdf(req, res, url) {
   if (!orderId || !token) return send(res, 422, { error: "Order ID and access token are required." });
   const order = await getGuestOrderByIdAndToken(orderId, token);
   if (!order) return send(res, 404, { error: "Order not found." });
-  if (!order.pdfBase64) return send(res, 409, { error: "This order does not have a saved PDF yet." });
+  if (!order.result && !order.pdfBase64) return send(res, 409, { error: "This order does not have a saved PDF yet." });
   const fileName = order.pdfFileName || `${order.id}.pdf`;
-  const fileBuffer = Buffer.from(order.pdfBase64, "base64");
+  const fileBuffer = order.result
+    ? await buildGuestOrderPdfBytes(order)
+    : Buffer.from(order.pdfBase64, "base64");
+  if (order.result) {
+    await updateGuestOrder(order.id, order.accessToken, {
+      pdfBase64: fileBuffer.toString("base64"),
+      pdfGeneratedAt: nowIso()
+    });
+  }
   send(res, 200, fileBuffer, "application/pdf", {
     "Content-Disposition": `attachment; filename=\"${fileName}\"`,
     "Cache-Control": "private, max-age=60"

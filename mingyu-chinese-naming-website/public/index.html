@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="AI-powered Chinese naming reports rooted in language, symbolism, and traditional culture, with guest order recovery and email delivery." />
   <title>名屿 Mingyu · Chinese Naming Studio</title>
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/theme.css" />
-  <link rel="stylesheet" href="/print.css" media="print" />
+  <link rel="stylesheet" href="/styles.css?v=20260822-register-fix" />
+  <link rel="stylesheet" href="/theme.css?v=20260822-register-fix" />
+  <link rel="stylesheet" href="/print.css?v=20260822-register-fix" media="print" />
 </head>
 <body>
             <header class="topbar">
@@ -126,6 +126,10 @@
 
     <section class="ritual" id="ritual">
       <div class="form-heading"><p class="section-no">贰 / 02</p><h2 data-i18n="formTitle">告诉我们，你是谁</h2><p data-i18n="formSub">为支持游客订单交付与找回，我们会保存本次付款所需信息。若有顾虑，可只输入您的姓氏，生成效果仍约有 90%。</p></div>
+      <div class="auth-entry" aria-label="Member access">
+        <a class="auth-entry-link primary-auth" href="/account.html#registerForm">立即注册</a>
+        <a class="auth-entry-link secondary-auth" href="/account.html#loginForm">会员登录</a>
+      </div>
       <div class="member-strip" id="memberStrip" data-staged-feature="membership">
         <div>
           <small data-i18n="memberStripEyebrow">MEMBER ACCESS</small>
@@ -235,6 +239,6 @@
 
       <dialog id="payment"><button class="close" aria-label="Close">×</button><p class="eyebrow" id="paymentEyebrow">MINGYU EDITION</p><h2 id="paymentTitle">确认生成简约版</h2><div class="preview-sheet"><span>名屿</span><b>名</b><small>CHINESE NAMING EDITION</small></div><ul id="paymentBenefits"></ul><div id="paypalButtons" hidden></div><div class="paypal-hosted-dialog" id="hostedCheckout" hidden><a class="primary paypal-hosted-link" id="dialogHostedLink" href="#">PayPal Checkout</a></div><button id="confirmPurchase" class="submit"><span id="confirmPurchaseText">支付并生成 · $2.99</span><b>→</b></button><small id="paymentNote" data-i18n="demoNote">支付将由 PayPal 处理；付款成功后，结果会在本站交付。</small><small class="legal-note">By purchasing, you agree to our <a href="/delivery.html" target="_blank" rel="noreferrer">Delivery</a>, <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>, <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>, <a href="/refund.html" target="_blank" rel="noreferrer">Refund Policy</a>, and <a href="/cancellation.html" target="_blank" rel="noreferrer">Cancellation Policy</a>.</small></dialog>
   <div class="loading" id="loading" hidden role="status" aria-live="polite"><div class="loader-seal">名</div><p data-i18n="loading">正在研读你的名字与时辰...</p></div>
-  <script src="/app.js"></script>
+  <script src="/app.js?v=20260822-register-fix"></script>
 </body>
 </html>

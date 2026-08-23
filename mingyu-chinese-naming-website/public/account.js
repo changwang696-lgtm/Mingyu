@@ -38,6 +38,20 @@ function formatMoney(value, currency = "USD") {
   return `${currency} ${value}`;
 }
 
+function normalizeTier(tier) {
+  return String(tier || "").toLowerCase() === "complete" ? "complete" : "simple";
+}
+
+function reportTierLabel(tier) {
+  return normalizeTier(tier) === "complete" ? "完整版" : "简约版";
+}
+
+function reportTierDescription(tier) {
+  return normalizeTier(tier) === "complete"
+    ? "生成全部起名结果"
+    : "生成名字及生肖";
+}
+
 function redirectAfterAuth() {
   if (!sessionStorage.getItem("mingyu_pending_service_intent")) return;
   const safePath = nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/";
@@ -92,22 +106,48 @@ function renderLedger(entries) {
 
 function renderReports(reports) {
   if (!reports?.length) {
-    reportList.innerHTML = `<div class="empty-state">No saved reports yet. After a successful member generation, your recent naming history will appear here.</div>`;
+    reportList.innerHTML = `<div class="empty-state">暂时还没有历史生成记录。登录后完成会员生成，这里会分别显示简约版与完整版清单。</div>`;
     return;
   }
 
-  reportList.innerHTML = reports.map(report => `
-    <article class="report-item">
-      <small>${safeDate(report.createdAt)} · ${report.tier}</small>
-      <strong>${escapeHtml(report.inputName)}</strong>
-      <div class="item-meta">${escapeHtml(report.zodiac)}</div>
-      <p>${(Array.isArray(report.previewNames) ? report.previewNames : []).map(escapeHtml).join(" · ")}</p>
-      <div class="item-actions">
-        <a class="text-link" href="${report.resultUrl}">Open result</a>
-        <a class="text-link" href="${report.pdfUrl}">Download PDF</a>
+  const simpleReports = reports.filter(report => normalizeTier(report.tier) === "simple");
+  const completeReports = reports.filter(report => normalizeTier(report.tier) === "complete");
+
+  const renderReportCards = items => items.map(report => {
+    const previewNames = (Array.isArray(report.previewNames) ? report.previewNames : [])
+      .map(escapeHtml)
+      .join(" · ");
+    const canDownloadPdf = normalizeTier(report.tier) === "complete" && report.pdfUrl;
+    return `
+      <article class="report-item">
+        <small>${safeDate(report.createdAt)} · ${reportTierLabel(report.tier)}</small>
+        <strong>${escapeHtml(report.inputName)}</strong>
+        <div class="item-meta">${reportTierDescription(report.tier)}${report.zodiac ? ` · ${escapeHtml(report.zodiac)}` : ""}</div>
+        <p>${previewNames || "已生成结果，点击下方可查看详情。"}</p>
+        <div class="item-actions">
+          <a class="text-link" href="${report.resultUrl}">查看结果</a>
+          ${canDownloadPdf ? `<a class="text-link" href="${report.pdfUrl}">下载 PDF</a>` : ""}
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  const renderReportSection = (title, desc, items, emptyText) => `
+    <section class="report-section">
+      <div class="report-section-head">
+        <strong>${title}</strong>
+        <span>${desc}</span>
       </div>
-    </article>
-  `).join("");
+      ${items.length
+        ? `<div class="report-list-inner">${renderReportCards(items)}</div>`
+        : `<div class="empty-state">${emptyText}</div>`}
+    </section>
+  `;
+
+  reportList.innerHTML = [
+    renderReportSection("简约版", "生成名字及生肖", simpleReports, "还没有简约版历史生成记录。"),
+    renderReportSection("完整版", "生成全部起名结果，可直接下载 PDF", completeReports, "还没有完整版历史生成记录。")
+  ].join("");
 }
 
 function renderMemberOrders(orders) {

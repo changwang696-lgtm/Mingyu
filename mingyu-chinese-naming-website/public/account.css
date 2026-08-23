@@ -236,6 +236,34 @@ button:disabled {
   gap: 12px;
 }
 
+.report-section {
+  padding: 16px 18px;
+  border: 1px solid rgba(48,37,29,.12);
+  background: rgba(255,255,255,.62);
+}
+
+.report-list-inner {
+  display: grid;
+  gap: 12px;
+}
+
+.report-section-head {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.report-section-head strong {
+  color: var(--ink);
+  font-weight: 400;
+  font-size: 20px;
+}
+
+.report-section-head span {
+  color: #6a5b4c;
+  line-height: 1.7;
+}
+
 .ledger-item,
 .report-item,
 .plan-card {
