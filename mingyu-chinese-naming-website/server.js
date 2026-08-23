@@ -1248,9 +1248,11 @@ async function buildNamingReportPdfBytes({
     drawParagraph(
       [
         `年柱 / Year pillar: ${culture.pillar || "-"}`,
+        `六十甲子位次 / Cycle position: ${culture.cycleNumber || "-"}`,
         `天干 / Heavenly stem: ${culture.stem?.char || "-"} · ${culture.stem?.polarity || "-"}${culture.stem?.element || ""}`,
         `地支与生肖 / Earthly branch: ${culture.branch?.char || "-"} · ${culture.branch?.element || "-"} · ${culture.branch?.zodiac || "-"}`,
         `出生时辰 / Birth hour: ${culture.hourBranch?.char || "-"}时 · ${culture.hourBranch?.range || "-"}`,
+        `原始出生时间 / Original birth time: ${culture.originalBirthLabel || "-"}`,
         `时区换算 / Timezone: ${culture.sourceTimeZone || "-"} -> ${culture.chinaBirthLabel || "-"}`
       ].join("\n"),
       {
@@ -1259,11 +1261,19 @@ async function buildNamingReportPdfBytes({
         gapAfter: 8
       }
     );
-    drawParagraph(culture.note || resultData.culturalNote || "暂无文化说明。", {
+    drawParagraph(culture.note || "暂无传统文化说明。", {
       size: 11,
       color: colors.soft,
       gapAfter: 10
     });
+    if (resultData.culturalNote) {
+      drawSectionTitle("补充说明 / Additional Note", "对应网页结果底部的文化注解");
+      drawParagraph(resultData.culturalNote, {
+        size: 11,
+        color: colors.soft,
+        gapAfter: 10
+      });
+    }
   } else if (resultData.culturalNote) {
     drawDivider();
     drawSectionTitle("文化说明 / Cultural Note");
@@ -2825,13 +2835,22 @@ async function handleMemberOverview(req, res) {
   const user = await getAuthenticatedUser(req);
   if (!user) return send(res, 401, { error: "Please sign in first." });
 
+  const safeLoad = async loader => {
+    try {
+      return await loader();
+    } catch (error) {
+      console.warn("Member overview partial load failed:", error.message);
+      return [];
+    }
+  };
+
   send(res, 200, {
     user: publicUser(user),
     catalog: getPublicCatalog(),
-    ledger: await getUserLedger(user.id, 20),
-    reports: await getUserReportSummaries(user.id, 12),
-    memberOrders: (await listUserMemberOrders(user.id, 12)).map(summarizeMemberOrder),
-    serviceOrders: await listUserServiceOrders(user.id, 12)
+    ledger: await safeLoad(() => getUserLedger(user.id, 20)),
+    reports: await safeLoad(() => getUserReportSummaries(user.id, 12)),
+    memberOrders: await safeLoad(async () => (await listUserMemberOrders(user.id, 12)).map(summarizeMemberOrder)),
+    serviceOrders: await safeLoad(() => listUserServiceOrders(user.id, 12))
   });
 }
 
