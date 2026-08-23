@@ -342,5 +342,9 @@ fetchSession()
     return null;
   })
   .catch(error => {
+    renderLedger([]);
+    renderReports([]);
+    renderMemberOrders([]);
+    renderServiceOrders([]);
     showStatus(error?.message || "Unable to load member center right now.", true);
   });
