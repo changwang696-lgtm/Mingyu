@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="AI-powered Chinese naming rooted in language, symbolism and traditional culture." />
+  <title>名屿 Mingyu · Chinese Naming Studio</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/print.css" media="print" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#top"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
+    <nav><a href="#ritual" data-i18n="navNaming">起名</a><a href="#story" data-i18n="navCulture">生肖文化</a><a href="#craft" data-i18n="navCraft">东方好物</a></nav>
+    <button class="lang" id="langBtn" aria-label="Switch language">EN</button>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-art" role="img" aria-label="Dunhuang-inspired Chinese landscape"></div>
+      <div class="hero-copy">
+        <p class="eyebrow" data-i18n="eyebrow">以字为舟 · 渡见东方</p>
+        <h1><span data-i18n="heroA">一个名字，</span><br><em data-i18n="heroB">一生的东方寓意</em></h1>
+        <p data-i18n="heroBody">从你的原名、出生时刻与个性出发，寻找一个既自然好听，也经得起文化推敲的中文名字。</p>
+        <a class="primary" href="#ritual"><span data-i18n="begin">开始寻名</span><b>↓</b></a>
+      </div>
+      <div class="hero-side"><span>天 地 人</span><i></i><small>NAME · SOUND · MEANING</small></div>
+    </section>
+
+    <section class="intro" id="story">
+      <div><p class="section-no">壹 / 01</p><h2 data-i18n="introTitle">不是翻译名字，<br>而是重新认识你。</h2></div>
+      <div class="intro-copy"><p data-i18n="introBody">中文名字是声音、字形与意义的共同选择。我们以你的身份为起点，参考生肖的文化意象与汉字传统，提供有出处、有解释、可被真实使用的名字。</p><div class="pill-row"><span>音 SOUND</span><span>形 FORM</span><span>意 MEANING</span></div></div>
+    </section>
+
+    <section class="ritual" id="ritual">
+      <div class="form-heading"><p class="section-no">贰 / 02</p><h2 data-i18n="formTitle">告诉我们，你是谁</h2><p data-i18n="formSub">约 1 分钟 · 你的资料仅用于本次生成</p></div>
+      <form id="nameForm">
+        <label class="wide"><span data-i18n="nameLabel">你现在的姓名</span><input id="name" name="name" required placeholder="e.g. Alex Morgan" autocomplete="name"><small data-i18n="nameHint">支持任何语言，我们会理解读音与文化背景</small></label>
+        <fieldset><legend data-i18n="genderLabel">性别表达</legend><div class="segments"><label><input type="radio" name="gender" value="female"><span data-i18n="female">女性</span></label><label><input type="radio" name="gender" value="male"><span data-i18n="male">男性</span></label><label><input type="radio" name="gender" value="neutral" checked><span data-i18n="neutral">中性 / 不限</span></label></div></fieldset>
+        <label><span data-i18n="birthLabel">出生日期与时间</span><input id="birth" name="birth" required type="datetime-local"><small data-i18n="birthHint">越准确，文化解读越细致</small></label>
+        <label><span data-i18n="placeLabel">出生地</span><input id="place" name="place" placeholder="e.g. Paris, France"><small data-i18n="placeHint">用于理解出生时区</small></label>
+        <label class="wide"><span data-i18n="wishLabel">你希望名字传达什么？</span><textarea name="wish" rows="3" placeholder="Wisdom, freedom, warmth..."></textarea></label>
+        <button class="submit" type="submit"><span data-i18n="generate">为我生成中文名</span><b>→</b></button>
+      </form>
+      <div class="privacy"><span>✦</span><p><strong data-i18n="humanTitle">以文化为依据，以人为中心</strong><br><small data-i18n="humanBody">结果为传统文化创意解读，不构成命运预测或专业建议。</small></p></div>
+    </section>
+
+    <section class="result" id="result" hidden>
+      <div class="result-top"><div><p class="section-no">叁 / 03</p><h2 data-i18n="resultTitle">你的东方名字卷</h2></div><button id="restart" class="text-button" data-i18n="restart">重新填写 ↺</button></div>
+      <article class="zodiac"><div class="zodiac-glyph" id="zodiacGlyph">马</div><div><p class="eyebrow" data-i18n="zodiacTitle">你的生肖意象</p><h3 id="zodiacName">午马 · Horse</h3><div class="traits" id="traits"></div><p id="summary"></p></div></article>
+      <div class="name-list" id="nameList"></div>
+      <aside class="culture-note"><b>注 / NOTE</b><p id="culturalNote"></p></aside>
+      <div class="report-cta"><div><p class="eyebrow" data-i18n="reportEyebrow">珍藏版 · PERSONAL EDITION</p><h3 data-i18n="reportTitle">把你的名字，装订成一份东方礼物</h3><p data-i18n="reportBody">包含完整生肖解读、每个名字的字源声韵、使用建议与精美双语版式。</p></div><div><strong>$9.90</strong><button id="buyPdf" class="primary" data-i18n="getPdf">获取 PDF 报告</button></div></div>
+    </section>
+
+    <section class="craft" id="craft">
+      <div class="craft-head"><div><p class="section-no">肆 / 04</p><h2 data-i18n="craftTitle">一件带着名字的东方礼物</h2></div><p data-i18n="craftSub">来自手艺人的小物，为名字留下可以触摸的纪念。</p></div>
+      <div class="products"><article><div class="product-img seal-img"><span>安</span></div><p>01 / 手工篆刻</p><h3 data-i18n="product1">定制姓名印章</h3><strong>From $39</strong></article><article><div class="product-img fan-img"><span>和</span></div><p>02 / 苏作雅物</p><h3 data-i18n="product2">缂丝团扇</h3><strong>From $68</strong></article><article><div class="product-img paper-img"><span>名</span></div><p>03 / 宣纸手作</p><h3 data-i18n="product3">姓名书法卷</h3><strong>From $29</strong></article></div>
+    </section>
+  </main>
+  <footer><div class="brand"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></div><p>Names rooted in culture, made for the world.</p><small>© 2026 Mingyu Naming Studio</small></footer>
+
+  <dialog id="payment"><button class="close" aria-label="Close">×</button><p class="eyebrow">MINGYU PERSONAL EDITION</p><h2 data-i18n="payTitle">解锁完整名字报告</h2><div class="preview-sheet"><span>名屿</span><b id="previewName">曜安</b><small>PERSONAL CHINESE NAME BOOK</small></div><ul><li data-i18n="pay1">完整中英双语名字解析</li><li data-i18n="pay2">精美 A4 排版，适合打印与赠礼</li><li data-i18n="pay3">付款后即时生成 PDF</li></ul><button id="demoDownload" class="submit"><span data-i18n="demoPay">演示支付并下载 · $9.90</span><b>→</b></button><small data-i18n="demoNote">当前为演示结账流程，未接入真实扣款。</small></dialog>
+  <div class="loading" id="loading" hidden><div class="loader-seal">名</div><p data-i18n="loading">正在研读你的名字与时辰...</p></div>
+  <script src="/app.js"></script>
+</body>
+</html>

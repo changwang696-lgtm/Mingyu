@@ -1,0 +1,131 @@
+:root {
+  --ink: #071c31;
+  --paper: #f7f0e0;
+  --gold: #d8a84e;
+  --gold-light: #f2cf83;
+  --cinnabar: #9e392b;
+  --line: rgba(7, 28, 49, .12);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #fbf7ef, var(--paper));
+  color: #2f271f;
+  font-family: "Noto Serif SC", "Songti SC", Georgia, serif;
+}
+
+a { color: var(--cinnabar); }
+
+.legal-shell {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 36px 24px 80px;
+}
+
+.legal-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 0 26px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 20px;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--gold);
+  color: var(--cinnabar);
+}
+
+.back-link {
+  color: var(--ink);
+  text-decoration: none;
+  font: 13px Arial, sans-serif;
+  letter-spacing: .5px;
+}
+
+.hero {
+  padding: 32px;
+  border: 1px solid rgba(158, 57, 43, .18);
+  border-top: 6px solid var(--gold);
+  background: rgba(255, 255, 255, .72);
+  box-shadow: 0 18px 36px rgba(7, 28, 49, .06);
+}
+
+.hero p,
+.policy p,
+.policy li {
+  line-height: 1.85;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--cinnabar);
+  font: 12px Arial, sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 16px 0 12px;
+  color: var(--ink);
+  font-size: clamp(34px, 6vw, 54px);
+  font-weight: 400;
+}
+
+.hero-meta {
+  color: #756c61;
+  font: 13px Arial, sans-serif;
+}
+
+.policy {
+  margin-top: 26px;
+  padding: 32px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .8);
+}
+
+.policy + .policy { margin-top: 18px; }
+
+h2 {
+  margin: 0 0 12px;
+  color: var(--ink);
+  font-size: 26px;
+  font-weight: 400;
+}
+
+ul {
+  margin: 12px 0 0;
+  padding-left: 22px;
+}
+
+.note {
+  padding: 14px 16px;
+  border-left: 3px solid var(--gold);
+  background: #fff8ea;
+}
+
+footer {
+  margin-top: 28px;
+  color: #756c61;
+  font: 13px Arial, sans-serif;
+}
+
+@media (max-width: 760px) {
+  .legal-shell { padding: 20px 16px 56px; }
+  .legal-topbar { flex-direction: column; align-items: start; }
+  .hero, .policy { padding: 22px 18px; }
+}
