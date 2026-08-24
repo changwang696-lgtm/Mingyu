@@ -982,6 +982,13 @@ function wrapPdfText(text, font, size, maxWidth) {
   return lines;
 }
 
+function joinPdfBilingualText(zh, en) {
+  const zhText = String(zh || "").trim();
+  const enText = String(en || "").trim();
+  if (zhText && enText) return `${zhText}\n${enText}`;
+  return zhText || enText || "";
+}
+
 function getPdfAssetBuffer(relativePath) {
   const normalized = String(relativePath || "").replace(/^[/\\]+/, "");
   if (!normalized) return null;
@@ -1032,7 +1039,7 @@ async function buildNamingReportPdfBytes({
 }) {
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
-  const font = await pdfDoc.embedFont(await getPdfFontBytes(), { subset: true });
+  const font = await pdfDoc.embedFont(await getPdfFontBytes(), { subset: false });
   const pageSize = [595.28, 841.89];
   const pageWidth = pageSize[0];
   const pageHeight = pageSize[1];
@@ -1134,6 +1141,191 @@ async function buildNamingReportPdfBytes({
     y -= dimensions.height + gapAfter;
   };
 
+  const drawTraditionalSnapshotPanel = cultureData => {
+    const panelHeight = 236;
+    const panelWidth = maxWidth;
+    const panelX = margin;
+    const panelY = y - panelHeight;
+    const boxGap = 8;
+    const boxCount = 4;
+    const boxWidth = (panelWidth - boxGap * (boxCount + 1)) / boxCount;
+    const boxHeight = 76;
+    const boxTopY = panelY + panelHeight - 72 - boxHeight;
+    const rowTop = panelY + 48;
+    const rowCenterY = rowTop + 24;
+    const elements = ["木", "火", "土", "金", "水"];
+    const present = new Set([cultureData?.stem?.element, cultureData?.branch?.element, cultureData?.hourBranch?.element].filter(Boolean));
+    const boxes = [
+      {
+        label: "年柱 / Year pillar",
+        value: cultureData?.pillar || "-",
+        note: `六十甲子 · 第 ${cultureData?.cycleNumber || "-"} 位`
+      },
+      {
+        label: "天干 / Heavenly stem",
+        value: `${cultureData?.stem?.char || "-"} · ${cultureData?.stem?.polarity || "-"}${cultureData?.stem?.element || ""}`.trim(),
+        note: "体现年柱天干的阴阳与五行属性"
+      },
+      {
+        label: "地支与生肖 / Branch & zodiac",
+        value: `${cultureData?.branch?.char || "-"} · ${cultureData?.branch?.element || "-"} · ${cultureData?.branch?.zodiac || "-"}`.trim(),
+        note: "地支与生肖为固定对应关系"
+      },
+      {
+        label: "出生时辰 / Birth hour",
+        value: `${cultureData?.hourBranch?.char || "-"}时 · ${cultureData?.hourBranch?.element || "-"}`.trim(),
+        note: `${cultureData?.hourBranch?.range || "-"} · 北京时间 ${cultureData?.chinaBirthLabel || "-"}`
+      }
+    ];
+
+    ensureSpace(panelHeight + 16);
+    page.drawRectangle({
+      x: panelX,
+      y: panelY,
+      width: panelWidth,
+      height: panelHeight,
+      color: colors.ink
+    });
+    page.drawRectangle({
+      x: panelX,
+      y: panelY,
+      width: panelWidth,
+      height: panelHeight,
+      borderWidth: 1,
+      borderColor: colors.line
+    });
+    page.drawText("干支 · 五行 · 时辰", {
+      x: panelX + 18,
+      y: panelY + panelHeight - 24,
+      size: 10,
+      font,
+      color: colors.warm
+    });
+    page.drawText("传统时序文化解读", {
+      x: panelX + 18,
+      y: panelY + panelHeight - 46,
+      size: 18,
+      font,
+      color: colors.paper
+    });
+    page.drawRectangle({
+      x: panelX + panelWidth - 70,
+      y: panelY + panelHeight - 50,
+      width: 52,
+      height: 32,
+      color: colors.warm
+    });
+    page.drawText(`${cultureData?.stem?.char || "-"} ${cultureData?.branch?.char || "-"}`, {
+      x: panelX + panelWidth - 58,
+      y: panelY + panelHeight - 39,
+      size: 16,
+      font,
+      color: colors.paper
+    });
+
+    for (let index = 0; index < boxes.length; index += 1) {
+      const box = boxes[index];
+      const x = panelX + boxGap + (boxWidth + boxGap) * index;
+      page.drawRectangle({
+        x,
+        y: boxTopY,
+        width: boxWidth,
+        height: boxHeight,
+        borderWidth: 1,
+        borderColor: colors.line
+      });
+      page.drawText(box.label, {
+        x: x + 8,
+        y: boxTopY + boxHeight - 16,
+        size: 8,
+        font,
+        color: colors.paper
+      });
+      const valueLines = wrapPdfText(box.value, font, 12, boxWidth - 16).slice(0, 2);
+      let valueY = boxTopY + boxHeight - 36;
+      for (const line of valueLines) {
+        page.drawText(line, {
+          x: x + 8,
+          y: valueY,
+          size: 12,
+          font,
+          color: colors.warm
+        });
+        valueY -= 14;
+      }
+      const noteLines = wrapPdfText(box.note, font, 7.5, boxWidth - 16).slice(0, 2);
+      let noteY = boxTopY + 10;
+      for (const line of noteLines.reverse()) {
+        page.drawText(line, {
+          x: x + 8,
+          y: noteY,
+          size: 7.5,
+          font,
+          color: rgb(0.82, 0.78, 0.7)
+        });
+        noteY += 9;
+      }
+    }
+
+    const lineStartX = panelX + 120;
+    const lineEndX = panelX + panelWidth - 120;
+    page.drawLine({
+      start: { x: lineStartX, y: rowCenterY },
+      end: { x: lineEndX, y: rowCenterY },
+      thickness: 1,
+      color: colors.line
+    });
+    elements.forEach((element, index) => {
+      const cx = lineStartX + ((lineEndX - lineStartX) / (elements.length - 1)) * index;
+      const active = present.has(element);
+      page.drawCircle({
+        x: cx,
+        y: rowCenterY,
+        size: 16,
+        color: active ? colors.warm : colors.ink,
+        borderWidth: 1,
+        borderColor: colors.line
+      });
+      page.drawText(element, {
+        x: cx - 5,
+        y: rowCenterY - 5,
+        size: 11,
+        font,
+        color: active ? colors.ink : colors.paper
+      });
+    });
+
+    page.drawRectangle({
+      x: panelX + 18,
+      y: panelY + 14,
+      width: panelWidth - 36,
+      height: 34,
+      color: rgb(0.08, 0.2, 0.32)
+    });
+    page.drawLine({
+      start: { x: panelX + 18, y: panelY + 14 },
+      end: { x: panelX + 18, y: panelY + 48 },
+      thickness: 2,
+      color: colors.warm
+    });
+    const notePreview = wrapPdfText(cultureData?.note || "暂无传统文化说明。", font, 8, panelWidth - 64).slice(0, 2).join(" ");
+    page.drawText("计算说明 / Method note", {
+      x: panelX + 28,
+      y: panelY + 33,
+      size: 8,
+      font,
+      color: colors.paper
+    });
+    page.drawText(notePreview, {
+      x: panelX + 120,
+      y: panelY + 33,
+      size: 7.5,
+      font,
+      color: rgb(0.82, 0.78, 0.7)
+    });
+    y = panelY - 16;
+  };
+
   page.drawRectangle({
     x: 0,
     y: pageHeight - 190,
@@ -1196,21 +1388,21 @@ async function buildNamingReportPdfBytes({
       gapAfter: 6
     });
   }
-  drawParagraph(resultData.summary || "暂无概览说明。", {
+  drawParagraph(joinPdfBilingualText(resultData.summary || "暂无概览说明。", resultData.summaryEn || "Summary unavailable."), {
     size: 11,
     color: colors.soft,
     gapAfter: 10
   });
   drawDivider();
 
-  drawSectionTitle("候选名字 / Name Options", "与网页结果保持同一批候选名字");
+  drawSectionTitle("候选名字 / Name Options", "每个名字说明都同步输出中文与英文");
   for (const option of Array.isArray(resultData.names) ? resultData.names : []) {
-    ensureSpace(84);
+    ensureSpace(106);
     page.drawRectangle({
       x: margin,
-      y: y - 72,
+      y: y - 94,
       width: maxWidth,
-      height: 72,
+      height: 94,
       color: colors.panel,
       borderWidth: 1,
       borderColor: colors.line
@@ -1219,7 +1411,7 @@ async function buildNamingReportPdfBytes({
     drawTextLine(`${option.hanzi || ""}  ${option.pinyin || ""}`.trim(), { size: 14, color: colors.ink, x: margin + 12 });
     if (option.seal) drawTextLine(`Seal / 印记: ${option.seal}`, { size: 10, color: colors.warm, x: margin + 12 });
     if (option.tone) drawTextLine(`Tone / 声调: ${option.tone}`, { size: 10, color: colors.warm, x: margin + 12 });
-    drawParagraph(option.meaning || "", {
+    drawParagraph(joinPdfBilingualText(option.meaning || "", option.meaningEn || ""), {
       size: 10,
       color: colors.soft,
       x: margin + 12,
@@ -1232,19 +1424,21 @@ async function buildNamingReportPdfBytes({
     drawDivider();
     drawSectionTitle("生肖文化详解 / Zodiac Culture", "完整版包含网页中的完整生肖文化解读");
     if (Array.isArray(profile.personality) && profile.personality.length) {
-      drawParagraph(`性格特征 / Personality: ${profile.personality.join(" · ")}`, {
+      const bilingualTraits = profile.personality.map((trait, index) => `${trait} / ${(profile.personalityEn || [])[index] || ""}`).join(" · ");
+      drawParagraph(`性格特征 / Personality: ${bilingualTraits}`, {
         size: 11,
         color: colors.soft,
         gapAfter: 6
       });
     }
-    drawParagraph(profile.symbolism || "暂无生肖文化说明。", {
+    drawParagraph(joinPdfBilingualText(profile.symbolism || "暂无生肖文化说明。", profile.symbolismEn || "Zodiac symbolism unavailable."), {
       size: 11,
       color: colors.soft,
       gapAfter: 12
     });
 
     drawSectionTitle("传统时序文化解读 / Traditional Reading", "对应网页中的年柱、时辰与文化注解");
+    drawTraditionalSnapshotPanel(culture);
     drawParagraph(
       [
         `年柱 / Year pillar: ${culture.pillar || "-"}`,
@@ -1261,23 +1455,23 @@ async function buildNamingReportPdfBytes({
         gapAfter: 8
       }
     );
-    drawParagraph(culture.note || "暂无传统文化说明。", {
+    drawParagraph(joinPdfBilingualText(culture.note || "暂无传统文化说明。", culture.noteEn || "Traditional reading unavailable."), {
       size: 11,
       color: colors.soft,
       gapAfter: 10
     });
     if (resultData.culturalNote) {
       drawSectionTitle("补充说明 / Additional Note", "对应网页结果底部的文化注解");
-      drawParagraph(resultData.culturalNote, {
+      drawParagraph(joinPdfBilingualText(resultData.culturalNote, resultData.culturalNoteEn || ""), {
         size: 11,
         color: colors.soft,
         gapAfter: 10
       });
     }
-  } else if (resultData.culturalNote) {
+  } else if (resultData.culturalNote || resultData.culturalNoteEn) {
     drawDivider();
     drawSectionTitle("文化说明 / Cultural Note");
-    drawParagraph(resultData.culturalNote, {
+    drawParagraph(joinPdfBilingualText(resultData.culturalNote, resultData.culturalNoteEn || ""), {
       size: 11,
       color: colors.soft,
       gapAfter: 10
