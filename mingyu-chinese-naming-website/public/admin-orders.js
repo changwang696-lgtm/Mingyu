@@ -36,7 +36,7 @@ async function ensureAdminSession() {
     window.location.href = "/admin-login.html";
     return null;
   }
-  $("#adminSessionText").textContent = `已登录管理员：${data.username} · 邮件发送${data.emailEnabled ? "已启用" : "未启用"}`;
+  $("#adminSessionText").textContent = `已登录管理员：${data.username} · 邮件发送${data.emailEnabled ? "已启用" : "未启用"} · 套餐数 ${data.planCount || 0}`;
   return data;
 }
 

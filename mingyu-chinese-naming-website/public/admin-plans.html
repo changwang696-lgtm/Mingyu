@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>会员套餐后台 | Mingyu</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin.css?v=20260828-plan-admin-db" />
+</head>
+<body>
+  <main class="admin-shell">
+    <div class="admin-wrap">
+      <header class="admin-topbar">
+        <div>
+          <a class="brand" href="/"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
+          <p class="admin-muted" id="adminSessionText">正在检查后台登录状态...</p>
+        </div>
+        <div class="admin-topbar-actions">
+          <a class="admin-link" href="/admin-orders.html">游客订单后台</a>
+          <a class="admin-link" href="/order-lookup.html">订单找回页</a>
+          <button class="admin-ghost" type="button" id="adminLogoutBtn">退出登录</button>
+        </div>
+      </header>
+
+      <section class="admin-panel">
+        <div class="admin-list-header">
+          <div>
+            <h1>会员套餐管理</h1>
+            <p class="admin-muted" id="planStorageText">正在读取套餐配置...</p>
+          </div>
+          <div class="admin-topbar-actions">
+            <button class="admin-ghost" type="button" id="reloadPlansBtn">重新读取</button>
+            <button class="admin-primary" type="button" id="savePlansBtn">保存套餐配置</button>
+          </div>
+        </div>
+
+        <p class="admin-message" id="plansMessage"></p>
+
+        <form id="plansForm" class="admin-stack">
+          <div class="admin-plan-grid" id="plansGrid"></div>
+        </form>
+      </section>
+    </div>
+  </main>
+  <script src="/admin-plans.js?v=20260828-plan-admin-db"></script>
+</body>
+</html>
