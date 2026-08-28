@@ -640,7 +640,7 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 .profile-traits { display: grid; gap: 10px; }
 .profile-traits span {
   display: grid;
-  grid-template-columns: 48px 44px minmax(0, 1fr);
+  grid-template-columns: 56px 56px minmax(220px, 1fr);
   align-items: stretch;
   min-height: 78px;
   color: var(--paper);
@@ -664,6 +664,7 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 }
 .profile-traits em {
   display: grid;
+  grid-template-columns: 1fr;
   gap: 6px;
   align-content: center;
   min-width: 0;
@@ -675,6 +676,7 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 .profile-traits em .bilingual-zh {
   font-size: 20px;
   line-height: 1.2;
+  width: 100%;
 }
 
 .profile-traits em .bilingual-en,
@@ -686,6 +688,7 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
   margin-top: 0;
   font-size: 15px;
   line-height: 1.3;
+  width: 100%;
 }
 .personality-panel > p { margin: 18px 0 0; color: #756c61; font-size: 11px; line-height: 1.65; }
 .symbolism-panel { position: relative; overflow: hidden; background: rgba(216,168,78,.11); }
@@ -714,10 +717,28 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 .profile-grid small { color: var(--cinnabar); font: 10px Arial,sans-serif; letter-spacing: 1.4px; }
 .profile-grid h4 { margin: 9px 0 22px; color: var(--ink); font-size: 23px; font-weight: 400; }
 .profile-traits { display: grid; gap: 10px; }
-.profile-traits span { display: grid; grid-template-columns: 48px 44px minmax(0, 1fr); align-items: stretch; min-height: 78px; color: var(--paper); background: var(--teal); }
+.profile-traits span { display: grid; grid-template-columns: 56px 56px minmax(220px, 1fr); align-items: stretch; min-height: 78px; color: var(--paper); background: var(--teal); }
 .profile-traits b { height: 100%; display: grid; place-items: center; border-right: 1px solid rgba(242,207,131,.35); color: var(--gold-light); font: 10px Arial,sans-serif; }
 .profile-traits i { display: grid; place-items: center; color: var(--gold-light); font-style: normal; border-right: 1px solid rgba(242,207,131,.18); }
-.profile-traits em { display: grid; gap: 6px; align-content: center; min-width: 0; padding: 12px 16px; font-style: normal; white-space: normal; overflow-wrap: break-word; }
+.profile-traits em { display: grid; grid-template-columns: 1fr; gap: 6px; align-content: center; min-width: 0; padding: 12px 16px; font-style: normal; white-space: normal; overflow-wrap: break-word; }
+
+.profile-traits em .bilingual-line {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .profile-traits span {
+    grid-template-columns: 46px 42px minmax(0, 1fr);
+  }
+
+  .profile-traits em .bilingual-zh {
+    font-size: 17px;
+  }
+
+  .profile-traits em .bilingual-en {
+    font-size: 13px;
+  }
+}
 .personality-panel > p { margin: 18px 0 0; color: #756c61; font-size: 11px; line-height: 1.65; }
 .symbolism-panel { position: relative; overflow: hidden; background: rgba(216,168,78,.11); }
 .symbolism-panel::after { content: "寓"; position: absolute; right: 22px; bottom: -22px; color: rgba(167,58,43,.07); font-size: 126px; line-height: 1; pointer-events: none; }
