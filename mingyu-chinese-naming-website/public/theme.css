@@ -714,14 +714,14 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 .profile-grid article + article { border-left: 1px solid rgba(48,37,29,.25); }
 .profile-grid small { color: var(--cinnabar); font: 10px Arial,sans-serif; letter-spacing: 1.4px; }
 .profile-grid h4 { margin: 9px 0 22px; color: var(--ink); font-size: 23px; font-weight: 400; }
-.profile-traits { display: grid; gap: 8px; }
-.profile-traits span { display: grid; grid-template-columns: 42px 38px minmax(0, 1fr); align-items: stretch; min-height: 60px; color: var(--paper); background: var(--teal); }
+.profile-traits { display: grid; gap: 6px; }
+.profile-traits span { display: grid; grid-template-columns: 36px 32px minmax(0, 1fr); align-items: stretch; min-height: 52px; color: var(--paper); background: var(--teal); }
 .profile-traits b { height: 100%; display: grid; place-items: center; border-right: 1px solid rgba(242,207,131,.35); color: var(--gold-light); font: 10px Arial,sans-serif; }
 .profile-traits i { display: grid; place-items: center; color: var(--gold-light); font-style: normal; border-right: 1px solid rgba(242,207,131,.18); }
-.profile-traits em { display: grid; grid-template-columns: 1fr; gap: 4px; align-content: center; min-width: 0; padding: 8px 12px; font-style: normal; white-space: normal; overflow-wrap: break-word; }
-.profile-traits em .bilingual-zh { font-size: 16px; line-height: 1.2; }
-.profile-traits em .bilingual-en { margin-top: 0; font-size: 12px; line-height: 1.25; }
-.personality-panel > p { margin: 18px 0 0; color: #756c61; font-size: 11px; line-height: 1.65; }
+.profile-traits em { display: grid; grid-template-columns: 1fr; gap: 3px; align-content: center; min-width: 0; padding: 6px 10px; font-style: normal; white-space: normal; overflow-wrap: break-word; }
+.profile-traits em .bilingual-zh { font-size: 15px; line-height: 1.15; }
+.profile-traits em .bilingual-en { margin-top: 0; font-size: 11px; line-height: 1.2; }
+.personality-panel > p { margin: 12px 0 0; color: #756c61; font-size: 11px; line-height: 1.65; }
 .symbolism-panel { position: relative; overflow: hidden; background: rgba(216,168,78,.11); }
 .symbolism-panel::after { content: "寓"; position: absolute; right: 22px; bottom: -22px; color: rgba(167,58,43,.07); font-size: 126px; line-height: 1; pointer-events: none; }
 .symbolism-panel > p { position: relative; z-index: 1; max-width: 680px; margin: 0; font-size: 16px; line-height: 2; }
@@ -736,12 +736,12 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 
 .profile-columns {
   display: grid;
-  grid-template-columns: minmax(300px, .85fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(250px, .68fr) minmax(0, 1.32fr);
 }
 
 .profile-column {
   min-width: 0;
-  padding: 30px;
+  padding: 26px 28px;
 }
 
 .profile-column + .profile-column {
@@ -757,10 +757,12 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 
 .profile-combined .personality-panel {
   background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,248,233,.92));
+  padding-right: 22px;
 }
 
 .profile-combined .symbolism-panel {
   background: rgba(216,168,78,.11);
+  padding-left: 22px;
 }
 
 @media (max-width: 1050px) {
