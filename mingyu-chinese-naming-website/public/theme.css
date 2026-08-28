@@ -536,6 +536,27 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 }
 .zodiac-copy { position: relative; z-index: 1; }
 .zodiac-copy h3 { font-size: 42px; letter-spacing: 1px; }
+.bilingual-line {
+  display: block;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.bilingual-zh {
+  word-break: keep-all;
+}
+
+.bilingual-en {
+  margin-top: 6px;
+  color: #6d6258;
+  font-size: .94em;
+  line-height: 1.45;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
 .traits { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
 .traits span {
   color: var(--paper);
@@ -543,6 +564,21 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
   border-color: var(--teal);
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+}
+
+.trait-dual {
+  display: grid;
+  gap: 4px;
+}
+
+.trait-dual b,
+.trait-dual small {
+  font-weight: 400;
+}
+
+.trait-dual small {
+  color: rgba(255,248,233,.82);
+  letter-spacing: .2px;
 }
 .name-card .seal { position: relative; display: grid; place-items: center; gap: 3px; color: var(--gold-light); background: var(--cinnabar); border: 2px double var(--gold-light); box-shadow: inset 0 0 0 3px rgba(255,236,184,.12), 0 4px 10px rgba(48,37,29,.16); writing-mode: vertical-rl; text-orientation: upright; }
 .name-card .seal::before, .name-card .seal::after { content: ""; position: absolute; width: 8px; height: 8px; border-color: rgba(255,236,184,.68); border-style: solid; }
@@ -604,9 +640,9 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 .profile-traits { display: grid; gap: 10px; }
 .profile-traits span {
   display: grid;
-  grid-template-columns: 38px 28px 1fr;
-  align-items: center;
-  min-height: 52px;
+  grid-template-columns: 48px 44px minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 78px;
   color: var(--paper);
   background: linear-gradient(135deg, var(--teal), #154e6d);
 }
@@ -624,10 +660,32 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
   color: var(--gold-light);
   font-style: normal;
   font-size: 14px;
+  border-right: 1px solid rgba(242,207,131,.18);
 }
 .profile-traits em {
-  padding-right: 14px;
+  display: grid;
+  gap: 6px;
+  align-content: center;
+  min-width: 0;
+  padding: 12px 16px;
   font-style: normal;
+  line-height: 1.45;
+}
+
+.profile-traits em .bilingual-zh {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.profile-traits em .bilingual-en,
+#zodiacSymbolism .bilingual-en {
+  color: rgba(255,255,255,.82);
+}
+
+.profile-traits em .bilingual-en {
+  margin-top: 0;
+  font-size: 15px;
+  line-height: 1.3;
 }
 .personality-panel > p { margin: 18px 0 0; color: #756c61; font-size: 11px; line-height: 1.65; }
 .symbolism-panel { position: relative; overflow: hidden; background: rgba(216,168,78,.11); }
@@ -656,10 +714,10 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 .profile-grid small { color: var(--cinnabar); font: 10px Arial,sans-serif; letter-spacing: 1.4px; }
 .profile-grid h4 { margin: 9px 0 22px; color: var(--ink); font-size: 23px; font-weight: 400; }
 .profile-traits { display: grid; gap: 10px; }
-.profile-traits span { display: grid; grid-template-columns: 38px 28px minmax(0, 1fr); align-items: center; min-height: 46px; color: var(--paper); background: var(--teal); }
+.profile-traits span { display: grid; grid-template-columns: 48px 44px minmax(0, 1fr); align-items: stretch; min-height: 78px; color: var(--paper); background: var(--teal); }
 .profile-traits b { height: 100%; display: grid; place-items: center; border-right: 1px solid rgba(242,207,131,.35); color: var(--gold-light); font: 10px Arial,sans-serif; }
-.profile-traits i { display: grid; place-items: center; color: var(--gold-light); font-style: normal; }
-.profile-traits em { min-width: 0; padding: 0 14px; font-style: normal; white-space: normal; overflow-wrap: anywhere; }
+.profile-traits i { display: grid; place-items: center; color: var(--gold-light); font-style: normal; border-right: 1px solid rgba(242,207,131,.18); }
+.profile-traits em { display: grid; gap: 6px; align-content: center; min-width: 0; padding: 12px 16px; font-style: normal; white-space: normal; overflow-wrap: break-word; }
 .personality-panel > p { margin: 18px 0 0; color: #756c61; font-size: 11px; line-height: 1.65; }
 .symbolism-panel { position: relative; overflow: hidden; background: rgba(216,168,78,.11); }
 .symbolism-panel::after { content: "寓"; position: absolute; right: 22px; bottom: -22px; color: rgba(167,58,43,.07); font-size: 126px; line-height: 1; pointer-events: none; }
@@ -693,6 +751,16 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 .culture-grid small { color: #a9b6b7; }
 .culture-grid strong { display: block; margin: 12px 0 10px; color: var(--gold-light); font-size: 23px; font-weight: 400; }
 .culture-grid p { min-height: 2.8em; margin: 0; color: #b9b2a2; font-size: 12px; line-height: 1.55; }
+.culture-grid strong .bilingual-en,
+.calculation-note .bilingual-en {
+  color: #c7beb0;
+}
+
+.name-detail .bilingual-en,
+.culture-note .bilingual-en,
+#summary .bilingual-en {
+  color: #756c61;
+}
 .element-flow { display: grid; grid-template-columns: 52px 1fr 52px 1fr 52px 1fr 52px 1fr 52px; align-items: center; gap: 8px; max-width: 660px; margin: 32px auto; }
 .element-flow span { width: 52px; height: 52px; display: grid; place-items: center; border: 1px solid #657178; border-radius: 50%; color: #849197; font-size: 20px; }
 .element-flow span.is-present { color: var(--ink); background: var(--gold); border-color: var(--gold-light); box-shadow: 0 0 0 4px rgba(216,168,78,.13); }
@@ -728,6 +796,7 @@ footer .footer-links { display: flex; flex-wrap: wrap; gap: 18px; }
 footer .footer-links a { color: var(--gold-light); text-decoration: none; font: 12px Arial,sans-serif; letter-spacing: .6px; }
 footer .footer-links a:hover { text-decoration: underline; }
 dialog { color: #30251d; background: var(--paper); border-top: 8px solid var(--cinnabar); }
+dialog:not([open]) { display: none; }
 .preview-sheet { background-color: #e4c786; border-color: var(--cinnabar); }
 .loading { background: rgba(7,28,49,.96); }
 .loader-seal { color: var(--gold-light); border-color: var(--gold); }

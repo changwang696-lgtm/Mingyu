@@ -1,27 +1,27 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Member Center | Mingyu Naming Studio</title>
-  <link rel="stylesheet" href="/account.css" />
+  <title>会员中心 | 名屿 Mingyu</title>
+  <link rel="stylesheet" href="/account.css?v=20260828-account-clarity" />
 </head>
 <body>
   <main class="account-shell">
     <header class="account-topbar">
       <a class="brand" href="/"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
       <nav>
-        <a href="/">Back to site</a>
-        <a href="/cancellation.html">Cancellation Policy</a>
+        <a href="/">返回首页</a>
+        <a href="/cancellation.html">取消政策</a>
       </nav>
     </header>
 
     <section class="hero">
-      <p class="eyebrow">MEMBER CENTER</p>
+      <p class="eyebrow">MEMBER CENTER · 会员中心</p>
       <h1>注册、订阅、订单与报告都在这里</h1>
       <p>登录后，你可以购买会员或 credits、查看生成记录与订单记录，并直接打开结果或下载 PDF。首页生成服务现在会优先要求登录后再继续。</p>
       <div class="hero-note">
-        <strong>Welcome credit policy</strong>
+        <strong>欢迎 credits 说明 / Welcome credit policy</strong>
         <span>新注册账户默认获得 3 credits，可立即测试会员生成流程；后续可继续购买会员套餐或一次性 credits 包。</span>
       </div>
     </section>
@@ -30,38 +30,38 @@
 
     <section class="auth-grid" id="authGrid">
       <article class="auth-card">
-        <p class="eyebrow">REGISTER</p>
-        <h2>Create your account</h2>
+        <p class="eyebrow">REGISTER · 注册</p>
+        <h2>创建会员账户</h2>
         <form id="registerForm">
           <label>
-            <span>Display name</span>
+            <span>显示名称</span>
             <input name="displayName" placeholder="Mingyu Member" />
           </label>
           <label>
-            <span>Email</span>
+            <span>邮箱</span>
             <input name="email" type="email" required placeholder="you@example.com" autocomplete="email" />
           </label>
           <label>
-            <span>Password</span>
-            <input name="password" type="password" required minlength="8" placeholder="At least 8 characters" autocomplete="new-password" />
+            <span>密码</span>
+            <input name="password" type="password" required minlength="8" placeholder="至少 8 位字符" autocomplete="new-password" />
           </label>
-          <button type="submit">Create account</button>
+          <button type="submit">注册并创建账户</button>
         </form>
       </article>
 
       <article class="auth-card">
-        <p class="eyebrow">LOGIN</p>
-        <h2>Sign in</h2>
+        <p class="eyebrow">LOGIN · 登录</p>
+        <h2>登录会员中心</h2>
         <form id="loginForm">
           <label>
-            <span>Email</span>
+            <span>邮箱</span>
             <input name="email" type="email" required placeholder="you@example.com" autocomplete="email" />
           </label>
           <label>
-            <span>Password</span>
-            <input name="password" type="password" required placeholder="Your password" autocomplete="current-password" />
+            <span>密码</span>
+            <input name="password" type="password" required placeholder="请输入密码" autocomplete="current-password" />
           </label>
-          <button type="submit">Sign in</button>
+          <button type="submit">登录</button>
         </form>
       </article>
     </section>
@@ -69,21 +69,21 @@
     <section class="dashboard" id="dashboard" hidden>
       <div class="summary-grid">
         <article class="summary-card">
-          <small>ACCOUNT</small>
-          <h2 id="memberName">Member</h2>
+          <small>账户信息 / ACCOUNT</small>
+          <h2 id="memberName">会员</h2>
           <p id="memberEmail">you@example.com</p>
-          <button class="secondary" id="logoutBtn" type="button">Sign out</button>
+          <button class="secondary" id="logoutBtn" type="button">退出登录</button>
         </article>
         <article class="summary-card emphasis-card">
-          <small>AVAILABLE CREDITS</small>
+          <small>剩余点数 / AVAILABLE CREDITS</small>
           <h2 id="memberCredits">0</h2>
-          <p>登录后可使用 credits。1 credit = 1 次起名/报告生成请求。</p>
-          <a class="text-link" href="/">Use credits on the naming page</a>
+          <p>登录后可使用 credits。简约版消耗 1 credit，完整版消耗 3 credits。</p>
+          <a class="text-link" href="/">前往首页使用 credits</a>
         </article>
         <article class="summary-card">
-          <small>MEMBERSHIP STATUS</small>
-          <h2 id="memberPlan">No active membership</h2>
-          <p id="memberRenewal">You can still use welcome credits and future one-time credit packs.</p>
+          <small>会员状态 / MEMBERSHIP</small>
+          <h2 id="memberPlan">当前未开通会员</h2>
+          <p id="memberRenewal">你仍然可以使用欢迎 credits，或购买一次性 credits 包。</p>
         </article>
       </div>
 
@@ -92,7 +92,7 @@
           <div class="panel-head">
             <div>
               <p class="eyebrow">LEDGER</p>
-              <h3>Credit activity</h3>
+              <h3>点数变动记录</h3>
             </div>
           </div>
           <div class="ledger-list" id="ledgerList"></div>
@@ -101,7 +101,7 @@
         <article class="panel">
           <div class="panel-head">
             <div>
-              <p class="eyebrow">REPORTS</p>
+              <p class="eyebrow">REPORTS · 生成记录</p>
               <h3>历史生成清单</h3>
               <p class="inline-note">简约版显示名字与生肖；完整版显示完整起名结果，并可直接下载 PDF。</p>
             </div>
@@ -114,8 +114,8 @@
         <article class="panel">
           <div class="panel-head">
             <div>
-              <p class="eyebrow">PURCHASE ORDERS</p>
-              <h3>Membership & credit pack orders</h3>
+              <p class="eyebrow">PURCHASE ORDERS · 购买订单</p>
+              <h3>会员与 credits 购买记录</h3>
             </div>
           </div>
           <div class="report-list" id="memberOrderList"></div>
@@ -124,8 +124,8 @@
         <article class="panel">
           <div class="panel-head">
             <div>
-              <p class="eyebrow">SERVICE ORDERS</p>
-              <h3>Paid naming orders</h3>
+              <p class="eyebrow">SERVICE ORDERS · 服务订单</p>
+              <h3>单次付费起名订单</h3>
             </div>
           </div>
           <div class="report-list" id="serviceOrderList"></div>
@@ -136,8 +136,8 @@
     <section class="plan-preview" id="planPreview">
       <div class="panel-head">
         <div>
-          <p class="eyebrow">BUY MEMBERSHIP</p>
-          <h2>Choose a membership or one-time credit pack</h2>
+          <p class="eyebrow">BUY MEMBERSHIP · 购买会员</p>
+          <h2>选择会员套餐或一次性 credits 包</h2>
         </div>
       </div>
       <p class="inline-note">购买后会跳转到 PayPal，完成付款后自动返回本页入账。</p>

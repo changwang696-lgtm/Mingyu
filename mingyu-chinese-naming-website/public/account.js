@@ -29,13 +29,21 @@ function escapeHtml(value) {
 }
 
 function safeDate(value) {
-  if (!value) return "Not available";
+  if (!value) return "暂无时间";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Not available" : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? "暂无时间" : date.toLocaleString();
 }
 
 function formatMoney(value, currency = "USD") {
   return `${currency} ${value}`;
+}
+
+function formatOrderStatus(status) {
+  const current = String(status || "").toLowerCase();
+  if (current === "completed") return "已完成";
+  if (current === "pending_payment") return "待付款";
+  if (current === "cancelled") return "已取消";
+  return status || "处理中";
 }
 
 function normalizeTier(tier) {
@@ -73,17 +81,17 @@ function renderCatalog(catalog) {
   if (!catalog?.plans) return;
   planGrid.innerHTML = catalog.plans.map(plan => `
     <article class="plan-card">
-      <small>${plan.interval === "month" ? "MEMBERSHIP PLAN" : "ONE-TIME PLAN"}</small>
+      <small>${plan.interval === "month" ? "会员套餐 / MEMBERSHIP PLAN" : "一次性购买 / ONE-TIME PLAN"}</small>
       <strong>${plan.name}</strong>
       <div>${plan.price}</div>
-      <p>${plan.credits} credits included</p>
+      <p>包含 ${plan.credits} credits</p>
       <button
         type="button"
         class="plan-purchase"
         data-plan-id="${escapeHtml(plan.id)}"
         ${!sessionState.loggedIn || purchasePendingPlanId === plan.id ? "disabled" : ""}
       >
-        ${!sessionState.loggedIn ? "Sign in first" : purchasePendingPlanId === plan.id ? "Redirecting..." : "Buy with PayPal"}
+        ${!sessionState.loggedIn ? "请先登录" : purchasePendingPlanId === plan.id ? "正在跳转 PayPal..." : "使用 PayPal 购买"}
       </button>
     </article>
   `).join("");
@@ -91,7 +99,7 @@ function renderCatalog(catalog) {
 
 function renderLedger(entries) {
   if (!entries?.length) {
-    ledgerList.innerHTML = `<div class="empty-state">No credit activity yet. Registering grants welcome credits, and each member generation request will appear here.</div>`;
+    ledgerList.innerHTML = `<div class="empty-state">暂时还没有点数变动记录。注册成功后会先获得欢迎 credits，之后每次会员生成或购买入账都会显示在这里。</div>`;
     return;
   }
 
@@ -99,7 +107,7 @@ function renderLedger(entries) {
     <article class="ledger-item">
       <small>${new Date(entry.createdAt).toLocaleString()}</small>
       <strong>${entry.description}</strong>
-      <div class="item-meta">${entry.creditsDelta > 0 ? "+" : ""}${entry.creditsDelta} credits · Balance ${entry.creditsBalanceAfter}</div>
+      <div class="item-meta">${entry.creditsDelta > 0 ? "+" : ""}${entry.creditsDelta} credits · 当前余额 ${entry.creditsBalanceAfter}</div>
     </article>
   `).join("");
 }
@@ -125,7 +133,7 @@ function renderReports(reports) {
         <div class="item-meta">${reportTierDescription(report.tier)}${report.zodiac ? ` · ${escapeHtml(report.zodiac)}` : ""}</div>
         <p>${previewNames || "已生成结果，点击下方可查看详情。"}</p>
         <div class="item-actions">
-          <a class="text-link" href="${report.resultUrl}">查看结果</a>
+          <a class="text-link" href="${report.resultUrl}">打开结果</a>
           ${canDownloadPdf ? `<a class="text-link" href="${report.pdfUrl}">下载 PDF</a>` : ""}
         </div>
       </article>
@@ -152,38 +160,38 @@ function renderReports(reports) {
 
 function renderMemberOrders(orders) {
   if (!orders?.length) {
-    memberOrderList.innerHTML = `<div class="empty-state">No membership or credit-pack orders yet. After you complete a PayPal purchase here, the order will appear in this list.</div>`;
+    memberOrderList.innerHTML = `<div class="empty-state">还没有会员或 credits 购买记录。完成一次 PayPal 付款后，对应订单会显示在这里。</div>`;
     return;
   }
 
   memberOrderList.innerHTML = orders.map(order => `
     <article class="report-item">
-      <small>${safeDate(order.createdAt)} · ${escapeHtml(order.status)}</small>
+      <small>${safeDate(order.createdAt)} · ${escapeHtml(formatOrderStatus(order.status))}</small>
       <strong>${escapeHtml(order.itemName)}</strong>
       <div class="item-meta">${formatMoney(order.amount, order.currency)} · +${order.creditsDelta} credits</div>
       <p>${order.status === "completed"
-        ? (order.membershipRenewalAt ? `Renews on ${new Date(order.membershipRenewalAt).toLocaleDateString()}` : "One-time credit purchase completed.")
-        : "Waiting for PayPal confirmation."}</p>
+        ? (order.membershipRenewalAt ? `续期时间：${new Date(order.membershipRenewalAt).toLocaleDateString()}` : "一次性 credits 购买已完成。")
+        : "等待 PayPal 确认付款。"}</p>
     </article>
   `).join("");
 }
 
 function renderServiceOrders(orders) {
   if (!orders?.length) {
-    serviceOrderList.innerHTML = `<div class="empty-state">No paid naming orders yet. If you buy a single naming service from the homepage, the order and PDF entry will appear here.</div>`;
+    serviceOrderList.innerHTML = `<div class="empty-state">还没有单次付费起名订单。若你在首页购买一次性起名服务，订单与 PDF 入口会显示在这里。</div>`;
     return;
   }
 
   serviceOrderList.innerHTML = orders.map(order => `
     <article class="report-item">
-      <small>${safeDate(order.createdAt)} · ${escapeHtml(order.status)} · ${escapeHtml(order.paymentStatus || "pending")}</small>
+      <small>${safeDate(order.createdAt)} · ${escapeHtml(formatOrderStatus(order.status))} · 支付状态 ${escapeHtml(order.paymentStatus || "pending")}</small>
       <strong>${escapeHtml(order.inputName || order.id)}</strong>
       <div class="item-meta">${escapeHtml(order.tier)} · ${formatMoney(order.paymentAmount || order.priceValue, order.paymentCurrency || "USD")}</div>
-      <p>Order ID: ${escapeHtml(order.id)}</p>
+      <p>订单号：${escapeHtml(order.id)}</p>
       <div class="item-actions">
-        ${order.deliveryUrl ? `<a class="text-link" href="${order.deliveryUrl}">Open result</a>` : ""}
+        ${order.deliveryUrl ? `<a class="text-link" href="${order.deliveryUrl}">打开结果</a>` : ""}
         ${order.pdfUrl ? `<a class="text-link" href="${order.pdfUrl}">Download PDF</a>` : ""}
-        ${!order.deliveryUrl && order.successUrl ? `<a class="text-link" href="${order.successUrl}">Continue payment return</a>` : ""}
+        ${!order.deliveryUrl && order.successUrl ? `<a class="text-link" href="${order.successUrl}">继续支付回跳</a>` : ""}
       </div>
     </article>
   `).join("");
@@ -200,13 +208,13 @@ function renderSession(data) {
 
   authGrid.hidden = true;
   dashboard.hidden = false;
-  memberName.textContent = data.user.displayName || "Member";
+  memberName.textContent = data.user.displayName || "会员";
   memberEmail.textContent = data.user.email;
   memberCredits.textContent = String(data.user.creditsBalance);
-  memberPlan.textContent = data.user.membership?.planName || "No active membership";
+  memberPlan.textContent = data.user.membership?.planName || "当前未开通会员";
   memberRenewal.textContent = data.user.membership?.renewalAt
-    ? `Renews on ${new Date(data.user.membership.renewalAt).toLocaleDateString()}`
-    : "No renewal is scheduled yet.";
+    ? `续期时间：${new Date(data.user.membership.renewalAt).toLocaleDateString()}`
+    : "当前没有待续期计划。";
 }
 
 async function fetchSession() {
@@ -219,7 +227,7 @@ async function fetchSession() {
 async function fetchOverview() {
   const response = await fetch("/api/member/overview");
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Unable to load member overview.");
+  if (!response.ok) throw new Error(data.error || "暂时无法加载会员中心数据。");
   renderSession({ loggedIn: true, user: data.user, catalog: data.catalog });
   renderLedger(data.ledger);
   renderReports(data.reports);
@@ -237,9 +245,9 @@ async function handleAuth(endpoint, form) {
     body: JSON.stringify(formData)
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Request failed.");
+  if (!response.ok) throw new Error(data.error || "请求失败，请稍后重试。");
   form.reset();
-  showStatus(data.message || "Success.");
+  showStatus(data.message || "操作成功。");
   await fetchOverview();
   redirectAfterAuth();
 }
@@ -270,21 +278,21 @@ logoutBtn.addEventListener("click", async () => {
   renderMemberOrders([]);
   renderServiceOrders([]);
   await fetchSession();
-  showStatus("Signed out successfully.");
+  showStatus("已退出登录。");
 });
 
 planGrid.addEventListener("click", async event => {
   const button = event.target.closest("[data-plan-id]");
   if (!button) return;
   if (!sessionState.loggedIn) {
-    showStatus("Please sign in before purchasing a membership or credit pack.", true);
+    showStatus("请先登录，再购买会员或 credits。", true);
     return;
   }
 
   const planId = String(button.dataset.planId || "");
   purchasePendingPlanId = planId;
   renderCatalog(sessionState.catalog);
-  showStatus("Redirecting to PayPal...");
+  showStatus("正在跳转到 PayPal...");
 
   try {
     const response = await fetch("/api/member/purchase/start", {
@@ -293,7 +301,7 @@ planGrid.addEventListener("click", async event => {
       body: JSON.stringify({ planId })
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Unable to start purchase.");
+    if (!response.ok) throw new Error(data.error || "无法发起购买，请稍后重试。");
     window.location.assign(data.approvalUrl);
   } catch (error) {
     purchasePendingPlanId = null;
@@ -309,22 +317,22 @@ async function handleReturnedMemberPurchase() {
   const cancelled = params.get("cancelled") === "1";
 
   if (cancelled) {
-    showStatus("PayPal payment was cancelled. You can start the purchase again when ready.", true);
+    showStatus("PayPal 付款已取消，你可以稍后重新发起购买。", true);
     history.replaceState({}, "", "/account.html");
     return;
   }
   if (!memberOrderId) return;
 
-  showStatus("Confirming your PayPal payment...");
+  showStatus("正在确认你的 PayPal 付款...");
   const response = await fetch("/api/member/purchase/capture", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ memberOrderId, payPalOrderId })
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Unable to confirm this PayPal purchase.");
+  if (!response.ok) throw new Error(data.error || "暂时无法确认这笔 PayPal 付款。");
 
-  showStatus("Purchase completed. Credits have been added to your account.");
+  showStatus("购买已完成，credits 已入账。");
   history.replaceState({}, "", "/account.html");
   await fetchOverview();
 }
@@ -346,5 +354,5 @@ fetchSession()
     renderReports([]);
     renderMemberOrders([]);
     renderServiceOrders([]);
-    showStatus(error?.message || "Unable to load member center right now.", true);
+    showStatus(error?.message || "暂时无法加载会员中心。", true);
   });
