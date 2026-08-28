@@ -1488,11 +1488,6 @@ async function buildNamingReportPdfBytes({
     gapAfter: 12
   });
 
-  if (reportPreview) {
-    drawSectionTitle("报告预览 / Report Preview", "完整版会保留与网页结果一致的核心视觉内容");
-    drawCenteredAsset(reportPreview, 260, 320, 18);
-  }
-
   drawSectionTitle("你的生肖意象 / Zodiac", "网页上的生肖图现在也会进入 PDF");
   drawCenteredAsset(zodiacImage, 130, 130, 14);
   drawTextLine(`${resultData.zodiac?.years || "-"} · ${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
@@ -1513,78 +1508,75 @@ async function buildNamingReportPdfBytes({
   });
   drawDivider();
 
+  if (isComplete) beginNewPage(true);
+
   drawSectionTitle("候选名字 / Name Options", "每个名字说明都同步输出中文与英文");
+  if (reportPreview) {
+    drawCenteredAsset(reportPreview, 176, 220, 14);
+  }
   for (const option of Array.isArray(resultData.names) ? resultData.names : []) {
-    ensureSpace(106);
+    ensureSpace(92);
     page.drawRectangle({
       x: margin,
-      y: y - 94,
+      y: y - 80,
       width: maxWidth,
-      height: 94,
+      height: 80,
       color: colors.panel,
       borderWidth: 1,
       borderColor: colors.line
     });
-    y -= 14;
-    drawTextLine(`${option.hanzi || ""}  ${option.pinyin || ""}`.trim(), { size: 14, color: colors.ink, x: margin + 12 });
-    if (option.seal) drawTextLine(`Seal / 印记: ${option.seal}`, { size: 10, color: colors.warm, x: margin + 12 });
-    if (option.tone) drawTextLine(`Tone / 声调: ${option.tone}`, { size: 10, color: colors.warm, x: margin + 12 });
+    y -= 12;
+    drawTextLine(`${option.hanzi || ""}  ${option.pinyin || ""}`.trim(), { size: 13, color: colors.ink, x: margin + 12 });
+    if (option.seal) drawTextLine(`Seal / 印记: ${option.seal}`, { size: 9, color: colors.warm, x: margin + 12 });
+    if (option.tone) drawTextLine(`Tone / 声调: ${option.tone}`, { size: 9, color: colors.warm, x: margin + 12 });
     drawParagraph(joinPdfBilingualText(option.meaning || "", option.meaningEn || ""), {
-      size: 10,
+      size: 9.5,
       color: colors.soft,
       x: margin + 12,
       width: maxWidth - 24,
-      gapAfter: 10
+      gapAfter: 8
     });
   }
 
   if (isComplete) {
-    drawDivider();
+    beginNewPage(true);
     drawSectionTitle("生肖文化详解 / Zodiac Culture", "完整版包含网页中的完整生肖文化解读");
     if (Array.isArray(profile.personality) && profile.personality.length) {
       drawPersonalitySnapshotPanel(profile);
-      const bilingualTraits = profile.personality.map((trait, index) => `${trait} / ${(profile.personalityEn || [])[index] || ""}`).join(" · ");
-      drawParagraph(`性格特征 / Personality: ${bilingualTraits}`, {
-        size: 11,
-        color: colors.soft,
-        gapAfter: 6
-      });
     }
     drawParagraph(joinPdfBilingualText(profile.symbolism || "暂无生肖文化说明。", profile.symbolismEn || "Zodiac symbolism unavailable."), {
       size: 11,
       color: colors.soft,
-      gapAfter: 12
+      gapAfter: 8
     });
-
+    beginNewPage(true);
     drawSectionTitle("传统时序文化解读 / Traditional Reading", "对应网页中的年柱、时辰与文化注解");
     drawTraditionalSnapshotPanel(culture);
     drawParagraph(
       [
-        `年柱 / Year pillar: ${culture.pillar || "-"}`,
-        `六十甲子位次 / Cycle position: ${culture.cycleNumber || "-"}`,
-        `天干 / Heavenly stem: ${culture.stem?.char || "-"} · ${culture.stem?.polarity || "-"}${culture.stem?.element || ""}`,
-        `地支与生肖 / Earthly branch: ${culture.branch?.char || "-"} · ${culture.branch?.element || "-"} · ${culture.branch?.zodiac || "-"}`,
-        `出生时辰 / Birth hour: ${culture.hourBranch?.char || "-"}时 · ${culture.hourBranch?.range || "-"}`,
         `原始出生时间 / Original birth time: ${culture.originalBirthLabel || "-"}`,
-        `时区换算 / Timezone: ${culture.sourceTimeZone || "-"} -> ${culture.chinaBirthLabel || "-"}`
+        `时区换算 / Timezone: ${culture.sourceTimeZone || "-"} -> ${culture.chinaBirthLabel || "-"}`,
+        `年柱 / Year pillar: ${culture.pillar || "-"} · 六十甲子位次 / Cycle position: ${culture.cycleNumber || "-"}`,
+        `天干 / Heavenly stem: ${culture.stem?.char || "-"} · ${culture.stem?.polarity || "-"}${culture.stem?.element || ""}`,
+        `地支与生肖 / Earthly branch: ${culture.branch?.char || "-"} · ${culture.branch?.element || "-"} · ${culture.branch?.zodiac || "-"}`
       ].join("\n"),
       {
-        size: 11,
+        size: 10,
         color: colors.soft,
         gapAfter: 8
       }
     );
     drawParagraph(joinPdfBilingualText(culture.note || "暂无传统文化说明。", culture.noteEn || "Traditional reading unavailable."), {
-      size: 11,
+      size: 10,
       color: colors.soft,
-      gapAfter: 10
+      gapAfter: 8
     });
-    if (resultData.culturalNote) {
+    if (resultData.culturalNote || resultData.culturalNoteEn) {
       drawSectionTitle("补充说明 / Additional Note", "对应网页结果底部的文化注解");
       drawParagraph(joinPdfBilingualText(resultData.culturalNote, resultData.culturalNoteEn || ""), {
-        size: 11,
+        size: 10,
         color: colors.soft,
-        gapAfter: 10
+        gapAfter: 8
       });
     }
   } else if (resultData.culturalNote || resultData.culturalNoteEn) {
