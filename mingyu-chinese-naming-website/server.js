@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -22,6 +24,9 @@ const adminSessionCookieName = "mingyu_admin";
 const welcomeCredits = 3;
 const sessionLifetimeSeconds = 60 * 60 * 24 * 30;
 const adminSessionLifetimeSeconds = 60 * 60 * 24 * 7;
+const registerVerificationLifetimeSeconds = 60 * 10;
+const registerVerificationCooldownSeconds = 60;
+const maxRegisterVerificationAttempts = 6;
 const adminUsername = process.env.ADMIN_USERNAME || "";
 const adminPassword = process.env.ADMIN_PASSWORD || "";
 const adminSessionSecret = process.env.ADMIN_SESSION_SECRET || adminPassword || "";
@@ -116,7 +121,7 @@ const placeTimeZones = [
 ];
 
 function createDefaultDatabase() {
-  return { users: [], sessions: [], reports: [], guestOrders: [], memberOrders: [] };
+  return { users: [], sessions: [], reports: [], guestOrders: [], memberOrders: [], pendingRegistrations: [] };
 }
 
 function ensureDatabaseFile() {
@@ -133,7 +138,8 @@ function loadDatabase() {
       sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
         reports: Array.isArray(parsed.reports) ? parsed.reports : [],
         guestOrders: Array.isArray(parsed.guestOrders) ? parsed.guestOrders : [],
-        memberOrders: Array.isArray(parsed.memberOrders) ? parsed.memberOrders : []
+        memberOrders: Array.isArray(parsed.memberOrders) ? parsed.memberOrders : [],
+        pendingRegistrations: Array.isArray(parsed.pendingRegistrations) ? parsed.pendingRegistrations : []
     };
   } catch {
     const fallback = createDefaultDatabase();
@@ -265,6 +271,18 @@ function normalizeEmail(email) {
 
 function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function generateVerificationCode() {
+  return String(crypto.randomInt(0, 1000000)).padStart(6, "0");
+}
+
+function maskEmail(email) {
+  const normalized = normalizeEmail(email);
+  const [local, domain] = normalized.split("@");
+  if (!local || !domain) return normalized;
+  const visibleLength = Math.min(2, local.length);
+  return `${local.slice(0, visibleLength)}${"*".repeat(Math.max(1, local.length - visibleLength))}@${domain}`;
 }
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
@@ -434,14 +452,13 @@ function addLedgerEntry(user, entry) {
   return ledgerItem;
 }
 
-function createUserRecord(email, password, displayName) {
-  const { salt, hash } = hashPassword(password);
+function createUserRecordFromCredentials(email, credentials, displayName) {
   const user = sanitizeUserRecord({
     id: nextId("user_"),
     email,
     displayName,
-    passwordHash: hash,
-    passwordSalt: salt,
+    passwordHash: credentials.hash,
+    passwordSalt: credentials.salt,
     createdAt: nowIso(),
     creditsBalance: 0,
     membership: {
@@ -461,6 +478,43 @@ function createUserRecord(email, password, displayName) {
     creditsDelta: welcomeCredits
   });
   return user;
+}
+
+function createUserRecord(email, password, displayName) {
+  return createUserRecordFromCredentials(email, hashPassword(password), displayName);
+}
+
+function cleanupPendingRegistrations() {
+  const now = Date.now();
+  const pending = Array.isArray(database.pendingRegistrations) ? database.pendingRegistrations : [];
+  database.pendingRegistrations = pending.filter(item => {
+    const expiresAt = new Date(item.expiresAt).getTime();
+    return Number.isFinite(expiresAt) && expiresAt > now;
+  });
+}
+
+function findPendingRegistration(email) {
+  cleanupPendingRegistrations();
+  const normalizedEmail = normalizeEmail(email);
+  return (database.pendingRegistrations || []).find(item => item.email === normalizedEmail) || null;
+}
+
+function savePendingRegistration(record) {
+  cleanupPendingRegistrations();
+  const pending = Array.isArray(database.pendingRegistrations) ? database.pendingRegistrations : [];
+  const index = pending.findIndex(item => item.email === record.email);
+  if (index === -1) pending.push(record);
+  else pending[index] = record;
+  database.pendingRegistrations = pending;
+  saveDatabase();
+  return record;
+}
+
+function removePendingRegistration(email) {
+  const normalizedEmail = normalizeEmail(email);
+  const pending = Array.isArray(database.pendingRegistrations) ? database.pendingRegistrations : [];
+  database.pendingRegistrations = pending.filter(item => item.email !== normalizedEmail);
+  saveDatabase();
 }
 
 async function findUserByEmail(email) {
@@ -887,6 +941,71 @@ function summarizeMemberReport(report) {
 
 function isMailConfigured() {
   return Boolean(resendApiKey && mailFrom && siteBaseUrl);
+}
+
+function isVerificationMailConfigured() {
+  return Boolean(resendApiKey && mailFrom);
+}
+
+function buildRegistrationVerificationEmail({ email, code, displayName }) {
+  const safeName = escapeHtml(displayName || email.split("@")[0] || "Member");
+  const safeCode = escapeHtml(code);
+  const subject = `Your Mingyu verification code: ${code}`;
+  const html = `
+  <div style="font-family:Arial,sans-serif;background:#f6ecd8;padding:32px 16px;color:#30251d;">
+    <div style="max-width:640px;margin:0 auto;background:#fffdf8;border:1px solid rgba(48,37,29,.12);padding:32px;">
+      <p style="margin:0 0 12px;color:#9e392b;font-size:12px;letter-spacing:1.2px;">MINGYU ACCOUNT</p>
+      <h1 style="margin:0 0 16px;color:#071c31;font-size:28px;font-weight:400;">Confirm your email</h1>
+      <p style="margin:0 0 14px;line-height:1.8;">Hello ${safeName}, use the verification code below to finish creating your Mingyu member account.</p>
+      <div style="margin:24px 0;padding:20px;background:#071c31;color:#f4ead3;text-align:center;border:1px solid rgba(216,168,78,.3);">
+        <div style="font-size:12px;letter-spacing:2px;color:#f2cf83;">VERIFICATION CODE</div>
+        <div style="margin-top:12px;font-size:36px;letter-spacing:8px;">${safeCode}</div>
+      </div>
+      <p style="margin:0 0 8px;line-height:1.8;">This code expires in 10 minutes. If you did not request it, you can ignore this email.</p>
+      <p style="margin:0;color:#7a6b5f;font-size:13px;line-height:1.8;">This email was sent automatically by Mingyu account verification.</p>
+    </div>
+  </div>`;
+  const text = [
+    "Confirm your Mingyu email address.",
+    `Verification code: ${code}`,
+    "This code expires in 10 minutes.",
+    "If you did not request it, you can ignore this email."
+  ].join("\n");
+  return { subject, html, text };
+}
+
+async function sendRegistrationVerificationEmail({ email, code, displayName }) {
+  if (!isVerificationMailConfigured()) {
+    throw new Error("Email verification is not configured. Set RESEND_API_KEY and MAIL_FROM.");
+  }
+  const emailContent = buildRegistrationVerificationEmail({ email, code, displayName });
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: mailFrom,
+      to: [email],
+      ...(mailReplyTo ? { reply_to: mailReplyTo } : {}),
+      subject: emailContent.subject,
+      html: emailContent.html,
+      text: emailContent.text
+    })
+  });
+  const text = await response.text();
+  let payload = {};
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = {};
+    }
+  }
+  if (!response.ok) {
+    throw new Error(payload?.message || payload?.error || "Failed to send verification email.");
+  }
 }
 
 function summarizeGuestOrder(order) {
@@ -3244,13 +3363,102 @@ async function handleRegister(req, res) {
   const email = normalizeEmail(body.email);
   const password = String(body.password || "");
   const displayName = String(body.displayName || "").trim() || email.split("@")[0] || "Member";
+  const verificationCode = String(body.verificationCode || body.code || "").trim();
   if (!validateEmail(email)) return send(res, 422, { error: "A valid email address is required." });
   if (password.length < 8) return send(res, 422, { error: "Password must be at least 8 characters." });
   if (await findUserByEmail(email)) return send(res, 409, { error: "An account with this email already exists." });
 
-  const user = createUserRecord(email, password, displayName);
+  if (!verificationCode) {
+    const existingPending = findPendingRegistration(email);
+    const now = Date.now();
+    const availableAt = existingPending ? new Date(existingPending.resendAvailableAt).getTime() : 0;
+    if (Number.isFinite(availableAt) && availableAt > now) {
+      const remainingSeconds = Math.ceil((availableAt - now) / 1000);
+      return send(res, 429, {
+        error: `A verification code was just sent. Please wait ${remainingSeconds} seconds and try again.`,
+        verificationRequired: true,
+        maskedEmail: maskEmail(email),
+        cooldownSeconds: remainingSeconds
+      });
+    }
+
+    const code = generateVerificationCode();
+    try {
+      await sendRegistrationVerificationEmail({ email, code, displayName });
+    } catch (error) {
+      return send(res, 502, { error: error.message || "Failed to send verification email." });
+    }
+
+    const passwordCredentials = hashPassword(password);
+    const codeCredentials = hashPassword(code);
+    const createdAt = existingPending?.createdAt || nowIso();
+    savePendingRegistration({
+      id: existingPending?.id || nextId("preg_"),
+      email,
+      displayName,
+      passwordHash: passwordCredentials.hash,
+      passwordSalt: passwordCredentials.salt,
+      codeHash: codeCredentials.hash,
+      codeSalt: codeCredentials.salt,
+      createdAt,
+      updatedAt: nowIso(),
+      expiresAt: new Date(Date.now() + registerVerificationLifetimeSeconds * 1000).toISOString(),
+      resendAvailableAt: new Date(Date.now() + registerVerificationCooldownSeconds * 1000).toISOString(),
+      attempts: 0
+    });
+
+    return send(res, 200, {
+      verificationRequired: true,
+      maskedEmail: maskEmail(email),
+      cooldownSeconds: registerVerificationCooldownSeconds,
+      expiresInSeconds: registerVerificationLifetimeSeconds,
+      message: `Verification code sent to ${maskEmail(email)}.`
+    });
+  }
+
+  const pending = findPendingRegistration(email);
+  if (!pending) {
+    return send(res, 410, { error: "This verification code has expired. Please request a new code." });
+  }
+
+  const expiresAt = new Date(pending.expiresAt).getTime();
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+    removePendingRegistration(email);
+    return send(res, 410, { error: "This verification code has expired. Please request a new code." });
+  }
+
+  if ((Number(pending.attempts) || 0) >= maxRegisterVerificationAttempts) {
+    removePendingRegistration(email);
+    return send(res, 429, { error: "Too many incorrect verification attempts. Please request a new code." });
+  }
+
+  if (!verifyPassword(verificationCode, pending.codeHash, pending.codeSalt)) {
+    const attempts = (Number(pending.attempts) || 0) + 1;
+    if (attempts >= maxRegisterVerificationAttempts) {
+      removePendingRegistration(email);
+      return send(res, 429, { error: "Too many incorrect verification attempts. Please request a new code." });
+    }
+    savePendingRegistration({
+      ...pending,
+      attempts,
+      updatedAt: nowIso()
+    });
+    return send(res, 422, { error: `Incorrect verification code. ${maxRegisterVerificationAttempts - attempts} attempts remaining.` });
+  }
+
+  if (await findUserByEmail(email)) {
+    removePendingRegistration(email);
+    return send(res, 409, { error: "An account with this email already exists." });
+  }
+
+  const user = createUserRecordFromCredentials(email, {
+    hash: pending.passwordHash,
+    salt: pending.passwordSalt
+  }, pending.displayName || displayName);
+
   if (!useSupabase) {
     database.users.push(user);
+    removePendingRegistration(email);
     saveDatabase();
   } else {
     await supabaseRpc("app_register_user", {
@@ -3261,12 +3469,13 @@ async function handleRegister(req, res) {
       p_password_salt: user.passwordSalt,
       p_welcome_credits: welcomeCredits
     });
+    removePendingRegistration(email);
   }
   const sessionToken = await createSession(user.id);
   send(res, 201, {
     user: publicUser(user),
     catalog: getPublicCatalog(),
-    message: `Welcome to Mingyu. ${welcomeCredits} credits have been added to your new account.`
+    message: `Email verified. Welcome to Mingyu. ${welcomeCredits} credits have been added to your new account.`
   }, "application/json; charset=utf-8", { "Set-Cookie": buildSessionCookie(sessionToken, sessionLifetimeSeconds) });
 }
 
