@@ -27,9 +27,11 @@ const adminSessionLifetimeSeconds = 60 * 60 * 24 * 7;
 const registerVerificationLifetimeSeconds = 60 * 10;
 const registerVerificationCooldownSeconds = 60;
 const maxRegisterVerificationAttempts = 6;
+const authChallengeLifetimeSeconds = 60 * 10;
 const adminUsername = process.env.ADMIN_USERNAME || "";
 const adminPassword = process.env.ADMIN_PASSWORD || "";
 const adminSessionSecret = process.env.ADMIN_SESSION_SECRET || adminPassword || "";
+const authChallengeSecret = process.env.AUTH_CHALLENGE_SECRET || crypto.randomBytes(32).toString("hex");
 const resendApiKey = process.env.RESEND_API_KEY || "";
 const mailFrom = process.env.MAIL_FROM || "";
 const mailReplyTo = process.env.MAIL_REPLY_TO || "";
@@ -2062,6 +2064,61 @@ function buildAdminCookie(value, maxAgeSeconds) {
   return parts.join("; ");
 }
 
+function signAuthChallengePayload(payload) {
+  return crypto.createHmac("sha256", authChallengeSecret).update(payload).digest("hex");
+}
+
+function createAuthChallenge() {
+  const left = crypto.randomInt(2, 10);
+  const right = crypto.randomInt(2, 10);
+  const expiresAt = Date.now() + authChallengeLifetimeSeconds * 1000;
+  const payload = `${left}.${right}.${expiresAt}`;
+  const signature = signAuthChallengePayload(payload);
+  return {
+    prompt: `${left} + ${right} = ?`,
+    token: Buffer.from(`${payload}.${signature}`).toString("base64url"),
+    expiresInSeconds: authChallengeLifetimeSeconds
+  };
+}
+
+function readAuthChallengeToken(token) {
+  if (!token) return null;
+  try {
+    const raw = Buffer.from(token, "base64url").toString("utf8");
+    const [left, right, expiresAt, signature] = raw.split(".");
+    if (!left || !right || !expiresAt || !signature) return null;
+    const payload = `${left}.${right}.${expiresAt}`;
+    if (signAuthChallengePayload(payload) !== signature) return null;
+    if (Number(expiresAt) < Date.now()) return null;
+    return {
+      left: Number(left),
+      right: Number(right),
+      expiresAt: Number(expiresAt)
+    };
+  } catch {
+    return null;
+  }
+}
+
+function validateAuthChallenge(body) {
+  const token = String(body?.challengeToken || "").trim();
+  const rawAnswer = String(body?.challengeAnswer || "").trim();
+  if (!token || !rawAnswer) {
+    return { ok: false, status: 422, error: "Please complete the human verification question." };
+  }
+  if (!/^-?\d+$/.test(rawAnswer)) {
+    return { ok: false, status: 422, error: "Please enter a numeric answer for the human verification question." };
+  }
+  const challenge = readAuthChallengeToken(token);
+  if (!challenge) {
+    return { ok: false, status: 410, error: "The human verification question has expired. Please try a new one." };
+  }
+  if (Number(rawAnswer) !== challenge.left + challenge.right) {
+    return { ok: false, status: 422, error: "The human verification answer is incorrect. Please try again." };
+  }
+  return { ok: true };
+}
+
 function signAdminPayload(payload) {
   return crypto.createHmac("sha256", adminSessionSecret).update(payload).digest("hex");
 }
@@ -3360,6 +3417,13 @@ async function handleCapturePayPalOrder(req, res) {
 async function handleRegister(req, res) {
   const body = await readJsonBody(req, res);
   if (!body) return;
+  const authChallenge = validateAuthChallenge(body);
+  if (!authChallenge.ok) {
+    return send(res, authChallenge.status, {
+      error: authChallenge.error,
+      authChallenge: createAuthChallenge()
+    });
+  }
   const email = normalizeEmail(body.email);
   const password = String(body.password || "");
   const displayName = String(body.displayName || "").trim() || email.split("@")[0] || "Member";
@@ -3378,7 +3442,8 @@ async function handleRegister(req, res) {
         error: `A verification code was just sent. Please wait ${remainingSeconds} seconds and try again.`,
         verificationRequired: true,
         maskedEmail: maskEmail(email),
-        cooldownSeconds: remainingSeconds
+        cooldownSeconds: remainingSeconds,
+        authChallenge: createAuthChallenge()
       });
     }
 
@@ -3412,7 +3477,8 @@ async function handleRegister(req, res) {
       maskedEmail: maskEmail(email),
       cooldownSeconds: registerVerificationCooldownSeconds,
       expiresInSeconds: registerVerificationLifetimeSeconds,
-      message: `Verification code sent to ${maskEmail(email)}.`
+      message: `Verification code sent to ${maskEmail(email)}.`,
+      authChallenge: createAuthChallenge()
     });
   }
 
@@ -3475,24 +3541,33 @@ async function handleRegister(req, res) {
   send(res, 201, {
     user: publicUser(user),
     catalog: getPublicCatalog(),
-    message: `Email verified. Welcome to Mingyu. ${welcomeCredits} credits have been added to your new account.`
+    message: `Email verified. Welcome to Mingyu. ${welcomeCredits} credits have been added to your new account.`,
+    authChallenge: createAuthChallenge()
   }, "application/json; charset=utf-8", { "Set-Cookie": buildSessionCookie(sessionToken, sessionLifetimeSeconds) });
 }
 
 async function handleLogin(req, res) {
   const body = await readJsonBody(req, res);
   if (!body) return;
+  const authChallenge = validateAuthChallenge(body);
+  if (!authChallenge.ok) {
+    return send(res, authChallenge.status, {
+      error: authChallenge.error,
+      authChallenge: createAuthChallenge()
+    });
+  }
   const email = normalizeEmail(body.email);
   const password = String(body.password || "");
   const user = await findUserByEmail(email);
   if (!user || !verifyPassword(password, user.passwordHash, user.passwordSalt)) {
-    return send(res, 401, { error: "Incorrect email or password." });
+    return send(res, 401, { error: "Incorrect email or password.", authChallenge: createAuthChallenge() });
   }
 
   const sessionToken = await createSession(user.id);
   send(res, 200, {
     user: publicUser(user),
-    catalog: getPublicCatalog()
+    catalog: getPublicCatalog(),
+    authChallenge: createAuthChallenge()
   }, "application/json; charset=utf-8", { "Set-Cookie": buildSessionCookie(sessionToken, sessionLifetimeSeconds) });
 }
 
@@ -3506,8 +3581,13 @@ async function handleSession(req, res) {
   send(res, 200, {
     loggedIn: Boolean(user),
     user: user ? publicUser(user) : null,
-    catalog: getPublicCatalog()
+    catalog: getPublicCatalog(),
+    authChallenge: createAuthChallenge()
   });
+}
+
+async function handleAuthChallenge(req, res) {
+  send(res, 200, { authChallenge: createAuthChallenge() });
 }
 
 async function handleMemberOverview(req, res) {
@@ -3769,6 +3849,7 @@ http.createServer((req, res) => {
     if (req.method === "POST" && pathname === "/api/auth/login") return handleLogin(req, res);
     if (req.method === "POST" && pathname === "/api/auth/logout") return handleLogout(req, res);
     if (req.method === "GET" && pathname === "/api/auth/session") return handleSession(req, res);
+    if (req.method === "GET" && pathname === "/api/auth/challenge") return handleAuthChallenge(req, res);
 
     if (req.method === "GET" && pathname === "/api/member/overview") return handleMemberOverview(req, res);
     if (req.method === "POST" && pathname === "/api/member/purchase/start") return handleMemberPurchaseStart(req, res);
