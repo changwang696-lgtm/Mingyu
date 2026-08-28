@@ -1052,7 +1052,14 @@ async function buildNamingReportPdfBytes({
     soft: rgb(0.33, 0.27, 0.23),
     line: rgb(0.82, 0.74, 0.6),
     panel: rgb(0.97, 0.94, 0.88),
-    paper: rgb(0.95, 0.92, 0.84)
+    paper: rgb(0.95, 0.92, 0.84),
+    gold: rgb(0.85, 0.66, 0.31),
+    goldLight: rgb(0.95, 0.85, 0.63),
+    cinnabar: rgb(0.63, 0.24, 0.17),
+    teal: rgb(0.12, 0.45, 0.41),
+    tealDeep: rgb(0.09, 0.29, 0.39),
+    mist: rgb(0.91, 0.88, 0.81),
+    mutedLight: rgb(0.74, 0.7, 0.64)
   };
 
   const resultData = result || {};
@@ -1145,14 +1152,10 @@ async function buildNamingReportPdfBytes({
     const panelHeight = 236;
     const panelWidth = maxWidth;
     const panelX = margin;
-    const panelY = y - panelHeight;
     const boxGap = 8;
     const boxCount = 4;
     const boxWidth = (panelWidth - boxGap * (boxCount + 1)) / boxCount;
     const boxHeight = 76;
-    const boxTopY = panelY + panelHeight - 72 - boxHeight;
-    const rowTop = panelY + 48;
-    const rowCenterY = rowTop + 24;
     const elements = ["木", "火", "土", "金", "水"];
     const present = new Set([cultureData?.stem?.element, cultureData?.branch?.element, cultureData?.hourBranch?.element].filter(Boolean));
     const boxes = [
@@ -1179,6 +1182,10 @@ async function buildNamingReportPdfBytes({
     ];
 
     ensureSpace(panelHeight + 16);
+    const panelY = y - panelHeight;
+    const boxTopY = panelY + panelHeight - 72 - boxHeight;
+    const rowTop = panelY + 48;
+    const rowCenterY = rowTop + 24;
     page.drawRectangle({
       x: panelX,
       y: panelY,
@@ -1326,6 +1333,269 @@ async function buildNamingReportPdfBytes({
     y = panelY - 16;
   };
 
+  const drawZodiacCulturePanel = profileData => {
+    const personality = (Array.isArray(profileData?.personality) ? profileData.personality : []).slice(0, 3);
+    const personalityEn = Array.isArray(profileData?.personalityEn) ? profileData.personalityEn : [];
+    const traitEntries = personality.map((trait, index) => ({
+      index: String(index + 1).padStart(2, "0"),
+      zh: String(trait || "").trim() || "传统特质",
+      en: String(personalityEn[index] || "").trim() || "Trait"
+    }));
+    while (traitEntries.length < 3) {
+      const index = traitEntries.length;
+      traitEntries.push({
+        index: String(index + 1).padStart(2, "0"),
+        zh: "传统特质",
+        en: "Trait"
+      });
+    }
+
+    const symbolismText = joinPdfBilingualText(
+      profileData?.symbolism || "暂无生肖文化说明。",
+      profileData?.symbolismEn || "Zodiac symbolism unavailable."
+    );
+    const emblems = [
+      { char: "承", label: "传承", color: colors.cinnabar },
+      { char: "瑞", label: "祥瑞", color: rgb(0.65, 0.47, 0.16) },
+      { char: "和", label: "和合", color: colors.teal }
+    ];
+
+    const panelX = margin;
+    const panelWidth = maxWidth;
+    const panelPadding = 20;
+    const columnGap = 18;
+    const leftWidth = 210;
+    const rightWidth = panelWidth - panelPadding * 2 - leftWidth - columnGap;
+    const panelInnerTop = 78;
+    const traitBoxHeight = 60;
+    const traitGap = 8;
+    const noteLines = wrapPdfText(
+      "源自传统生肖文化的典型特征，仅作文化理解，不代表对个人性格的科学判定。",
+      font,
+      7.5,
+      leftWidth - 18
+    );
+    const noteHeight = noteLines.length * 10 + 10;
+    const leftHeight = panelInnerTop + traitEntries.length * traitBoxHeight + (traitEntries.length - 1) * traitGap + 18 + noteHeight;
+    const symbolismLines = wrapPdfText(symbolismText, font, 10.5, rightWidth - 6);
+    const rightHeight = panelInnerTop + 64 + symbolismLines.length * 14 + 28;
+    const panelHeight = Math.max(286, leftHeight, rightHeight);
+
+    ensureSpace(panelHeight + 18);
+    const panelY = y - panelHeight;
+    const leftX = panelX + panelPadding;
+    const rightX = leftX + leftWidth + columnGap;
+    const titleY = panelY + panelHeight - 46;
+    page.drawRectangle({
+      x: panelX,
+      y: panelY,
+      width: panelWidth,
+      height: panelHeight,
+      color: colors.panel
+    });
+    page.drawRectangle({
+      x: panelX,
+      y: panelY,
+      width: panelWidth,
+      height: panelHeight,
+      borderWidth: 1,
+      borderColor: colors.line
+    });
+    page.drawRectangle({
+      x: panelX,
+      y: panelY + panelHeight - 32,
+      width: panelWidth,
+      height: 32,
+      color: colors.cinnabar
+    });
+    page.drawText("生肖文化详解 · ZODIAC CULTURE", {
+      x: panelX + 16,
+      y: panelY + panelHeight - 21,
+      size: 10,
+      font,
+      color: colors.paper
+    });
+    page.drawLine({
+      start: { x: rightX - columnGap / 2, y: panelY + 18 },
+      end: { x: rightX - columnGap / 2, y: panelY + panelHeight - 46 },
+      thickness: 1,
+      color: colors.line
+    });
+
+    page.drawText("性格意象 · PERSONALITY", {
+      x: leftX,
+      y: titleY + 18,
+      size: 8.5,
+      font,
+      color: colors.warm
+    });
+    page.drawCircle({
+      x: leftX + 16,
+      y: titleY - 1,
+      size: 15,
+      color: colors.cinnabar,
+      borderWidth: 1,
+      borderColor: colors.gold
+    });
+    page.drawText("性", {
+      x: leftX + 11,
+      y: titleY - 7,
+      size: 12,
+      font,
+      color: colors.paper
+    });
+    page.drawText("性格特征", {
+      x: leftX + 36,
+      y: titleY - 4,
+      size: 16,
+      font,
+      color: colors.ink
+    });
+
+    let traitY = titleY - 30;
+    traitEntries.forEach(entry => {
+      page.drawRectangle({
+        x: leftX,
+        y: traitY - traitBoxHeight,
+        width: leftWidth,
+        height: traitBoxHeight,
+        color: colors.teal
+      });
+      page.drawRectangle({
+        x: leftX,
+        y: traitY - traitBoxHeight,
+        width: 28,
+        height: traitBoxHeight,
+        color: colors.tealDeep
+      });
+      page.drawRectangle({
+        x: leftX + 28,
+        y: traitY - traitBoxHeight,
+        width: 24,
+        height: traitBoxHeight,
+        borderWidth: 1,
+        borderColor: rgb(0.85, 0.72, 0.45)
+      });
+      page.drawText(entry.index, {
+        x: leftX + 9,
+        y: traitY - 34,
+        size: 8,
+        font,
+        color: colors.goldLight
+      });
+      page.drawText(entry.zh.slice(0, 1), {
+        x: leftX + 36,
+        y: traitY - 34,
+        size: 12,
+        font,
+        color: colors.goldLight
+      });
+      page.drawText(entry.zh, {
+        x: leftX + 64,
+        y: traitY - 20,
+        size: 12,
+        font,
+        color: colors.paper
+      });
+      page.drawText(entry.en, {
+        x: leftX + 64,
+        y: traitY - 40,
+        size: 10,
+        font,
+        color: rgb(0.84, 0.9, 0.88)
+      });
+      traitY -= traitBoxHeight + traitGap;
+    });
+
+    let noteY = traitY - 2;
+    noteLines.forEach(line => {
+      page.drawText(line || " ", {
+        x: leftX + 2,
+        y: noteY,
+        size: 7.5,
+        font,
+        color: colors.soft
+      });
+      noteY -= 10;
+    });
+
+    page.drawText("文化意象 · SYMBOLISM & MEANING", {
+      x: rightX,
+      y: titleY + 18,
+      size: 8.5,
+      font,
+      color: colors.warm
+    });
+    page.drawCircle({
+      x: rightX + 16,
+      y: titleY - 1,
+      size: 15,
+      color: colors.teal,
+      borderWidth: 1,
+      borderColor: colors.gold
+    });
+    page.drawText("寓", {
+      x: rightX + 11,
+      y: titleY - 7,
+      size: 12,
+      font,
+      color: colors.paper
+    });
+    page.drawText("象征与寓意", {
+      x: rightX + 36,
+      y: titleY - 4,
+      size: 16,
+      font,
+      color: colors.ink
+    });
+
+    emblems.forEach((item, index) => {
+      const cx = rightX + 18 + index * 54;
+      page.drawCircle({
+        x: cx,
+        y: titleY - 54,
+        size: 15,
+        color: item.color,
+        borderWidth: 1,
+        borderColor: colors.gold
+      });
+      page.drawText(item.char, {
+        x: cx - 5,
+        y: titleY - 60,
+        size: 12,
+        font,
+        color: colors.paper
+      });
+      page.drawText(item.label, {
+        x: cx - 9,
+        y: titleY - 80,
+        size: 7,
+        font,
+        color: colors.soft
+      });
+    });
+
+    page.drawText("寓", {
+      x: panelX + panelWidth - 84,
+      y: panelY + 18,
+      size: 58,
+      font,
+      color: colors.mist
+    });
+    let symbolismY = titleY - 112;
+    symbolismLines.forEach(line => {
+      page.drawText(line || " ", {
+        x: rightX,
+        y: symbolismY,
+        size: 10.5,
+        font,
+        color: colors.soft
+      });
+      symbolismY -= 14;
+    });
+    y = panelY - 18;
+  };
+
   page.drawRectangle({
     x: 0,
     y: pageHeight - 190,
@@ -1421,22 +1691,12 @@ async function buildNamingReportPdfBytes({
   }
 
   if (isComplete) {
-    drawDivider();
-    drawSectionTitle("生肖文化详解 / Zodiac Culture", "完整版包含网页中的完整生肖文化解读");
-    if (Array.isArray(profile.personality) && profile.personality.length) {
-      const bilingualTraits = profile.personality.map((trait, index) => `${trait} / ${(profile.personalityEn || [])[index] || ""}`).join(" · ");
-      drawParagraph(`性格特征 / Personality: ${bilingualTraits}`, {
-        size: 11,
-        color: colors.soft,
-        gapAfter: 6
-      });
-    }
-    drawParagraph(joinPdfBilingualText(profile.symbolism || "暂无生肖文化说明。", profile.symbolismEn || "Zodiac symbolism unavailable."), {
-      size: 11,
-      color: colors.soft,
-      gapAfter: 12
-    });
+    beginNewPage(true);
+    drawSectionTitle("生肖文化详解 / Zodiac Culture", "新增网页同款的双栏文化版式，保留性格特征与象征寓意");
+    drawZodiacCulturePanel(profile);
 
+    ensureSpace(420);
+    if (y < 440) beginNewPage(true);
     drawSectionTitle("传统时序文化解读 / Traditional Reading", "对应网页中的年柱、时辰与文化注解");
     drawTraditionalSnapshotPanel(culture);
     drawParagraph(
