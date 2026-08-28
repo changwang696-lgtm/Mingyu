@@ -42,32 +42,6 @@ const tierPricing = {
   complete: { value: "9.90", label: "Complete Edition" }
 };
 const tierCreditCosts = { simple: 1, complete: 3 };
-const memberPlans = {
-  starter: {
-    id: "starter",
-    name: "Starter Membership",
-    price: "$19/month",
-    payPalValue: "19.00",
-    credits: 30,
-    interval: "month"
-  },
-  studio: {
-    id: "studio",
-    name: "Studio Membership",
-    price: "$39/month",
-    payPalValue: "39.00",
-    credits: 80,
-    interval: "month"
-  },
-  creditPack: {
-    id: "credit-pack-50",
-    name: "Credit Pack",
-    price: "$29 one-time",
-    payPalValue: "29.00",
-    credits: 50,
-    interval: "one-time"
-  }
-};
 const types = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -123,7 +97,15 @@ const placeTimeZones = [
 ];
 
 function createDefaultDatabase() {
-  return { users: [], sessions: [], reports: [], guestOrders: [], memberOrders: [], pendingRegistrations: [] };
+  return {
+    users: [],
+    sessions: [],
+    reports: [],
+    guestOrders: [],
+    memberOrders: [],
+    pendingRegistrations: [],
+    memberPlans: getDefaultMemberPlans()
+  };
 }
 
 function ensureDatabaseFile() {
@@ -141,7 +123,8 @@ function loadDatabase() {
         reports: Array.isArray(parsed.reports) ? parsed.reports : [],
         guestOrders: Array.isArray(parsed.guestOrders) ? parsed.guestOrders : [],
         memberOrders: Array.isArray(parsed.memberOrders) ? parsed.memberOrders : [],
-        pendingRegistrations: Array.isArray(parsed.pendingRegistrations) ? parsed.pendingRegistrations : []
+        pendingRegistrations: Array.isArray(parsed.pendingRegistrations) ? parsed.pendingRegistrations : [],
+        memberPlans: buildMemberPlansFromSource(parsed.memberPlans)
     };
   } catch {
     const fallback = createDefaultDatabase();
@@ -265,6 +248,94 @@ function compactBody(body) {
     wish: body.wish?.trim() || "",
     tier: normalizeTier(body.tier)
   };
+}
+
+function getDefaultMemberPlans() {
+  return [
+    {
+      id: "starter",
+      name: "Starter Membership",
+      nameZh: "入门会员",
+      nameEn: "Starter Membership",
+      descriptionZh: "每月 30 credits，适合轻量使用",
+      descriptionEn: "30 credits monthly for light usage",
+      price: "$19/month",
+      payPalValue: "19.00",
+      credits: 30,
+      interval: "month",
+      active: true,
+      sortOrder: 10
+    },
+    {
+      id: "studio",
+      name: "Studio Membership",
+      nameZh: "工作室会员",
+      nameEn: "Studio Membership",
+      descriptionZh: "每月 80 credits，适合高频使用",
+      descriptionEn: "80 credits monthly for frequent use",
+      price: "$39/month",
+      payPalValue: "39.00",
+      credits: 80,
+      interval: "month",
+      active: true,
+      sortOrder: 20
+    },
+    {
+      id: "credit-pack-50",
+      name: "Credit Pack",
+      nameZh: "点数包",
+      nameEn: "Credit Pack",
+      descriptionZh: "一次性 50 credits，适合按需购买",
+      descriptionEn: "One-time 50-credit pack for flexible use",
+      price: "$29 one-time",
+      payPalValue: "29.00",
+      credits: 50,
+      interval: "one-time",
+      active: true,
+      sortOrder: 30
+    }
+  ];
+}
+
+function sanitizeMemberPlan(plan = {}, fallback = {}) {
+  const id = String(plan.id || fallback.id || "").trim();
+  const interval = String(plan.interval || fallback.interval || "month").trim() === "one-time" ? "one-time" : "month";
+  const credits = Math.max(0, Number.parseInt(plan.credits ?? fallback.credits ?? 0, 10) || 0);
+  const payPalValueRaw = String(plan.payPalValue ?? fallback.payPalValue ?? "").trim();
+  const payPalValueNumber = Number.parseFloat(payPalValueRaw);
+  const payPalValue = Number.isFinite(payPalValueNumber) && payPalValueNumber >= 0
+    ? payPalValueNumber.toFixed(2)
+    : String(fallback.payPalValue || "0.00");
+  return {
+    id,
+    name: String(plan.name || plan.nameEn || plan.nameZh || fallback.name || fallback.nameEn || id).trim(),
+    nameZh: String(plan.nameZh || fallback.nameZh || plan.name || id).trim(),
+    nameEn: String(plan.nameEn || fallback.nameEn || plan.name || id).trim(),
+    descriptionZh: String(plan.descriptionZh || fallback.descriptionZh || "").trim(),
+    descriptionEn: String(plan.descriptionEn || fallback.descriptionEn || "").trim(),
+    price: String(plan.price || fallback.price || "").trim(),
+    payPalValue,
+    credits,
+    interval,
+    active: plan.active === undefined ? (fallback.active !== undefined ? Boolean(fallback.active) : true) : Boolean(plan.active),
+    sortOrder: Number.parseInt(plan.sortOrder ?? fallback.sortOrder ?? 0, 10) || 0
+  };
+}
+
+function buildMemberPlansFromSource(sourcePlans) {
+  const defaults = getDefaultMemberPlans();
+  const defaultMap = new Map(defaults.map(plan => [plan.id, plan]));
+  const plans = Array.isArray(sourcePlans) && sourcePlans.length
+    ? sourcePlans.map(plan => sanitizeMemberPlan(plan, defaultMap.get(String(plan?.id || "").trim()) || {}))
+    : defaults.map(plan => sanitizeMemberPlan(plan));
+  return plans
+    .filter(plan => plan.id)
+    .sort((left, right) => left.sortOrder - right.sortOrder || left.id.localeCompare(right.id));
+}
+
+function listMemberPlans(includeInactive = false) {
+  const plans = buildMemberPlansFromSource(database.memberPlans);
+  return includeInactive ? plans : plans.filter(plan => plan.active !== false);
 }
 
 function normalizeEmail(email) {
@@ -413,12 +484,12 @@ function mapMemberOrderRow(row) {
 }
 
 function getMemberPlan(planId) {
-  return Object.values(memberPlans).find(plan => plan.id === planId) || null;
+  return listMemberPlans(false).find(plan => plan.id === planId) || null;
 }
 
 function getPublicCatalog() {
   return {
-    plans: Object.values(memberPlans),
+    plans: listMemberPlans(false),
     generationCosts: tierCreditCosts,
     welcomeCredits
   };
@@ -3293,7 +3364,52 @@ async function handleAdminSession(req, res) {
     configured: isAdminConfigured(),
     authenticated: Boolean(admin),
     username: admin?.username || null,
-    emailEnabled: isMailConfigured()
+    emailEnabled: isMailConfigured(),
+    planCount: listMemberPlans(true).length
+  });
+}
+
+async function handleAdminMemberPlans(req, res) {
+  if (!requireAdmin(req, res)) return;
+  send(res, 200, {
+    plans: listMemberPlans(true),
+    storage: "local_database_file",
+    payPalEnabled: Boolean(getPayPalConfig())
+  });
+}
+
+async function handleAdminMemberPlansSave(req, res) {
+  if (!requireAdmin(req, res)) return;
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  const incomingPlans = Array.isArray(body.plans) ? body.plans : [];
+  if (!incomingPlans.length) return send(res, 422, { error: "At least one member plan is required." });
+
+  const currentPlans = listMemberPlans(true);
+  const currentMap = new Map(currentPlans.map(plan => [plan.id, plan]));
+  const nextPlans = incomingPlans.map((plan, index) => sanitizeMemberPlan(plan, {
+    ...currentMap.get(String(plan?.id || "").trim()),
+    sortOrder: (index + 1) * 10
+  }));
+
+  const uniqueIds = new Set();
+  for (const plan of nextPlans) {
+    if (!plan.id) return send(res, 422, { error: "Each member plan must keep a valid ID." });
+    if (uniqueIds.has(plan.id)) return send(res, 422, { error: `Duplicate plan ID detected: ${plan.id}` });
+    uniqueIds.add(plan.id);
+    if (!plan.price) return send(res, 422, { error: `Price label is required for ${plan.id}.` });
+    if (!plan.nameEn) return send(res, 422, { error: `English name is required for ${plan.id}.` });
+    if (!plan.nameZh) return send(res, 422, { error: `Chinese name is required for ${plan.id}.` });
+    if (!plan.payPalValue || Number.parseFloat(plan.payPalValue) < 0) {
+      return send(res, 422, { error: `PayPal amount is invalid for ${plan.id}.` });
+    }
+  }
+
+  database.memberPlans = nextPlans;
+  saveDatabase();
+  send(res, 200, {
+    ok: true,
+    plans: listMemberPlans(true)
   });
 }
 
@@ -3838,6 +3954,8 @@ http.createServer((req, res) => {
     if (req.method === "POST" && pathname === "/api/admin/login") return handleAdminLogin(req, res);
     if (req.method === "POST" && pathname === "/api/admin/logout") return handleAdminLogout(req, res);
     if (req.method === "GET" && pathname === "/api/admin/session") return handleAdminSession(req, res);
+    if (req.method === "GET" && pathname === "/api/admin/member-plans") return handleAdminMemberPlans(req, res);
+    if (req.method === "POST" && pathname === "/api/admin/member-plans") return handleAdminMemberPlansSave(req, res);
     if (req.method === "GET" && pathname === "/api/admin/guest-orders") return handleAdminGuestOrders(req, res, url);
     if (req.method === "GET" && pathname === "/api/admin/guest-orders/detail") return handleAdminGuestOrderDetail(req, res, url);
     if (req.method === "POST" && pathname === "/api/admin/guest-orders/send-email") return handleAdminGuestOrderSendEmail(req, res);
