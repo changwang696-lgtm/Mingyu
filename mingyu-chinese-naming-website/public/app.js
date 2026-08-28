@@ -60,15 +60,15 @@ const translations = {
     symbolismEyebrow: "SYMBOLISM & MEANING", symbolismTitle: "Symbolism & meaning",
     reportEyebrow: "PERSONAL EDITION", pdfReadyTitle: "Your complete report is ready",
     pdfReadyBody: "Save the complete result as a polished A4 PDF for printing, gifting or keeping.", savePdf: "Save PDF",
-    craftTitle: "An Eastern gift bearing your name", craftSub: "Objects made by artisans, turning your name into a keepsake you can touch.",
+    craftTitle: "An Eastern gift bearing your name to admire", craftSub: "Objects made by artisans, turning your name into a keepsake you can touch.",
     product1: "Custom name seal", product2: "Silk round fan", product3: "Name calligraphy scroll",
     launchTitle: "Current site status",
     launchBody: "The site currently focuses on one-time guest orders for personalized digital naming results. Payment is handled by PayPal, and delivery happens on-site with email and order recovery support.",
     demoNote: "Payment is handled by PayPal. Your result will be delivered on this site after successful payment.", loading: "Reading the sound, meaning and moment of your name...",
          paypalInlineTitle: "Pay with PayPal directly",
-         paypalInlineBody: "Complete the form above, then continue to the official PayPal page. You can pay with a PayPal account or an eligible card. The email you enter on this site is only for delivery and can differ from your PayPal login email.",
+         paypalInlineBody: "Use PayPal directly to pay and generate your result.",
     paypalValidation: "Please complete the required form fields before starting PayPal checkout.",
-         paypalHostedNote: "After your order is prepared, you will be redirected to the official PayPal payment page. You can pay with a PayPal account or an eligible bank card. The email entered on this site is only used to deliver your result and can differ from your PayPal login email. After payment, return to this site through the success page to continue delivery. If you cancel payment, the order will still be kept for later recovery.",
+         paypalHostedNote: "After your order is prepared, you will be redirected to the official PayPal payment page. You can pay with a PayPal account or an eligible bank card. The email entered on this site is only used to deliver your result and can differ from your PayPal login email. If you cancel payment, the order will still be kept for later recovery.",
               paypalHostedDialogNote: "You will be redirected to the official PayPal payment page. After payment, return to Mingyu and continue delivery from the saved order page. If you cancel payment, the order will remain saved for later recovery.",
     paypalHostedOpen: "Open PayPal checkout",
     paypalHostedOpened: "Redirecting to the PayPal checkout page...",
@@ -136,15 +136,15 @@ const translations = {
     symbolismEyebrow: "文化意象 · SYMBOLISM & MEANING", symbolismTitle: "象征与寓意",
     reportEyebrow: "珍藏版 · PERSONAL EDITION", pdfReadyTitle: "完整报告已经生成",
     pdfReadyBody: "可将当前完整结果保存为精美 A4 PDF，用于珍藏、打印或赠礼。", savePdf: "保存 PDF",
-    craftTitle: "一件带着名字的东方礼物", craftSub: "来自手艺人的小物，为名字留下可以触摸的纪念。",
+    craftTitle: "一件带着名字的东方礼物欣赏", craftSub: "来自手艺人的小物，为名字留下可以触摸的纪念。",
     product1: "定制姓名印章", product2: "缂丝团扇", product3: "姓名书法卷",
     launchTitle: "当前站点状态",
     launchBody: "当前站点以一次性游客订单为主，销售个性化数字起名结果。付款由 PayPal 处理，结果在站内交付，并支持邮件和订单找回。",
     demoNote: "支付将由 PayPal 处理；付款成功后，结果会在本站交付。", loading: "正在研读你的名字与时辰...",
          paypalInlineTitle: "使用 PayPal 直接付款",
-         paypalInlineBody: "填写上方信息后，将跳转到 PayPal 官方安全支付页。你可以使用 PayPal 账户登录付款，或选择支持的银行卡支付。你在本站填写的邮箱仅用于接收结果邮件，与 PayPal 登录邮箱可以不同。",
+         paypalInlineBody: "可直接使用 PayPal 支付并生成结果。",
     paypalValidation: "请先完整填写必填信息，再使用 PayPal 付款。",
-             paypalHostedNote: "当前会先创建游客订单，再跳转到 PayPal 官方安全支付页。你可以使用 PayPal 账户登录付款，或选择支持的银行卡支付。你在本站填写的邮箱仅用于接收结果邮件，与 PayPal 登录邮箱可以不同。付款完成后，请返回本站的成功页继续交付；若中途关闭页面，也可以凭邮箱和订单号稍后找回。",
+             paypalHostedNote: "当前会先创建游客订单，再跳转到 PayPal 官方安全支付页。你可以使用 PayPal 账户登录付款，或选择支持的银行卡支付。你在本站填写的邮箱仅用于接收结果邮件，与 PayPal 登录邮箱可以不同。若中途关闭页面，也可以凭邮箱和订单号稍后找回。",
              paypalHostedDialogNote: "当前将跳转到 PayPal 官方安全支付页进行付款。付款完成后，请返回名屿并通过已保存的订单继续交付；若你取消支付，订单也会保留，方便稍后找回。",
     paypalHostedOpen: "打开 PayPal 付款页",
     paypalHostedOpened: "正在跳转到 PayPal 付款页...",
@@ -295,6 +295,11 @@ function resolveSubmittedTier(event) {
 function openPaymentDialogWithFallback() {
   updatePaymentDialog();
   try {
+    const preferNonModal = window.matchMedia?.("(max-width: 760px)")?.matches || window.matchMedia?.("(pointer: coarse)")?.matches;
+    if (preferNonModal && typeof dialog.show === "function") {
+      dialog.show();
+      return true;
+    }
     if (typeof dialog.showModal === "function") {
       dialog.showModal();
       return true;
@@ -393,32 +398,45 @@ $("#confirmPurchase").onclick = async () => {
 };
 
 function render(data) {
-  const en = lang === "en";
   const simple = activeTier === "simple";
   const animalKey = data.zodiac.animalEn.toLowerCase();
   const usedCredits = data.membership?.consumedCredits;
   $("#result").classList.toggle("simple-result", simple);
-  $("#resultTitle").textContent = simple ? translations[lang].simpleResultTitle : translations[lang].resultTitle;
+  $("#resultTitle").textContent = simple ? "你的东方名字卷 / Simple Naming Result" : "你的东方名字卷 / Complete Naming Result";
   $("#editionBadge").textContent = usedCredits
-    ? `${simple ? (en ? "Simple Edition" : "简约版") : (en ? "Complete Edition" : "完整版")} · ${usedCredits} ${en ? "credits" : "credits"}`
-    : (simple ? `${en ? "Simple Edition" : "简约版"} · $2.99` : `${en ? "Complete Edition" : "完整版"} · $9.90`);
+    ? `${simple ? "简约版 / Simple Edition" : "完整版 / Complete Edition"} · ${usedCredits} credits`
+    : (simple ? "简约版 / Simple Edition · $2.99" : "完整版 / Complete Edition · $9.90");
   $("#zodiacGlyph span").textContent = data.zodiac.animal;
   $("#zodiacImage").src = `/assets/zodiac/${animalKey}.jpg`;
   $("#zodiacImage").alt = `${data.zodiac.animal} · ${data.zodiac.animalEn}`;
-  $("#zodiacName").textContent = `${data.zodiac.years} · ${en ? data.zodiac.animalEn : data.zodiac.animal}`;
-  $("#traits").innerHTML = (en ? data.zodiac.traitsEn : data.zodiac.traits).map(item => `<span>${esc(item)}</span>`).join("");
-  $("#summary").textContent = en ? data.summaryEn : data.summary;
-  $("#culturalNote").textContent = en ? data.culturalNoteEn : data.culturalNote;
-  renderZodiacProfile(data.traditionalCulture, en);
-  renderCulture(data.traditionalCulture, en);
+  $("#zodiacName").textContent = `${data.zodiac.years} · ${data.zodiac.animal} · ${data.zodiac.animalEn}`;
+  $("#traits").innerHTML = (Array.isArray(data.zodiac.traits) ? data.zodiac.traits : []).map((item, index) => `
+    <span class="trait-dual">
+      <b>${esc(item)}</b>
+      <small>${esc((data.zodiac.traitsEn || [])[index] || "")}</small>
+    </span>
+  `).join("");
+  $("#summary").innerHTML = bilingualText(data.summary, data.summaryEn);
+  $("#culturalNote").innerHTML = bilingualText(data.culturalNote, data.culturalNoteEn);
+  renderZodiacProfile(data.traditionalCulture);
+  renderCulture(data.traditionalCulture);
   $("#nameList").innerHTML = data.names.map((name, index) => `
     <article class="name-card">
-      <div><small>${en ? `NAME 0${index + 1}` : `候选 0${index + 1}`}</small><div class="hanzi">${esc(name.hanzi)}</div><div class="pinyin">${esc(name.pinyin)}</div></div>
-      <div class="name-detail"><p>${esc(en ? name.meaningEn : name.meaning)}</p><span class="tone">${esc(name.tone)}</span></div>
+      <div><small>候选 / NAME 0${index + 1}</small><div class="hanzi">${esc(name.hanzi)}</div><div class="pinyin">${esc(name.pinyin)}</div></div>
+      <div class="name-detail"><p class="bilingual-block">${bilingualText(name.meaning, name.meaningEn)}</p><span class="tone">${esc(name.tone)}</span></div>
       <div class="seal"><span class="seal-mark" aria-hidden="true">印</span><span class="seal-text">${esc(name.seal)}</span></div>
     </article>`).join("");
   $("#demoBadge").hidden = !data.demo;
-  $("#demoBadge").textContent = en ? "Cultural preview" : "文化体验版";
+  $("#demoBadge").textContent = "文化体验版 / Cultural preview";
+}
+
+function bilingualText(zh, en) {
+  const zhText = String(zh || "").trim() || "-";
+  const enText = String(en || "").trim();
+  return `
+    <span class="bilingual-line bilingual-zh">${esc(zhText)}</span>
+    ${enText ? `<span class="bilingual-line bilingual-en">${esc(enText)}</span>` : ""}
+  `.trim();
 }
 
 function loadPayPalSdk() {
@@ -779,16 +797,23 @@ async function restoreMemberReportFromUrl() {
   }
 }
 
-function renderZodiacProfile(culture, en) {
+function renderZodiacProfile(culture) {
   const profile = culture?.zodiacProfile;
   if (!profile) return;
-  const traits = en ? profile.personalityEn : profile.personality;
   const icons = ["志", "心", "行"];
-  $("#profileTraits").innerHTML = traits.map((trait, index) => `<span><b>0${index + 1}</b><i aria-hidden="true">${icons[index % icons.length]}</i><em>${esc(trait)}</em></span>`).join("");
-  $("#zodiacSymbolism").textContent = en ? profile.symbolismEn : profile.symbolism;
+  const zhTraits = Array.isArray(profile.personality) ? profile.personality : [];
+  const enTraits = Array.isArray(profile.personalityEn) ? profile.personalityEn : [];
+  $("#profileTraits").innerHTML = zhTraits.map((trait, index) => `
+    <span>
+      <b>0${index + 1}</b>
+      <i aria-hidden="true">${icons[index % icons.length]}</i>
+      <em>${bilingualText(trait, enTraits[index] || "")}</em>
+    </span>
+  `).join("");
+  $("#zodiacSymbolism").innerHTML = bilingualText(profile.symbolism, profile.symbolismEn);
 }
 
-function renderCulture(culture, en) {
+function renderCulture(culture) {
   if (!culture) return;
   const elements = { 木: "Wood", 火: "Fire", 土: "Earth", 金: "Metal", 水: "Water" };
   const polarities = { 阳: "Yang", 阴: "Yin" };
@@ -796,16 +821,17 @@ function renderCulture(culture, en) {
   $("#pillarStem").textContent = culture.stem.char;
   $("#pillarBranch").textContent = culture.branch.char;
   $("#yearPillar").textContent = culture.pillar;
-  $("#cyclePosition").textContent = en ? `Sexagenary cycle · No. ${culture.cycleNumber}` : `六十甲子 · 第 ${culture.cycleNumber} 位`;
-  $("#stemDetail").textContent = en ? `${culture.stem.char} · ${polarities[culture.stem.polarity]} ${elements[culture.stem.element]}` : `${culture.stem.char} · ${culture.stem.polarity}${culture.stem.element}`;
-  $("#branchDetail").textContent = en ? `${culture.branch.char} · ${elements[culture.branch.element]} · ${culture.branch.zodiacEn}` : `${culture.branch.char} · ${culture.branch.element} · ${culture.branch.zodiac}`;
-  $("#hourDetail").textContent = en ? `${branchNames[culture.hourBranch.char]} hour · ${elements[culture.hourBranch.element]}` : `${culture.hourBranch.char}时 · ${culture.hourBranch.element}`;
-  $("#hourRange").textContent = en ? `${culture.hourBranch.range} · China time ${culture.chinaBirthLabel}` : `${culture.hourBranch.range} · 北京时间 ${culture.chinaBirthLabel}`;
-  $("#cultureNote").textContent = en ? culture.noteEn : culture.note;
+  $("#cyclePosition").innerHTML = bilingualText(`六十甲子 · 第 ${culture.cycleNumber} 位`, `Sexagenary cycle · No. ${culture.cycleNumber}`);
+  $("#stemDetail").innerHTML = bilingualText(`${culture.stem.char} · ${culture.stem.polarity}${culture.stem.element}`, `${culture.stem.char} · ${polarities[culture.stem.polarity]} ${elements[culture.stem.element]}`);
+  $("#branchDetail").innerHTML = bilingualText(`${culture.branch.char} · ${culture.branch.element} · ${culture.branch.zodiac}`, `${culture.branch.char} · ${elements[culture.branch.element]} · ${culture.branch.zodiacEn}`);
+  $("#hourDetail").innerHTML = bilingualText(`${culture.hourBranch.char}时 · ${culture.hourBranch.element}`, `${branchNames[culture.hourBranch.char]} hour · ${elements[culture.hourBranch.element]}`);
+  $("#hourRange").innerHTML = bilingualText(`${culture.hourBranch.range} · 北京时间 ${culture.chinaBirthLabel}`, `${culture.hourBranch.range} · China time ${culture.chinaBirthLabel}`);
+  $("#cultureNote").innerHTML = bilingualText(culture.note, culture.noteEn);
   const present = new Set([culture.stem.element, culture.branch.element, culture.hourBranch.element]);
   document.querySelectorAll(".element-flow span").forEach(element => {
     element.classList.toggle("is-present", present.has(element.dataset.element));
-    element.textContent = en ? elements[element.dataset.element] : element.dataset.element;
+    element.textContent = element.dataset.element;
+    element.title = `${element.dataset.element} / ${elements[element.dataset.element]}`;
   });
 }
 
@@ -813,11 +839,22 @@ function esc(value) {
   return String(value).replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
 }
 
+function resetTransientLayers() {
+  if ($("#loading")) $("#loading").hidden = true;
+  if (!dialog) return;
+  try {
+    if (dialog.open) dialog.close();
+  } catch {}
+  dialog.removeAttribute("open");
+}
+
 $("#restart").onclick = () => {
   $("#result").hidden = true;
   $("#ritual").scrollIntoView({ behavior: "smooth" });
 };
-dialog.querySelector(".close").onclick = () => dialog.close();
+dialog.querySelector(".close").onclick = () => resetTransientLayers();
+dialog.addEventListener("cancel", () => resetTransientLayers());
+window.addEventListener("pageshow", () => resetTransientLayers());
 $("#savePdf").onclick = () => {
   if (memberReportMeta?.pdfUrl) {
     window.location.assign(memberReportMeta.pdfUrl);
@@ -846,6 +883,7 @@ fetch("/api/paypal-config")
   });
 
 applyLanguage();
+resetTransientLayers();
 if ($("#accountLink")) {
   $("#accountLink").hidden = false;
   $("#accountLink").style.display = "";
