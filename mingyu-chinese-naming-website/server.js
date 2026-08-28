@@ -1148,6 +1148,42 @@ async function buildNamingReportPdfBytes({
     y -= dimensions.height + gapAfter;
   };
 
+  const measurePdfLinesHeight = (lineCount, size, gapAfter = 0) => (lineCount * (size + lineGap)) + gapAfter;
+
+  const drawNameOptionCard = option => {
+    const title = `${option.hanzi || ""}  ${option.pinyin || ""}`.trim();
+    const meaningText = joinPdfBilingualText(option.meaning || "", option.meaningEn || "");
+    const meaningLines = wrapPdfText(meaningText, font, 10, maxWidth - 24);
+    const cardHeight =
+      14 +
+      (title ? measurePdfLinesHeight(1, 14) : 0) +
+      (option.seal ? measurePdfLinesHeight(1, 10) : 0) +
+      (option.tone ? measurePdfLinesHeight(1, 10) : 0) +
+      measurePdfLinesHeight(meaningLines.length, 10, 10);
+
+    ensureSpace(cardHeight + 8);
+    page.drawRectangle({
+      x: margin,
+      y: y - cardHeight,
+      width: maxWidth,
+      height: cardHeight,
+      color: colors.panel,
+      borderWidth: 1,
+      borderColor: colors.line
+    });
+    y -= 14;
+    if (title) drawTextLine(title, { size: 14, color: colors.ink, x: margin + 12 });
+    if (option.seal) drawTextLine(`Seal / 印记: ${option.seal}`, { size: 10, color: colors.warm, x: margin + 12 });
+    if (option.tone) drawTextLine(`Tone / 声调: ${option.tone}`, { size: 10, color: colors.warm, x: margin + 12 });
+    drawParagraph(meaningText, {
+      size: 10,
+      color: colors.soft,
+      x: margin + 12,
+      width: maxWidth - 24,
+      gapAfter: 10
+    });
+  };
+
   const drawTraditionalSnapshotPanel = cultureData => {
     const panelHeight = 236;
     const panelWidth = maxWidth;
@@ -1665,29 +1701,10 @@ async function buildNamingReportPdfBytes({
   });
   drawDivider();
 
+  beginNewPage(true);
   drawSectionTitle("候选名字 / Name Options", "每个名字说明都同步输出中文与英文");
   for (const option of Array.isArray(resultData.names) ? resultData.names : []) {
-    ensureSpace(106);
-    page.drawRectangle({
-      x: margin,
-      y: y - 94,
-      width: maxWidth,
-      height: 94,
-      color: colors.panel,
-      borderWidth: 1,
-      borderColor: colors.line
-    });
-    y -= 14;
-    drawTextLine(`${option.hanzi || ""}  ${option.pinyin || ""}`.trim(), { size: 14, color: colors.ink, x: margin + 12 });
-    if (option.seal) drawTextLine(`Seal / 印记: ${option.seal}`, { size: 10, color: colors.warm, x: margin + 12 });
-    if (option.tone) drawTextLine(`Tone / 声调: ${option.tone}`, { size: 10, color: colors.warm, x: margin + 12 });
-    drawParagraph(joinPdfBilingualText(option.meaning || "", option.meaningEn || ""), {
-      size: 10,
-      color: colors.soft,
-      x: margin + 12,
-      width: maxWidth - 24,
-      gapAfter: 10
-    });
+    drawNameOptionCard(option);
   }
 
   if (isComplete) {
@@ -1695,8 +1712,7 @@ async function buildNamingReportPdfBytes({
     drawSectionTitle("生肖文化详解 / Zodiac Culture", "新增网页同款的双栏文化版式，保留性格特征与象征寓意");
     drawZodiacCulturePanel(profile);
 
-    ensureSpace(420);
-    if (y < 440) beginNewPage(true);
+    beginNewPage(true);
     drawSectionTitle("传统时序文化解读 / Traditional Reading", "对应网页中的年柱、时辰与文化注解");
     drawTraditionalSnapshotPanel(culture);
     drawParagraph(
