@@ -6,8 +6,15 @@ const loginForm = document.querySelector("#loginForm");
 const registerHelp = document.querySelector("#registerHelp");
 const registerVerificationBlock = document.querySelector("#registerVerificationBlock");
 const registerVerificationCode = document.querySelector("#registerVerificationCode");
+const registerChallengePrompt = document.querySelector("#registerChallengePrompt");
+const registerChallengeAnswer = document.querySelector("#registerChallengeAnswer");
+const registerChallengeRefreshBtn = document.querySelector("#registerChallengeRefreshBtn");
 const registerSubmitBtn = document.querySelector("#registerSubmitBtn");
 const resendRegisterCodeBtn = document.querySelector("#resendRegisterCodeBtn");
+const loginChallengePrompt = document.querySelector("#loginChallengePrompt");
+const loginChallengeAnswer = document.querySelector("#loginChallengeAnswer");
+const loginChallengeRefreshBtn = document.querySelector("#loginChallengeRefreshBtn");
+const loginSubmitBtn = loginForm?.querySelector('button[type="submit"]');
 const logoutBtn = document.querySelector("#logoutBtn");
 const memberName = document.querySelector("#memberName");
 const memberEmail = document.querySelector("#memberEmail");
@@ -28,6 +35,16 @@ let registerCooldownUntil = 0;
 let registerCooldownTimer = null;
 let registerSubmitting = false;
 let resendSubmitting = false;
+let loginSubmitting = false;
+let registerChallengeToken = "";
+let loginChallengeToken = "";
+
+const registerFieldLabels = {
+  displayName: "显示名称",
+  email: "邮箱",
+  password: "密码",
+  verificationCode: "邮箱验证码"
+};
 
 function escapeHtml(value) {
   return String(value || "").replace(/[&<>"']/g, character => ({
@@ -88,6 +105,200 @@ function hideStatus() {
   statusBanner.textContent = "";
 }
 
+function getAuthChallengeNodes(formName) {
+  if (formName === "login") {
+    return {
+      token: loginChallengeToken,
+      setToken(value) { loginChallengeToken = value; },
+      prompt: loginChallengePrompt,
+      answer: loginChallengeAnswer,
+      refreshBtn: loginChallengeRefreshBtn
+    };
+  }
+  return {
+    token: registerChallengeToken,
+    setToken(value) { registerChallengeToken = value; },
+    prompt: registerChallengePrompt,
+    answer: registerChallengeAnswer,
+    refreshBtn: registerChallengeRefreshBtn
+  };
+}
+
+function setAuthChallenge(formName, challenge, { clearAnswer = true } = {}) {
+  const nodes = getAuthChallengeNodes(formName);
+  nodes.setToken(String(challenge?.token || "").trim());
+  if (nodes.prompt) {
+    nodes.prompt.textContent = challenge?.prompt || "题目加载失败，请点击换一题。";
+  }
+  if (clearAnswer && nodes.answer) {
+    nodes.answer.value = "";
+  }
+}
+
+async function refreshAuthChallenge(formName, { focusAnswer = false } = {}) {
+  const nodes = getAuthChallengeNodes(formName);
+  if (nodes.prompt) nodes.prompt.textContent = "载入中...";
+  nodes.setToken("");
+  try {
+    const response = await fetch("/api/auth/challenge");
+    const data = await response.json();
+    setAuthChallenge(formName, data?.authChallenge);
+    if (focusAnswer && nodes.answer) nodes.answer.focus();
+  } catch {
+    setAuthChallenge(formName, null);
+  }
+}
+
+function findRegisterField(fieldName) {
+  return registerForm?.querySelector(`[name="${fieldName}"]`) || null;
+}
+
+function getRegisterFieldValue(fieldName) {
+  return String(findRegisterField(fieldName)?.value || "").trim();
+}
+
+function showRegisterFieldError(fieldName, message) {
+  const field = findRegisterField(fieldName);
+  showStatus(message, true);
+  if (field) field.focus();
+  return false;
+}
+
+function findLoginField(fieldName) {
+  return loginForm?.querySelector(`[name="${fieldName}"]`) || null;
+}
+
+function getLoginFieldValue(fieldName) {
+  return String(findLoginField(fieldName)?.value || "").trim();
+}
+
+function showLoginFieldError(fieldName, message) {
+  const field = findLoginField(fieldName);
+  showStatus(message, true);
+  if (field) field.focus();
+  return false;
+}
+
+function normalizeAuthError(message) {
+  const text = String(message || "").trim();
+  if (!text) return "请求失败，请稍后重试。";
+  if (/Please complete the human verification question/i.test(text)) {
+    return "请先完成人机验证题目。";
+  }
+  if (/Please enter a numeric answer for the human verification question/i.test(text)) {
+    return "人机验证答案需要填写数字。";
+  }
+  if (/human verification question has expired/i.test(text)) {
+    return "人机验证题目已过期，我已经帮你换了一题，请重新填写。";
+  }
+  if (/human verification answer is incorrect/i.test(text)) {
+    return "人机验证答案不正确，请重新计算。";
+  }
+  return text;
+}
+
+function normalizeRegisterError(message) {
+  const text = normalizeAuthError(message);
+  if (!text) return "注册失败，请稍后重试。";
+  if (/already exists/i.test(text)) {
+    return "这个邮箱已经注册过了，请直接登录，或更换另一个邮箱。";
+  }
+  if (/A valid email address is required/i.test(text)) {
+    return "请输入正确的邮箱地址。";
+  }
+  if (/Password must be at least 8 characters/i.test(text)) {
+    return "密码至少需要 8 位字符。";
+  }
+  if (/verification code has expired/i.test(text)) {
+    return "验证码已过期，请重新获取。";
+  }
+  if (/verification code was just sent/i.test(text) || /Please wait \d+ seconds/i.test(text)) {
+    return "验证码刚刚发送，请稍候再试。";
+  }
+  if (/Too many incorrect verification attempts/i.test(text)) {
+    return "验证码错误次数过多，请重新获取验证码。";
+  }
+  if (/Incorrect verification code/i.test(text)) {
+    return text.replace("Incorrect verification code.", "验证码错误。");
+  }
+  if (/Failed to send verification email/i.test(text)) {
+    return "验证码发送失败，请稍后重试。";
+  }
+  return text;
+}
+
+function validateRegisterForm() {
+  const email = getRegisterFieldValue("email");
+  const password = getRegisterFieldValue("password");
+  const verificationCode = getRegisterFieldValue("verificationCode");
+  const challengeAnswer = String(registerChallengeAnswer?.value || "").trim();
+
+  if (!email) return showRegisterFieldError("email", "请先填写邮箱地址。");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return showRegisterFieldError("email", "请输入正确的邮箱地址。");
+  }
+  if (!password) return showRegisterFieldError("password", "请先填写密码。");
+  if (password.length < 8) {
+    return showRegisterFieldError("password", "密码至少需要 8 位字符。");
+  }
+  if (!registerChallengeToken) return showRegisterFieldError("challengeAnswer", "人机验证题目还没准备好，请点“换一题”后重试。");
+  if (!challengeAnswer) {
+    showStatus("请先填写人机验证题目的答案。", true);
+    registerChallengeAnswer?.focus();
+    return false;
+  }
+  if (!/^-?\d+$/.test(challengeAnswer)) {
+    showStatus("人机验证答案需要填写数字。", true);
+    registerChallengeAnswer?.focus();
+    return false;
+  }
+  if (registerVerificationPending) {
+    if (!verificationCode) return showRegisterFieldError("verificationCode", "请输入邮箱验证码后再完成注册。");
+    if (!/^\d{6}$/.test(verificationCode)) {
+      return showRegisterFieldError("verificationCode", "邮箱验证码需要填写 6 位数字。");
+    }
+  }
+  return true;
+}
+
+function normalizeLoginError(message) {
+  const text = normalizeAuthError(message);
+  if (/Incorrect email or password/i.test(text)) {
+    return "邮箱或密码不正确，请重新输入。";
+  }
+  if (/A valid email address is required/i.test(text)) {
+    return "请输入正确的邮箱地址。";
+  }
+  return text || "登录失败，请稍后重试。";
+}
+
+function validateLoginForm() {
+  const email = getLoginFieldValue("email");
+  const password = getLoginFieldValue("password");
+  const challengeAnswer = String(loginChallengeAnswer?.value || "").trim();
+
+  if (!email) return showLoginFieldError("email", "请先填写登录邮箱。");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return showLoginFieldError("email", "请输入正确的邮箱地址。");
+  }
+  if (!password) return showLoginFieldError("password", "请先填写登录密码。");
+  if (!loginChallengeToken) {
+    showStatus("人机验证题目还没准备好，请点“换一题”后重试。", true);
+    return false;
+  }
+  if (!challengeAnswer) {
+    showStatus("请先填写人机验证题目的答案。", true);
+    loginChallengeAnswer?.focus();
+    return false;
+  }
+  if (!/^-?\d+$/.test(challengeAnswer)) {
+    showStatus("人机验证答案需要填写数字。", true);
+    loginChallengeAnswer?.focus();
+    return false;
+  }
+  return true;
+}
+
 function updateRegisterActionUi() {
   if (registerSubmitBtn) {
     registerSubmitBtn.disabled = registerSubmitting;
@@ -103,6 +314,19 @@ function updateRegisterActionUi() {
       resendRegisterCodeBtn.textContent = "正在重发...";
       return;
     }
+  }
+  if (registerChallengeRefreshBtn) {
+    registerChallengeRefreshBtn.disabled = registerSubmitting || resendSubmitting;
+  }
+}
+
+function updateLoginActionUi() {
+  if (loginSubmitBtn) {
+    loginSubmitBtn.disabled = loginSubmitting;
+    loginSubmitBtn.textContent = loginSubmitting ? "正在登录..." : "登录";
+  }
+  if (loginChallengeRefreshBtn) {
+    loginChallengeRefreshBtn.disabled = loginSubmitting;
   }
 }
 
@@ -317,27 +541,13 @@ async function fetchOverview() {
   return data;
 }
 
-async function handleAuth(endpoint, form) {
-  hideStatus();
-  const formData = Object.fromEntries(new FormData(form));
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(formData)
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "请求失败，请稍后重试。");
-  form.reset();
-  showStatus(data.message || "操作成功。");
-  await fetchOverview();
-  redirectAfterAuth();
-}
-
 registerForm.addEventListener("submit", async event => {
   event.preventDefault();
   hideStatus();
+  if (!validateRegisterForm()) return;
   const form = event.currentTarget;
   const formData = Object.fromEntries(new FormData(form));
+  formData.challengeToken = registerChallengeToken;
   registerSubmitting = true;
   updateRegisterActionUi();
   showStatus(registerVerificationPending ? "正在验证邮箱，请稍候..." : "正在发送邮箱验证码，请稍候...");
@@ -349,6 +559,7 @@ registerForm.addEventListener("submit", async event => {
       body: JSON.stringify(formData)
     });
     const data = await response.json();
+    if (data?.authChallenge) setAuthChallenge("register", data.authChallenge);
     if (!response.ok) {
       if (data.verificationRequired) {
         setRegisterVerificationMode(true, {
@@ -356,7 +567,7 @@ registerForm.addEventListener("submit", async event => {
           cooldownSeconds: data.cooldownSeconds || 0
         });
       }
-      throw new Error(data.error || "注册失败，请稍后重试。");
+      throw new Error(normalizeRegisterError(data.error || "注册失败，请稍后重试。"));
     }
 
     if (data.verificationRequired) {
@@ -369,12 +580,14 @@ registerForm.addEventListener("submit", async event => {
     }
 
     form.reset();
+    setAuthChallenge("register", data?.authChallenge);
     setRegisterVerificationMode(false);
     showStatus(data.message || "注册成功。");
     await fetchOverview();
     redirectAfterAuth();
   } catch (error) {
-    showStatus(error.message, true);
+    showStatus(normalizeRegisterError(error.message), true);
+    await refreshAuthChallenge("register");
   } finally {
     registerSubmitting = false;
     updateRegisterActionUi();
@@ -383,10 +596,33 @@ registerForm.addEventListener("submit", async event => {
 
 loginForm.addEventListener("submit", async event => {
   event.preventDefault();
+  hideStatus();
+  if (!validateLoginForm()) return;
+  const form = event.currentTarget;
+  const formData = Object.fromEntries(new FormData(form));
+  formData.challengeToken = loginChallengeToken;
+  loginSubmitting = true;
+  updateLoginActionUi();
+  showStatus("正在登录，请稍候...");
   try {
-    await handleAuth("/api/auth/login", event.currentTarget);
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData)
+    });
+    const data = await response.json();
+    if (data?.authChallenge) setAuthChallenge("login", data.authChallenge);
+    if (!response.ok) throw new Error(data.error || "登录失败，请稍后重试。");
+    form.reset();
+    showStatus(data.message || "登录成功。");
+    await fetchOverview();
+    redirectAfterAuth();
   } catch (error) {
-    showStatus(error.message, true);
+    showStatus(normalizeLoginError(error.message), true);
+    await refreshAuthChallenge("login");
+  } finally {
+    loginSubmitting = false;
+    updateLoginActionUi();
   }
 });
 
@@ -404,7 +640,18 @@ logoutBtn.addEventListener("click", async () => {
 resendRegisterCodeBtn.addEventListener("click", async () => {
   if (!registerVerificationPending) return;
   hideStatus();
+  if (!registerChallengeToken) {
+    showStatus("人机验证题目还没准备好，请点“换一题”后重试。", true);
+    return;
+  }
+  const challengeAnswer = String(registerChallengeAnswer?.value || "").trim();
+  if (!challengeAnswer) {
+    showStatus("重新发送验证码前，请先填写人机验证答案。", true);
+    registerChallengeAnswer?.focus();
+    return;
+  }
   const formData = Object.fromEntries(new FormData(registerForm));
+  formData.challengeToken = registerChallengeToken;
   formData.verificationCode = "";
   resendSubmitting = true;
   updateRegisterActionUi();
@@ -416,6 +663,7 @@ resendRegisterCodeBtn.addEventListener("click", async () => {
       body: JSON.stringify(formData)
     });
     const data = await response.json();
+    if (data?.authChallenge) setAuthChallenge("register", data.authChallenge);
     if (!response.ok) throw new Error(data.error || "验证码发送失败，请稍后重试。");
     setRegisterVerificationMode(true, {
       maskedEmail: data.maskedEmail || registerVerificationMaskedEmail || maskEmail(formData.email || ""),
@@ -423,12 +671,21 @@ resendRegisterCodeBtn.addEventListener("click", async () => {
     });
     showStatus(data.message || "验证码已重新发送。");
   } catch (error) {
-    showStatus(error.message, true);
+    showStatus(normalizeRegisterError(error.message), true);
+    await refreshAuthChallenge("register");
   } finally {
     resendSubmitting = false;
     updateRegisterCooldownUi();
     updateRegisterActionUi();
   }
+});
+
+registerChallengeRefreshBtn?.addEventListener("click", () => {
+  refreshAuthChallenge("register", { focusAnswer: true });
+});
+
+loginChallengeRefreshBtn?.addEventListener("click", () => {
+  refreshAuthChallenge("login", { focusAnswer: true });
 });
 
 planGrid.addEventListener("click", async event => {
@@ -491,6 +748,9 @@ fetchSession()
   .then(data => {
     setRegisterVerificationMode(false);
     updateRegisterActionUi();
+    updateLoginActionUi();
+    setAuthChallenge("register", data?.authChallenge);
+    setAuthChallenge("login", data?.authChallenge);
     if (data.loggedIn) {
       return fetchOverview().then(() => handleReturnedMemberPurchase());
     }
@@ -508,6 +768,7 @@ fetchSession()
     renderServiceOrders([]);
     setRegisterVerificationMode(false);
     updateRegisterActionUi();
+    updateLoginActionUi();
     showStatus(error?.message || "暂时无法加载会员中心。", true);
   });
 

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>会员中心 | 名屿 Mingyu</title>
-  <link rel="stylesheet" href="/account.css?v=20260828-email-verify" />
+  <link rel="stylesheet" href="/account.css?v=20260828-auth-challenge" />
 </head>
 <body>
   <main class="account-shell">
@@ -32,7 +32,7 @@
       <article class="auth-card">
         <p class="eyebrow">REGISTER · 注册</p>
         <h2>创建会员账户</h2>
-        <form id="registerForm">
+        <form id="registerForm" novalidate>
           <label>
             <span>显示名称</span>
             <input name="displayName" placeholder="Mingyu Member" />
@@ -45,6 +45,14 @@
             <span>密码</span>
             <input name="password" type="password" required minlength="8" placeholder="至少 8 位字符" autocomplete="new-password" />
           </label>
+          <div class="challenge-block">
+            <div class="challenge-head">
+              <span>人机验证</span>
+              <button type="button" class="secondary challenge-refresh" id="registerChallengeRefreshBtn">换一题</button>
+            </div>
+            <div class="challenge-prompt" id="registerChallengePrompt">载入中...</div>
+            <input name="challengeAnswer" id="registerChallengeAnswer" inputmode="numeric" placeholder="请输入答案" autocomplete="off" />
+          </div>
           <p class="inline-note auth-note" id="registerHelp">提交后会自动向你的邮箱发送 6 位验证码，输入验证码后即可完成注册并自动登录。</p>
           <div class="verification-block" id="registerVerificationBlock" hidden>
             <label>
@@ -62,7 +70,7 @@
       <article class="auth-card">
         <p class="eyebrow">LOGIN · 登录</p>
         <h2>登录会员中心</h2>
-        <form id="loginForm">
+        <form id="loginForm" novalidate>
           <label>
             <span>邮箱</span>
             <input name="email" type="email" required placeholder="you@example.com" autocomplete="email" />
@@ -71,6 +79,14 @@
             <span>密码</span>
             <input name="password" type="password" required placeholder="请输入密码" autocomplete="current-password" />
           </label>
+          <div class="challenge-block">
+            <div class="challenge-head">
+              <span>人机验证</span>
+              <button type="button" class="secondary challenge-refresh" id="loginChallengeRefreshBtn">换一题</button>
+            </div>
+            <div class="challenge-prompt" id="loginChallengePrompt">载入中...</div>
+            <input name="challengeAnswer" id="loginChallengeAnswer" inputmode="numeric" placeholder="请输入答案" autocomplete="off" />
+          </div>
           <button type="submit">登录</button>
         </form>
       </article>
@@ -155,6 +171,6 @@
     </section>
   </main>
 
-  <script src="/account.js?v=20260828-email-verify"></script>
+  <script src="/account.js?v=20260828-auth-challenge"></script>
 </body>
 </html>
