@@ -145,6 +145,22 @@ body {
 .auth-card form { display: grid; gap: 14px; }
 .auth-card label { display: grid; gap: 8px; }
 .auth-card label span { font-size: 14px; }
+.auth-note { margin: -2px 0 0; }
+.verification-block {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(216,168,78,.24);
+  background: rgba(255,255,255,.62);
+}
+.verification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.verification-actions .secondary {
+  min-width: 180px;
+}
 
 input {
   width: 100%;
@@ -381,4 +397,10 @@ button:disabled {
   .summary-card,
   .panel,
   .plan-preview { padding: 22px 18px; }
+  .verification-actions {
+    flex-direction: column;
+  }
+  .verification-actions .secondary {
+    width: 100%;
+  }
 }

@@ -3,6 +3,11 @@ const authGrid = document.querySelector("#authGrid");
 const dashboard = document.querySelector("#dashboard");
 const registerForm = document.querySelector("#registerForm");
 const loginForm = document.querySelector("#loginForm");
+const registerHelp = document.querySelector("#registerHelp");
+const registerVerificationBlock = document.querySelector("#registerVerificationBlock");
+const registerVerificationCode = document.querySelector("#registerVerificationCode");
+const registerSubmitBtn = document.querySelector("#registerSubmitBtn");
+const resendRegisterCodeBtn = document.querySelector("#resendRegisterCodeBtn");
 const logoutBtn = document.querySelector("#logoutBtn");
 const memberName = document.querySelector("#memberName");
 const memberEmail = document.querySelector("#memberEmail");
@@ -17,6 +22,12 @@ const planGrid = document.querySelector("#planGrid");
 const nextPath = new URLSearchParams(window.location.search).get("next") || "/";
 let sessionState = { loggedIn: false, user: null, catalog: null };
 let purchasePendingPlanId = null;
+let registerVerificationPending = false;
+let registerVerificationMaskedEmail = "";
+let registerCooldownUntil = 0;
+let registerCooldownTimer = null;
+let registerSubmitting = false;
+let resendSubmitting = false;
 
 function escapeHtml(value) {
   return String(value || "").replace(/[&<>"']/g, character => ({
@@ -75,6 +86,76 @@ function showStatus(message, isError = false) {
 function hideStatus() {
   statusBanner.hidden = true;
   statusBanner.textContent = "";
+}
+
+function updateRegisterActionUi() {
+  if (registerSubmitBtn) {
+    registerSubmitBtn.disabled = registerSubmitting;
+    if (registerSubmitting) {
+      registerSubmitBtn.textContent = registerVerificationPending ? "正在验证邮箱..." : "正在发送验证码...";
+    } else {
+      registerSubmitBtn.textContent = registerVerificationPending ? "验证邮箱并创建账户" : "发送邮箱验证码";
+    }
+  }
+  if (resendRegisterCodeBtn) {
+    if (resendSubmitting) {
+      resendRegisterCodeBtn.disabled = true;
+      resendRegisterCodeBtn.textContent = "正在重发...";
+      return;
+    }
+  }
+}
+
+function stopRegisterCooldownTimer() {
+  if (!registerCooldownTimer) return;
+  window.clearInterval(registerCooldownTimer);
+  registerCooldownTimer = null;
+}
+
+function updateRegisterCooldownUi() {
+  if (!resendRegisterCodeBtn) return;
+  if (!registerVerificationPending) {
+    resendRegisterCodeBtn.disabled = true;
+    resendRegisterCodeBtn.textContent = "重新发送验证码";
+    return;
+  }
+  const remainingSeconds = Math.max(0, Math.ceil((registerCooldownUntil - Date.now()) / 1000));
+  resendRegisterCodeBtn.disabled = remainingSeconds > 0;
+  resendRegisterCodeBtn.textContent = remainingSeconds > 0
+    ? `${remainingSeconds} 秒后可重发`
+    : "重新发送验证码";
+  if (remainingSeconds <= 0) stopRegisterCooldownTimer();
+}
+
+function setRegisterVerificationMode(active, { maskedEmail = "", cooldownSeconds = 0 } = {}) {
+  registerVerificationPending = active;
+  if (!active) {
+    registerVerificationMaskedEmail = "";
+    registerCooldownUntil = 0;
+    stopRegisterCooldownTimer();
+    registerVerificationBlock.hidden = true;
+    registerVerificationCode.required = false;
+    registerVerificationCode.value = "";
+    registerHelp.textContent = "提交后会自动向你的邮箱发送 6 位验证码，输入验证码后即可完成注册并自动登录。";
+    updateRegisterCooldownUi();
+    updateRegisterActionUi();
+    return;
+  }
+
+  registerVerificationMaskedEmail = maskedEmail || registerVerificationMaskedEmail;
+  registerVerificationBlock.hidden = false;
+  registerVerificationCode.required = true;
+  registerHelp.textContent = registerVerificationMaskedEmail
+    ? `验证码已发送至 ${registerVerificationMaskedEmail}，请在 10 分钟内完成验证。`
+    : "验证码已发送，请输入邮箱中的 6 位验证码完成注册。";
+  registerCooldownUntil = cooldownSeconds > 0 ? Date.now() + cooldownSeconds * 1000 : 0;
+  updateRegisterCooldownUi();
+  updateRegisterActionUi();
+  if (cooldownSeconds > 0) {
+    stopRegisterCooldownTimer();
+    registerCooldownTimer = window.setInterval(updateRegisterCooldownUi, 1000);
+  }
+  registerVerificationCode.focus();
 }
 
 function renderCatalog(catalog) {
@@ -254,10 +335,49 @@ async function handleAuth(endpoint, form) {
 
 registerForm.addEventListener("submit", async event => {
   event.preventDefault();
+  hideStatus();
+  const form = event.currentTarget;
+  const formData = Object.fromEntries(new FormData(form));
+  registerSubmitting = true;
+  updateRegisterActionUi();
+  showStatus(registerVerificationPending ? "正在验证邮箱，请稍候..." : "正在发送邮箱验证码，请稍候...");
+
   try {
-    await handleAuth("/api/auth/register", event.currentTarget);
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      if (data.verificationRequired) {
+        setRegisterVerificationMode(true, {
+          maskedEmail: data.maskedEmail || maskEmail(formData.email || ""),
+          cooldownSeconds: data.cooldownSeconds || 0
+        });
+      }
+      throw new Error(data.error || "注册失败，请稍后重试。");
+    }
+
+    if (data.verificationRequired) {
+      setRegisterVerificationMode(true, {
+        maskedEmail: data.maskedEmail || maskEmail(formData.email || ""),
+        cooldownSeconds: data.cooldownSeconds || 0
+      });
+      showStatus(data.message || "验证码已发送，请检查邮箱。");
+      return;
+    }
+
+    form.reset();
+    setRegisterVerificationMode(false);
+    showStatus(data.message || "注册成功。");
+    await fetchOverview();
+    redirectAfterAuth();
   } catch (error) {
     showStatus(error.message, true);
+  } finally {
+    registerSubmitting = false;
+    updateRegisterActionUi();
   }
 });
 
@@ -279,6 +399,36 @@ logoutBtn.addEventListener("click", async () => {
   renderServiceOrders([]);
   await fetchSession();
   showStatus("已退出登录。");
+});
+
+resendRegisterCodeBtn.addEventListener("click", async () => {
+  if (!registerVerificationPending) return;
+  hideStatus();
+  const formData = Object.fromEntries(new FormData(registerForm));
+  formData.verificationCode = "";
+  resendSubmitting = true;
+  updateRegisterActionUi();
+  showStatus("正在重新发送验证码，请稍候...");
+  try {
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData)
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "验证码发送失败，请稍后重试。");
+    setRegisterVerificationMode(true, {
+      maskedEmail: data.maskedEmail || registerVerificationMaskedEmail || maskEmail(formData.email || ""),
+      cooldownSeconds: data.cooldownSeconds || 0
+    });
+    showStatus(data.message || "验证码已重新发送。");
+  } catch (error) {
+    showStatus(error.message, true);
+  } finally {
+    resendSubmitting = false;
+    updateRegisterCooldownUi();
+    updateRegisterActionUi();
+  }
 });
 
 planGrid.addEventListener("click", async event => {
@@ -339,6 +489,8 @@ async function handleReturnedMemberPurchase() {
 
 fetchSession()
   .then(data => {
+    setRegisterVerificationMode(false);
+    updateRegisterActionUi();
     if (data.loggedIn) {
       return fetchOverview().then(() => handleReturnedMemberPurchase());
     }
@@ -354,5 +506,15 @@ fetchSession()
     renderReports([]);
     renderMemberOrders([]);
     renderServiceOrders([]);
+    setRegisterVerificationMode(false);
+    updateRegisterActionUi();
     showStatus(error?.message || "暂时无法加载会员中心。", true);
   });
+
+function maskEmail(email) {
+  const normalized = String(email || "").trim().toLowerCase();
+  const [local, domain] = normalized.split("@");
+  if (!local || !domain) return normalized;
+  const visibleLength = Math.min(2, local.length);
+  return `${local.slice(0, visibleLength)}${"*".repeat(Math.max(1, local.length - visibleLength))}@${domain}`;
+}

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>会员中心 | 名屿 Mingyu</title>
-  <link rel="stylesheet" href="/account.css?v=20260828-account-clarity" />
+  <link rel="stylesheet" href="/account.css?v=20260828-email-verify" />
 </head>
 <body>
   <main class="account-shell">
@@ -45,7 +45,17 @@
             <span>密码</span>
             <input name="password" type="password" required minlength="8" placeholder="至少 8 位字符" autocomplete="new-password" />
           </label>
-          <button type="submit">注册并创建账户</button>
+          <p class="inline-note auth-note" id="registerHelp">提交后会自动向你的邮箱发送 6 位验证码，输入验证码后即可完成注册并自动登录。</p>
+          <div class="verification-block" id="registerVerificationBlock" hidden>
+            <label>
+              <span>邮箱验证码</span>
+              <input name="verificationCode" id="registerVerificationCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="请输入 6 位验证码" autocomplete="one-time-code" />
+            </label>
+            <div class="verification-actions">
+              <button type="button" class="secondary" id="resendRegisterCodeBtn">重新发送验证码</button>
+            </div>
+          </div>
+          <button type="submit" id="registerSubmitBtn">发送邮箱验证码</button>
         </form>
       </article>
 
@@ -145,6 +155,6 @@
     </section>
   </main>
 
-  <script src="/account.js"></script>
+  <script src="/account.js?v=20260828-email-verify"></script>
 </body>
 </html>
