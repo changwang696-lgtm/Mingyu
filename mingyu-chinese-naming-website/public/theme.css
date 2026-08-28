@@ -753,6 +753,9 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
   border: 0;
   box-shadow: none;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
 .profile-combined .personality-panel {
@@ -763,6 +766,27 @@ form .submit { background: var(--cinnabar); box-shadow: 7px 7px 0 rgba(0,0,0,.22
 .profile-combined .symbolism-panel {
   background: rgba(216,168,78,.11);
   padding-left: 22px;
+}
+
+.profile-combined .symbolism-panel .meaning-emblems {
+  gap: 24px;
+  margin: 10px 0 30px;
+  padding-bottom: 28px;
+}
+
+.profile-combined .symbolism-panel .meaning-emblems b {
+  width: 62px;
+  height: 62px;
+  font-size: 26px;
+}
+
+.profile-combined .symbolism-panel .meaning-emblems i {
+  font-size: 11px;
+}
+
+.profile-combined .symbolism-panel > p {
+  font-size: 18px;
+  line-height: 2.05;
 }
 
 @media (max-width: 1050px) {
