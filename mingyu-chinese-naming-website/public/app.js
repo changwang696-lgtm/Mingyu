@@ -48,7 +48,7 @@ const translations = {
     genderLabel: "Gender expression", female: "Female", male: "Male", neutral: "Neutral / Any",
     birthLabel: "Date and time of birth", birthHint: "The more accurate, the more nuanced the cultural reading.",
     timezoneLabel: "Birthplace time zone", timezonePlaceholder: "Select the birthplace time zone", timezoneHint: "Daylight saving is applied before conversion to China Standard Time (UTC+8).", wishLabel: "What should your name convey?",
-    simpleEdition: "SIMPLE EDITION", simpleGenerate: "Names and zodiac", simpleNoPdf: "View online · PDF included",
+    simpleEdition: "SIMPLE EDITION", simpleGenerate: "Names and zodiac", simpleNoPdf: "View online · No PDF download",
     completeEdition: "COMPLETE EDITION", completeGenerate: "Complete naming result", completeWithPdf: "Full result · Save as PDF",
     humanTitle: "Privacy first · Stored only for delivery", humanBody: "We store the details needed to deliver your paid result, reopen your order, and support dispute handling. This is a cultural interpretation, not fortune-telling or professional advice.",
     resultTitle: "Your Chinese name folio", simpleResultTitle: "Your names and zodiac", restart: "Start again ↺",
@@ -125,7 +125,7 @@ const translations = {
     deliveryEmailLabel: "交付邮箱",
     deliveryEmailHint: "用于找回订单、重新打开结果，以及后续客服协助",
     birthLabel: "出生日期与时间", birthHint: "越准确，文化解读越细致", timezoneLabel: "出生地时区", timezonePlaceholder: "请选择出生地对应时区", timezoneHint: "系统会处理夏令时，并换算为中国标准时间（UTC+8）", wishLabel: "你希望名字传达什么？",
-    simpleEdition: "简约版", simpleGenerate: "生成名字及生肖", simpleNoPdf: "页面查看 · 含 PDF 下载",
+    simpleEdition: "简约版", simpleGenerate: "生成名字及生肖", simpleNoPdf: "页面查看 · 不含 PDF 下载",
     completeEdition: "完整版", completeGenerate: "生成全部起名结果", completeWithPdf: "完整页面 · 可保存 PDF",
     humanTitle: "隐私优先 · 仅为交付保存必要信息", humanBody: "我们会保存交付结果、找回订单与处理争议所需的信息；如有顾虑可只输入姓氏。结果为传统文化创意解读，不构成命运预测或专业建议。",
     resultTitle: "你的东方名字卷", simpleResultTitle: "你的名字与生肖", restart: "重新填写 ↺", zodiacTitle: "你的生肖意象",
@@ -231,6 +231,7 @@ function updateMemberExperience() {
   const completeCaption = $("#completePlanCaption");
   const paypalSimpleLabel = $("#paypalSimpleLabel");
   const paypalCompleteLabel = $("#paypalCompleteLabel");
+  const planButtons = document.querySelectorAll("#nameForm .plan-button[name=\"tier\"]");
 
   if (!simplePrice || !completePrice || !simpleCaption || !completeCaption) return;
 
@@ -252,18 +253,28 @@ function updateMemberExperience() {
       credits: String(sessionState.user.creditsBalance)
     });
     memberStripLink.textContent = translations[lang].memberStripLoggedIn;
-    simplePrice.textContent = `${creditCosts.simple} cr`;
-    completePrice.textContent = `${creditCosts.complete} cr`;
+    simplePrice.textContent = creditCosts.simple === 1 ? "1 credit" : `${creditCosts.simple} credits`;
+    completePrice.textContent = creditCosts.complete === 1 ? "1 credit" : `${creditCosts.complete} credits`;
     simpleCaption.textContent = translations[lang].simpleCreditCaption;
     completeCaption.textContent = translations[lang].completeCreditCaption;
+    planButtons.forEach(button => {
+      button.disabled = false;
+      button.setAttribute("aria-disabled", "false");
+      button.title = "";
+    });
   } else {
     accountLink.textContent = translations[lang].accountLinkGuest;
     memberStripText.textContent = translations[lang].memberStripGuestBody;
     memberStripLink.textContent = translations[lang].memberStripGuest;
-    simplePrice.textContent = getServicePriceText("simple");
-    completePrice.textContent = getServicePriceText("complete");
+    simplePrice.textContent = creditCosts.simple === 1 ? "1 credit" : `${creditCosts.simple} credits`;
+    completePrice.textContent = creditCosts.complete === 1 ? "1 credit" : `${creditCosts.complete} credits`;
     simpleCaption.textContent = translations[lang].simpleNoPdf;
     completeCaption.textContent = translations[lang].completeWithPdf;
+    planButtons.forEach(button => {
+      button.disabled = true;
+      button.setAttribute("aria-disabled", "true");
+      button.title = lang === "zh" ? "请先注册或登录会员" : "Please sign in first";
+    });
   }
   if (paypalSimpleLabel) paypalSimpleLabel.textContent = `${getEditionLabel("simple")} · ${getServicePriceText("simple")}`;
   if (paypalCompleteLabel) paypalCompleteLabel.textContent = `${getEditionLabel("complete")} · ${getServicePriceText("complete")}`;
