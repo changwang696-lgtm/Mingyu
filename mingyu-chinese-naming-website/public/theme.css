@@ -88,11 +88,14 @@ body { background: var(--ink); color: var(--paper); }
   inset: 12%;
   width: 76%;
   height: 76%;
+  display: block;
   object-fit: cover;
   border-radius: 50%;
   border: 3px solid var(--gold);
   box-shadow: 0 0 0 12px var(--ink), 0 0 0 13px var(--gold), 0 32px 80px rgba(0,0,0,.5);
   animation: hero-emblem-spin 24s linear infinite;
+  transform-origin: center;
+  will-change: transform;
 }
 
 @keyframes hero-emblem-spin {
@@ -1097,7 +1100,9 @@ dialog:not([open]) { display: none; }
   .hero { min-height: 760px; }
   .hero-copy { top: 53%; }
   .hero h1 { font-size: 49px; }
-  .hero-emblem { top: 25%; right: -12%; width: 78vw; opacity: .42; }
+  .hero-art::before { display: none; }
+  .hero-emblem { top: 22%; right: -6%; width: 66vw; opacity: 1; z-index: 2; }
+  .hero-emblem img { animation-duration: 18s; }
   .hero-emblem > span { width: 58px; height: 58px; font-size: 28px; }
   .intro::before { right: -30px; font-size: 180px; }
   .zodiac-atlas { padding: 76px 20px; }
