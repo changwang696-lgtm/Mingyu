@@ -165,32 +165,56 @@ let sessionState = { loggedIn: false, user: null, catalog: null };
 // Future switch: set to true when the account, membership, and credits experience should return to the homepage.
 const membershipPreviewEnabled = true;
 const pendingServiceIntentKey = "mingyu_pending_service_intent";
-    let paypalConfig = { enabled: false, clientId: null, currency: "USD", hostedLinks: { simple: null, complete: null } };
+let paypalConfig = { enabled: false, clientId: null, currency: "USD", hostedLinks: { simple: null, complete: null } };
 let paypalSdkPromise = null;
 let paypalButtonsInstance = null;
 let inlinePayPalRendered = false;
 let activeGuestPayPalOrder = null;
 const guestCheckoutKey = "mingyu_guest_checkout";
-    let hostedPayPalLinks = { simple: null, complete: null };
+let hostedPayPalLinks = { simple: null, complete: null };
 let guestOrderMeta = null;
 let memberReportMeta = null;
 let lastRequestedTier = "simple";
 const $ = selector => document.querySelector(selector);
 const dialog = $("#payment");
 const creditCosts = { simple: 1, complete: 3 };
+const defaultServicePricing = {
+  simple: { value: "2.99", label: "Simple Edition" },
+  complete: { value: "9.90", label: "Complete Edition" }
+};
+let servicePricing = {
+  simple: { ...defaultServicePricing.simple },
+  complete: { ...defaultServicePricing.complete }
+};
 
 const tierCopy = {
   simple: {
-    price: "$2.99",
-    zh: { title: "确认生成简约版", eyebrow: "简约版 · SIMPLE EDITION", button: "支付并生成 · $2.99", benefits: ["生成 3 个中文候选名字及拼音", "展示对应的固定十二生肖", "结果保存到订单并支持 PDF 下载"] },
-    en: { title: "Confirm Simple Edition", eyebrow: "SIMPLE EDITION", button: "Pay & generate · $2.99", benefits: ["Three Chinese name options with pinyin", "Your fixed Chinese zodiac sign", "Saved to your order with PDF download access"] }
+    zh: { title: "确认生成简约版", eyebrow: "简约版 · SIMPLE EDITION", benefits: ["生成 3 个中文候选名字及拼音", "展示对应的固定十二生肖", "结果保存到订单并支持 PDF 下载"] },
+    en: { title: "Confirm Simple Edition", eyebrow: "SIMPLE EDITION", benefits: ["Three Chinese name options with pinyin", "Your fixed Chinese zodiac sign", "Saved to your order with PDF download access"] }
   },
   complete: {
-    price: "$9.90",
-        zh: { title: "确认生成完整版", eyebrow: "完整版 · COMPLETE EDITION", button: "支付并生成 · $9.90", benefits: ["全部名字释义与中英双语解读", "生肖性格、象征寓意、干支五行与时辰", "完整结果可保存为 A4 PDF"] },
-        en: { title: "Confirm Complete Edition", eyebrow: "COMPLETE EDITION", button: "Pay & generate · $9.90", benefits: ["Complete bilingual name interpretations", "Zodiac traits, symbolism, stems, branches and elements", "Save the full result as an A4 PDF"] }
+    zh: { title: "确认生成完整版", eyebrow: "完整版 · COMPLETE EDITION", benefits: ["全部名字释义与中英双语解读", "生肖性格、象征寓意、干支五行与时辰", "完整结果可保存为 A4 PDF"] },
+    en: { title: "Confirm Complete Edition", eyebrow: "COMPLETE EDITION", benefits: ["Complete bilingual name interpretations", "Zodiac traits, symbolism, stems, branches and elements", "Save the full result as an A4 PDF"] }
   }
 };
+
+function getServicePriceValue(tier) {
+  const normalizedTier = tier === "complete" ? "complete" : "simple";
+  return String(servicePricing[normalizedTier]?.value || defaultServicePricing[normalizedTier].value).trim();
+}
+
+function getServicePriceText(tier) {
+  return `$${getServicePriceValue(tier)}`;
+}
+
+function getEditionLabel(tier) {
+  return tier === "complete" ? "Complete Edition" : "Simple Edition";
+}
+
+function getEditionBadgeText(tier) {
+  const zhLabel = tier === "complete" ? "完整版" : "简约版";
+  return `${zhLabel} / ${getEditionLabel(tier)} · ${getServicePriceText(tier)}`;
+}
 
 function t(key, replacements = {}) {
   const template = translations[lang][key] || "";
@@ -205,6 +229,8 @@ function updateMemberExperience() {
   const completePrice = $("#completePlanPrice");
   const simpleCaption = $("#simplePlanCaption");
   const completeCaption = $("#completePlanCaption");
+  const paypalSimpleLabel = $("#paypalSimpleLabel");
+  const paypalCompleteLabel = $("#paypalCompleteLabel");
 
   if (!simplePrice || !completePrice || !simpleCaption || !completeCaption) return;
 
@@ -234,11 +260,13 @@ function updateMemberExperience() {
     accountLink.textContent = translations[lang].accountLinkGuest;
     memberStripText.textContent = translations[lang].memberStripGuestBody;
     memberStripLink.textContent = translations[lang].memberStripGuest;
-    simplePrice.textContent = "$2.99";
-    completePrice.textContent = "$9.90";
+    simplePrice.textContent = getServicePriceText("simple");
+    completePrice.textContent = getServicePriceText("complete");
     simpleCaption.textContent = translations[lang].simpleNoPdf;
     completeCaption.textContent = translations[lang].completeWithPdf;
   }
+  if (paypalSimpleLabel) paypalSimpleLabel.textContent = `${getEditionLabel("simple")} · ${getServicePriceText("simple")}`;
+  if (paypalCompleteLabel) paypalCompleteLabel.textContent = `${getEditionLabel("complete")} · ${getServicePriceText("complete")}`;
   if ($("#paypalInline")) $("#paypalInline").hidden = !sessionState.loggedIn;
 }
 
@@ -323,20 +351,20 @@ function openPaymentDialogWithFallback() {
 
 $("#nameForm").addEventListener("submit", async event => {
   event.preventDefault();
+  pendingTier = resolveSubmittedTier(event);
+  if (!sessionState.loggedIn) {
+    try {
+      sessionStorage.setItem(pendingServiceIntentKey, JSON.stringify({ tier: pendingTier }));
+    } catch {}
+    window.location.assign(`/account.html?next=${encodeURIComponent("/")}`);
+    return;
+  }
   const form = event.currentTarget;
   if (!form.checkValidity()) {
     form.reportValidity();
     return;
   }
-  pendingTier = resolveSubmittedTier(event);
   pendingBody = { ...Object.fromEntries(new FormData(form)), tier: pendingTier };
-  if (!sessionState.loggedIn) {
-    try {
-      sessionStorage.setItem(pendingServiceIntentKey, JSON.stringify({ tier: pendingTier, body: pendingBody }));
-    } catch {}
-    window.location.assign(`/account.html?next=${encodeURIComponent("/")}`);
-    return;
-  }
   if (sessionState.loggedIn && sessionState.user && sessionState.user.creditsBalance >= creditCosts[pendingTier]) {
     startMemberGeneration();
     return;
@@ -359,7 +387,9 @@ function updatePaymentDialog() {
   $("#paymentTitle").textContent = copy.title;
   $("#paymentEyebrow").textContent = copy.eyebrow;
   $("#paymentBenefits").innerHTML = copy.benefits.map(item => `<li>${esc(item)}</li>`).join("");
-  $("#confirmPurchaseText").textContent = copy.button;
+  $("#confirmPurchaseText").textContent = lang === "zh"
+    ? `支付并生成 · ${getServicePriceText(pendingTier)}`
+    : `Pay & generate · ${getServicePriceText(pendingTier)}`;
   $("#paymentNote").textContent = hasHostedCheckout
     ? translations[lang].paypalHostedDialogNote
     : paypalConfig.enabled
@@ -405,7 +435,7 @@ function render(data) {
   $("#resultTitle").textContent = simple ? "你的东方名字卷 / Simple Naming Result" : "你的东方名字卷 / Complete Naming Result";
   $("#editionBadge").textContent = usedCredits
     ? `${simple ? "简约版 / Simple Edition" : "完整版 / Complete Edition"} · ${usedCredits} credits`
-    : (simple ? "简约版 / Simple Edition · $2.99" : "完整版 / Complete Edition · $9.90");
+    : getEditionBadgeText(simple ? "simple" : "complete");
   $("#zodiacGlyph span").textContent = data.zodiac.animal;
   $("#zodiacImage").src = `/assets/zodiac/${animalKey}.jpg`;
   $("#zodiacImage").alt = `${data.zodiac.animal} · ${data.zodiac.animalEn}`;
@@ -874,9 +904,15 @@ fetch("/api/paypal-config")
   .then(response => response.json())
   .then(config => {
     paypalConfig = { ...paypalConfig, ...config };
+    servicePricing = {
+      simple: { ...defaultServicePricing.simple, ...(config.servicePricing?.simple || {}) },
+      complete: { ...defaultServicePricing.complete, ...(config.servicePricing?.complete || {}) }
+    };
     hostedPayPalLinks = { ...hostedPayPalLinks, ...(config.hostedLinks || {}) };
+    updateMemberExperience();
     renderHostedCheckoutLinks();
     if (dialog.open) updatePaymentDialog();
+    if (latest) render(latest);
   })
   .catch(() => {
     $("#paypalInline").hidden = true;
@@ -903,6 +939,12 @@ refreshSession().then(() => {
       pendingBody = { ...intent.body, tier: pendingTier };
       sessionStorage.removeItem(pendingServiceIntentKey);
       $("#formMessage").textContent = lang === "zh" ? "资料已恢复，请再次点击套餐继续。" : "Your form was restored. Select the package again to continue.";
+    } else if (intent?.tier && sessionState.loggedIn) {
+      pendingTier = intent.tier === "complete" ? "complete" : "simple";
+      sessionStorage.removeItem(pendingServiceIntentKey);
+      $("#formMessage").textContent = lang === "zh"
+        ? "请先填写起名资料，再点击所选套餐继续。"
+        : "Please complete your naming details, then select your package again to continue.";
     }
   } catch {
     sessionStorage.removeItem(pendingServiceIntentKey);

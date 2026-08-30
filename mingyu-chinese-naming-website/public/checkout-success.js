@@ -21,7 +21,9 @@ function setMessage(message) {
 function setMeta(order) {
   document.querySelector("#orderIdValue").textContent = order.orderId || "-";
   document.querySelector("#emailValue").textContent = order.email || "-";
-  document.querySelector("#tierValue").textContent = order.tier === "simple" ? "Simple Edition · $2.99" : "Complete Edition · $9.90";
+  const editionLabel = order.tier === "simple" ? "Simple Edition" : "Complete Edition";
+  const priceLabel = order.priceValue ? `$${order.priceValue}` : "-";
+  document.querySelector("#tierValue").textContent = `${editionLabel} · ${priceLabel}`;
   document.querySelector("#statusValue").textContent = order.status || "-";
   if (order.deliveryUrl) {
     const link = document.querySelector("#viewResultLink");

@@ -6,7 +6,7 @@
 }
 
 .admin-wrap {
-  max-width: 1380px;
+  max-width: 1240px;
   margin: 0 auto;
 }
 
@@ -59,7 +59,7 @@
 }
 
 .admin-panel {
-  padding: 22px;
+  padding: 28px;
 }
 
 .admin-field,
@@ -88,21 +88,23 @@
 
 .admin-stack {
   display: grid;
-  gap: 18px;
+  gap: 22px;
 }
 
 .admin-plan-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
 }
 
 .admin-plan-card {
   display: grid;
   gap: 14px;
-  padding: 18px;
+  padding: 22px;
   border: 1px solid rgba(48, 37, 29, .12);
-  background: rgba(255, 248, 233, .72);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 250, 241, .96), rgba(255, 246, 231, .84));
+  box-shadow: 0 10px 22px rgba(48, 37, 29, .05);
 }
 
 .admin-inline-grid {
@@ -116,10 +118,12 @@
 .admin-form input,
 .admin-field textarea {
   min-height: 46px;
+  width: 100%;
   padding: 0 12px;
   color: #30251d;
   background: #fff;
   border: 1px solid rgba(48, 37, 29, .18);
+  border-radius: 12px;
 }
 
 .admin-field textarea {
@@ -129,11 +133,54 @@
   font: inherit;
 }
 
+.admin-settings-panel,
+.admin-config-card {
+  border-radius: 20px;
+}
+
+.admin-settings-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.admin-config-card {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid rgba(48, 37, 29, .12);
+  background: linear-gradient(180deg, rgba(255, 250, 241, .98), rgba(252, 242, 222, .92));
+}
+
+.admin-card-kicker {
+  margin: 0;
+  color: #9e392b;
+  font: 11px Arial, sans-serif;
+  letter-spacing: 1.6px;
+}
+
+.admin-config-card h3,
+.admin-plan-card h3 {
+  margin: 0;
+  color: #071c31;
+  font-weight: 400;
+}
+
+.admin-price-preview {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  color: #54463a;
+  background: rgba(255, 255, 255, .72);
+}
+
 .admin-primary,
 .admin-ghost {
   min-height: 46px;
   padding: 0 18px;
   border: 1px solid #d8a84e;
+  border-radius: 999px;
   cursor: pointer;
   font: 13px Arial, sans-serif;
   letter-spacing: .7px;
@@ -181,9 +228,16 @@
 .admin-list-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.admin-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .admin-list-header h1,
@@ -235,9 +289,10 @@
 
 .admin-detail-card,
 .admin-subpanel {
-  padding: 16px;
+  padding: 22px;
   border: 1px solid rgba(48, 37, 29, .12);
-  background: rgba(255, 248, 233, .72);
+  border-radius: 20px;
+  background: rgba(255, 252, 245, .88);
 }
 
 .admin-detail-card strong {
@@ -275,6 +330,7 @@
   .admin-filters,
   .admin-layout,
   .admin-detail-grid,
+  .admin-settings-grid,
   .admin-plan-grid,
   .admin-inline-grid {
     grid-template-columns: 1fr;

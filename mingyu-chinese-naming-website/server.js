@@ -21,7 +21,6 @@ const port = Number(process.env.PORT) || 4173;
 const orderStore = new Map();
 const sessionCookieName = "mingyu_session";
 const adminSessionCookieName = "mingyu_admin";
-const welcomeCredits = 3;
 const sessionLifetimeSeconds = 60 * 60 * 24 * 30;
 const adminSessionLifetimeSeconds = 60 * 60 * 24 * 7;
 const registerVerificationLifetimeSeconds = 60 * 10;
@@ -38,10 +37,6 @@ const mailReplyTo = process.env.MAIL_REPLY_TO || "";
 const googleClientId = String(process.env.GOOGLE_CLIENT_ID || "").trim();
 const siteBaseUrl = String(process.env.SITE_BASE_URL || "").replace(/\/$/, "");
 const pdfFontUrl = process.env.PDF_FONT_URL || "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf";
-const tierPricing = {
-  simple: { value: "2.99", label: "Simple Edition" },
-  complete: { value: "9.90", label: "Complete Edition" }
-};
 const tierCreditCosts = { simple: 1, complete: 3 };
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -97,6 +92,46 @@ const placeTimeZones = [
   { keywords: ["beijing", "shanghai", "guangzhou", "shenzhen", "china", "hong kong", "macau", "taipei", "taiwan", "singapore", "kuala lumpur"], timeZone: chinaTimeZone }
 ];
 
+function getDefaultServicePricing() {
+  return {
+    simple: { value: "2.99", label: "Simple Edition" },
+    complete: { value: "9.90", label: "Complete Edition" }
+  };
+}
+
+function sanitizeServicePriceValue(value, fallback) {
+  const parsed = Number.parseFloat(String(value ?? fallback ?? "").trim());
+  if (!Number.isFinite(parsed) || parsed < 0) return String(fallback || "0.00");
+  return parsed.toFixed(2);
+}
+
+function sanitizeServicePricing(pricing = {}, fallback = getDefaultServicePricing()) {
+  return {
+    simple: {
+      label: String(fallback?.simple?.label || "Simple Edition"),
+      value: sanitizeServicePriceValue(pricing?.simple?.value, fallback?.simple?.value || "2.99")
+    },
+    complete: {
+      label: String(fallback?.complete?.label || "Complete Edition"),
+      value: sanitizeServicePriceValue(pricing?.complete?.value, fallback?.complete?.value || "9.90")
+    }
+  };
+}
+
+function getDefaultSiteSettings() {
+  return {
+    welcomeCredits: 3,
+    servicePricing: getDefaultServicePricing()
+  };
+}
+
+function sanitizeSiteSettings(settings = {}, fallback = getDefaultSiteSettings()) {
+  return {
+    welcomeCredits: Math.max(0, Number.parseInt(settings.welcomeCredits ?? fallback.welcomeCredits ?? 3, 10) || 0),
+    servicePricing: sanitizeServicePricing(settings.servicePricing, fallback.servicePricing)
+  };
+}
+
 function createDefaultDatabase() {
   return {
     users: [],
@@ -105,7 +140,8 @@ function createDefaultDatabase() {
     guestOrders: [],
     memberOrders: [],
     pendingRegistrations: [],
-    memberPlans: getDefaultMemberPlans()
+    memberPlans: getDefaultMemberPlans(),
+    siteSettings: getDefaultSiteSettings()
   };
 }
 
@@ -125,7 +161,8 @@ function loadDatabase() {
         guestOrders: Array.isArray(parsed.guestOrders) ? parsed.guestOrders : [],
         memberOrders: Array.isArray(parsed.memberOrders) ? parsed.memberOrders : [],
         pendingRegistrations: Array.isArray(parsed.pendingRegistrations) ? parsed.pendingRegistrations : [],
-        memberPlans: buildMemberPlansFromSource(parsed.memberPlans)
+        memberPlans: buildMemberPlansFromSource(parsed.memberPlans),
+        siteSettings: sanitizeSiteSettings(parsed.siteSettings)
     };
   } catch {
     const fallback = createDefaultDatabase();
@@ -138,6 +175,19 @@ let database = loadDatabase();
 
 function saveDatabase() {
   fs.writeFileSync(databaseFile, JSON.stringify(database, null, 2));
+}
+
+function getSiteSettings() {
+  database.siteSettings = sanitizeSiteSettings(database.siteSettings);
+  return database.siteSettings;
+}
+
+function getWelcomeCredits() {
+  return getSiteSettings().welcomeCredits;
+}
+
+function getTierPricing() {
+  return getSiteSettings().servicePricing;
 }
 
 function isJwtLikeKey(value) {
@@ -492,7 +542,7 @@ function getPublicCatalog() {
   return {
     plans: listMemberPlans(false),
     generationCosts: tierCreditCosts,
-    welcomeCredits
+    welcomeCredits: getWelcomeCredits()
   };
 }
 
@@ -549,7 +599,7 @@ function createUserRecordFromCredentials(email, credentials, displayName) {
     type: "grant",
     source: "welcome",
     description: `Welcome credits for new account`,
-    creditsDelta: welcomeCredits
+    creditsDelta: getWelcomeCredits()
   });
   return user;
 }
@@ -657,7 +707,7 @@ async function getUserReportSummaries(userId, limit = 12) {
 
 function createGuestOrderRecord(userId, email, formBody) {
   const tier = normalizeTier(formBody.tier);
-  const pricing = tierPricing[tier];
+  const pricing = getTierPricing()[tier];
   const orderId = nextId("guest_");
   return {
     id: orderId,
@@ -2829,7 +2879,7 @@ async function createPayPalGuestCheckout(order) {
       purchase_units: [{
         custom_id: order.id,
         invoice_id: order.id,
-        description: `Mingyu Chinese Naming - ${tierPricing[order.tier].label}`,
+        description: `Mingyu Chinese Naming - ${getTierPricing()[order.tier].label}`,
         amount: {
           currency_code: order.paymentCurrency || "USD",
           value: order.priceValue
@@ -3179,7 +3229,8 @@ async function handlePayPalConfig(req, res) {
     currency: "USD",
     mode: config?.mode || null,
     live: config?.mode === "live",
-    hostedLinks
+    hostedLinks,
+    servicePricing: getTierPricing()
   });
 }
 
@@ -3378,6 +3429,7 @@ async function handleAdminMemberPlans(req, res) {
   if (!requireAdmin(req, res)) return;
   send(res, 200, {
     plans: listMemberPlans(true),
+    settings: getSiteSettings(),
     storage: "local_database_file",
     payPalEnabled: Boolean(getPayPalConfig())
   });
@@ -3389,6 +3441,7 @@ async function handleAdminMemberPlansSave(req, res) {
   if (!body) return;
   const incomingPlans = Array.isArray(body.plans) ? body.plans : [];
   if (!incomingPlans.length) return send(res, 422, { error: "At least one member plan is required." });
+  const nextSettings = sanitizeSiteSettings(body.settings, getSiteSettings());
 
   const currentPlans = listMemberPlans(true);
   const currentMap = new Map(currentPlans.map(plan => [plan.id, plan]));
@@ -3411,10 +3464,12 @@ async function handleAdminMemberPlansSave(req, res) {
   }
 
   database.memberPlans = nextPlans;
+  database.siteSettings = nextSettings;
   saveDatabase();
   send(res, 200, {
     ok: true,
-    plans: listMemberPlans(true)
+    plans: listMemberPlans(true),
+    settings: getSiteSettings()
   });
 }
 
@@ -3485,7 +3540,7 @@ async function handleCreatePayPalOrder(req, res) {
 
   cleanupOrders();
   const tier = normalizeTier(body.tier);
-  const pricing = tierPricing[tier];
+  const pricing = getTierPricing()[tier];
   try {
     const order = await fetchPayPalJson(config, "/v2/checkout/orders", {
       method: "POST",
@@ -3654,7 +3709,7 @@ async function handleRegister(req, res) {
       p_display_name: user.displayName,
       p_password_hash: user.passwordHash,
       p_password_salt: user.passwordSalt,
-      p_welcome_credits: welcomeCredits
+      p_welcome_credits: getWelcomeCredits()
     });
     removePendingRegistration(email);
   }
@@ -3662,7 +3717,7 @@ async function handleRegister(req, res) {
   send(res, 201, {
     user: publicUser(user),
     catalog: getPublicCatalog(),
-    message: `Email verified. Welcome to Mingyu. ${welcomeCredits} credits have been added to your new account.`,
+    message: `Email verified. Welcome to Mingyu. ${getWelcomeCredits()} credits have been added to your new account.`,
     authChallenge: createAuthChallenge()
   }, "application/json; charset=utf-8", { "Set-Cookie": buildSessionCookie(sessionToken, sessionLifetimeSeconds) });
 }
@@ -3729,7 +3784,7 @@ async function persistNewUser(user) {
     p_display_name: user.displayName,
     p_password_hash: user.passwordHash,
     p_password_salt: user.passwordSalt,
-    p_welcome_credits: welcomeCredits
+    p_welcome_credits: getWelcomeCredits()
   });
   return user;
 }
@@ -3752,7 +3807,7 @@ async function handleGoogleLogin(req, res) {
       user: publicUser(user),
       catalog: getPublicCatalog(),
       message: isNewUser
-        ? `Google 登录成功，已自动创建账户并发放 ${welcomeCredits} welcome credits。`
+        ? `Google 登录成功，已自动创建账户并发放 ${getWelcomeCredits()} welcome credits。`
         : "Google 登录成功。",
       googleAuth: {
         enabled: Boolean(googleClientId),

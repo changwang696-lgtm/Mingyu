@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>会员套餐后台 | Mingyu</title>
+  <title>会员与价格后台 | Mingyu</title>
   <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/admin.css?v=20260828-plan-admin-db" />
+  <link rel="stylesheet" href="/admin.css?v=20260830-admin-plans-layout" />
 </head>
 <body>
   <main class="admin-shell">
@@ -25,23 +25,43 @@
       <section class="admin-panel">
         <div class="admin-list-header">
           <div>
-            <h1>会员套餐管理</h1>
-            <p class="admin-muted" id="planStorageText">正在读取套餐配置...</p>
+            <p class="admin-eyebrow">PLAN SETTINGS · 套餐与价格配置</p>
+            <h1>会员套餐与业务价格设置</h1>
+            <p class="admin-muted" id="planStorageText">正在读取套餐与价格配置...</p>
           </div>
           <div class="admin-topbar-actions">
             <button class="admin-ghost" type="button" id="reloadPlansBtn">重新读取</button>
-            <button class="admin-primary" type="button" id="savePlansBtn">保存套餐配置</button>
+            <button class="admin-primary" type="button" id="savePlansBtn">保存全部配置</button>
           </div>
         </div>
 
         <p class="admin-message" id="plansMessage"></p>
 
         <form id="plansForm" class="admin-stack">
-          <div class="admin-plan-grid" id="plansGrid"></div>
+          <section class="admin-subpanel admin-settings-panel">
+            <div class="admin-section-head">
+              <div>
+                <h2>基础业务设置</h2>
+                <p class="admin-muted">这里统一配置新用户赠送 credits，以及两种起名/PDF 结果的价格。</p>
+              </div>
+            </div>
+
+            <div class="admin-settings-grid" id="settingsGrid"></div>
+          </section>
+
+          <section class="admin-subpanel">
+            <div class="admin-section-head">
+              <div>
+                <h2>三个会员套餐设置</h2>
+                <p class="admin-muted">以下三个套餐会同步显示在会员中心购买区，并参与 PayPal 下单。</p>
+              </div>
+            </div>
+            <div class="admin-plan-grid" id="plansGrid"></div>
+          </section>
         </form>
       </section>
     </div>
   </main>
-  <script src="/admin-plans.js?v=20260828-plan-admin-db"></script>
+  <script src="/admin-plans.js?v=20260830-admin-plans-layout"></script>
 </body>
 </html>

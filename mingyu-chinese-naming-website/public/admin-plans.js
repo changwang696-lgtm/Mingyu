@@ -1,5 +1,14 @@
+const defaultSettings = {
+  welcomeCredits: 3,
+  servicePricing: {
+    simple: { value: "2.99", label: "Simple Edition" },
+    complete: { value: "9.90", label: "Complete Edition" }
+  }
+};
+
 const state = {
-  plans: []
+  plans: [],
+  settings: normalizeSettings(defaultSettings)
 };
 
 function $(selector) {
@@ -22,6 +31,28 @@ function escapeHtml(value) {
   }[character]));
 }
 
+function normalizePriceValue(value, fallback = "0.00") {
+  const parsed = Number.parseFloat(String(value ?? "").trim());
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+  return parsed.toFixed(2);
+}
+
+function normalizeSettings(settings = {}) {
+  return {
+    welcomeCredits: Math.max(0, Number.parseInt(settings.welcomeCredits ?? defaultSettings.welcomeCredits, 10) || 0),
+    servicePricing: {
+      simple: {
+        label: defaultSettings.servicePricing.simple.label,
+        value: normalizePriceValue(settings.servicePricing?.simple?.value, defaultSettings.servicePricing.simple.value)
+      },
+      complete: {
+        label: defaultSettings.servicePricing.complete.label,
+        value: normalizePriceValue(settings.servicePricing?.complete?.value, defaultSettings.servicePricing.complete.value)
+      }
+    }
+  };
+}
+
 async function ensureAdminSession() {
   const response = await fetch("/api/admin/session");
   const data = await response.json();
@@ -36,14 +67,50 @@ async function ensureAdminSession() {
   return data;
 }
 
+function renderSettings(settings) {
+  const grid = $("#settingsGrid");
+  grid.innerHTML = `
+    <section class="admin-config-card">
+      <p class="admin-card-kicker">WELCOME CREDITS</p>
+      <h3>新用户注册赠送</h3>
+      <p class="admin-muted">注册成功后自动发放给新账户，可立即用于会员生成。</p>
+      <label class="admin-field">
+        <span>赠送 Credits 数量</span>
+        <input id="welcomeCreditsInput" value="${escapeHtml(settings.welcomeCredits)}" inputmode="numeric" />
+      </label>
+    </section>
+
+    <section class="admin-config-card">
+      <p class="admin-card-kicker">SERVICE PRICING</p>
+      <h3>两种 PDF / 起名结果价格</h3>
+      <p class="admin-muted">首页购买按钮、支付弹窗、PayPal 下单金额都会读取这里的设置。</p>
+      <div class="admin-inline-grid">
+        <label class="admin-field">
+          <span>简约版价格（USD）</span>
+          <input id="simplePriceInput" value="${escapeHtml(settings.servicePricing.simple.value)}" inputmode="decimal" placeholder="2.99" />
+        </label>
+        <label class="admin-field">
+          <span>完整版价格（USD）</span>
+          <input id="completePriceInput" value="${escapeHtml(settings.servicePricing.complete.value)}" inputmode="decimal" placeholder="9.90" />
+        </label>
+      </div>
+      <div class="admin-price-preview">
+        <span>简约版 / ${escapeHtml(settings.servicePricing.simple.label)}：$${escapeHtml(settings.servicePricing.simple.value)}</span>
+        <span>完整版 / ${escapeHtml(settings.servicePricing.complete.label)}：$${escapeHtml(settings.servicePricing.complete.value)}</span>
+      </div>
+    </section>
+  `;
+}
+
 function renderPlans(plans) {
   const grid = $("#plansGrid");
   grid.innerHTML = plans.map(plan => `
     <section class="admin-plan-card" data-plan-id="${escapeHtml(plan.id)}">
-      <div class="admin-list-header">
+      <div class="admin-section-head">
         <div>
-          <h2>${escapeHtml(plan.id)}</h2>
-          <p class="admin-muted">该 ID 用于购买与订单记录，建议保持不变。</p>
+          <p class="admin-card-kicker">PLAN ID · ${escapeHtml(plan.id)}</p>
+          <h3>${escapeHtml(plan.nameZh)} / ${escapeHtml(plan.nameEn)}</h3>
+          <p class="admin-muted">该 ID 用于购买与订单记录，建议保持不变；这里只编辑名称、价格、描述和 credits。</p>
         </div>
       </div>
 
@@ -106,6 +173,16 @@ function renderPlans(plans) {
   `).join("");
 }
 
+function collectSettings() {
+  return normalizeSettings({
+    welcomeCredits: $("#welcomeCreditsInput").value.trim(),
+    servicePricing: {
+      simple: { value: $("#simplePriceInput").value.trim() },
+      complete: { value: $("#completePriceInput").value.trim() }
+    }
+  });
+}
+
 function collectPlans() {
   return Array.from(document.querySelectorAll(".admin-plan-card")).map(card => ({
     id: card.dataset.planId,
@@ -124,31 +201,36 @@ function collectPlans() {
 }
 
 async function loadPlans() {
-  showMessage("正在读取会员套餐配置...");
+  showMessage("正在读取会员套餐与价格配置...");
   const response = await fetch("/api/admin/member-plans");
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "读取会员套餐失败。");
+  if (!response.ok) throw new Error(data.error || "读取会员套餐与价格配置失败。");
   state.plans = data.plans || [];
+  state.settings = normalizeSettings(data.settings);
+  renderSettings(state.settings);
   renderPlans(state.plans);
   $("#planStorageText").textContent = data.storage === "local_database_file"
-    ? `当前套餐保存在服务器本地数据库文件中，共 ${state.plans.length} 个套餐。`
-    : `当前套餐已加载，共 ${state.plans.length} 个套餐。`;
-  showMessage(`已加载 ${state.plans.length} 个会员套餐。${data.payPalEnabled ? " PayPal 已连接。" : " PayPal 当前未配置。"}`);
+    ? `当前配置保存在服务器本地数据库文件中：欢迎赠送 ${state.settings.welcomeCredits} credits，套餐 ${state.plans.length} 个。`
+    : `当前配置已加载：欢迎赠送 ${state.settings.welcomeCredits} credits，套餐 ${state.plans.length} 个。`;
+  showMessage(`已加载业务设置与 ${state.plans.length} 个会员套餐。${data.payPalEnabled ? " PayPal 已连接。" : " PayPal 当前未配置。"}`);
 }
 
 async function savePlans() {
   const plans = collectPlans();
-  showMessage("正在保存会员套餐配置...");
+  const settings = collectSettings();
+  showMessage("正在保存业务设置与会员套餐配置...");
   const response = await fetch("/api/admin/member-plans", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ plans })
+    body: JSON.stringify({ plans, settings })
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "保存会员套餐失败。");
+  if (!response.ok) throw new Error(data.error || "保存业务设置失败。");
   state.plans = data.plans || [];
+  state.settings = normalizeSettings(data.settings);
+  renderSettings(state.settings);
   renderPlans(state.plans);
-  showMessage(`已保存 ${state.plans.length} 个会员套餐，会员中心刷新后会读取新配置。`);
+  showMessage(`已保存：新用户赠送 ${state.settings.welcomeCredits} credits，简约版 $${state.settings.servicePricing.simple.value}，完整版 $${state.settings.servicePricing.complete.value}，以及 ${state.plans.length} 个会员套餐。`);
 }
 
 $("#reloadPlansBtn").addEventListener("click", () => {

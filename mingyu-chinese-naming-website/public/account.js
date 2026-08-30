@@ -31,6 +31,7 @@ const memberOrderList = document.querySelector("#memberOrderList");
 const serviceOrderList = document.querySelector("#serviceOrderList");
 const planGrid = document.querySelector("#planGrid");
 const paypalPurchaseNote = document.querySelector("#paypalPurchaseNote");
+const welcomePolicyText = document.querySelector("#welcomePolicyText");
 const nextPath = new URLSearchParams(window.location.search).get("next") || "/";
 let sessionState = {
   loggedIn: false,
@@ -620,6 +621,10 @@ function setRegisterVerificationMode(active, { maskedEmail = "", cooldownSeconds
 
 function renderCatalog(catalog) {
   if (!catalog?.plans) return;
+  if (welcomePolicyText) {
+    const welcomeCredits = Math.max(0, Number.parseInt(catalog.welcomeCredits ?? 0, 10) || 0);
+    welcomePolicyText.innerHTML = `新注册账户默认获得 ${welcomeCredits} credits，可立即测试会员生成流程；后续可继续购买会员套餐或一次性 credits 包。<br />New accounts receive ${welcomeCredits} welcome credits so you can try the member flow immediately before purchasing a membership or one-time credit pack.`;
+  }
   planGrid.innerHTML = catalog.plans.map(plan => `
     <article class="plan-card">
       <small>${intervalLabel(plan.interval)}</small>
@@ -648,7 +653,8 @@ function renderCatalog(catalog) {
 
 function renderLedger(entries) {
   if (!entries?.length) {
-    ledgerList.innerHTML = `<div class="empty-state">暂时还没有点数变动记录。注册成功后会先获得欢迎 credits，之后每次会员生成或购买入账都会显示在这里。<br />No credit activity yet. Your welcome credits and future purchases or usage will appear here.</div>`;
+    const welcomeCredits = Math.max(0, Number.parseInt(sessionState.catalog?.welcomeCredits ?? 0, 10) || 0);
+    ledgerList.innerHTML = `<div class="empty-state">暂时还没有点数变动记录。注册成功后会先获得 ${welcomeCredits} welcome credits，之后每次会员生成或购买入账都会显示在这里。<br />No credit activity yet. Your ${welcomeCredits} welcome credits and future purchases or usage will appear here.</div>`;
     return;
   }
 
