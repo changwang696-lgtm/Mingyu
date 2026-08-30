@@ -49,6 +49,7 @@ let resendSubmitting = false;
 let loginSubmitting = false;
 let registerChallengeToken = "";
 let loginChallengeToken = "";
+let statusHideTimer = null;
 let googleInitializedClientId = "";
 let googleButtonsRendered = false;
 let googleInitPromise = null;
@@ -223,7 +224,7 @@ async function handleGoogleCredentialResponse(googleResponse) {
       catalog: data.catalog,
       googleAuth: data.googleAuth
     });
-    showStatus(data.message || "Google 登录成功。 / Signed in with Google.");
+    showStatus(data.message || "Google 登录成功。 / Signed in with Google.", false, { autoHideMs: 2200 });
     await fetchOverview();
     redirectAfterAuth();
   } catch (error) {
@@ -298,16 +299,30 @@ function redirectAfterAuth() {
   window.location.assign(safePath);
 }
 
-function showStatus(message, isError = false) {
+function showStatus(message, isError = false, options = {}) {
+  const autoHideMs = Number(options?.autoHideMs || 0);
+  if (statusHideTimer) {
+    window.clearTimeout(statusHideTimer);
+    statusHideTimer = null;
+  }
   statusBanner.hidden = false;
   statusBanner.textContent = message;
   statusBanner.dataset.state = isError ? "error" : "success";
   statusBanner.style.animation = "none";
   void statusBanner.offsetWidth;
   statusBanner.style.animation = "";
+  if (!isError && autoHideMs > 0) {
+    statusHideTimer = window.setTimeout(() => {
+      hideStatus();
+    }, autoHideMs);
+  }
 }
 
 function hideStatus() {
+  if (statusHideTimer) {
+    window.clearTimeout(statusHideTimer);
+    statusHideTimer = null;
+  }
   statusBanner.hidden = true;
   statusBanner.textContent = "";
   delete statusBanner.dataset.state;
