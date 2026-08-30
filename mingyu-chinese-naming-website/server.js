@@ -35,6 +35,7 @@ const authChallengeSecret = process.env.AUTH_CHALLENGE_SECRET || crypto.randomBy
 const resendApiKey = process.env.RESEND_API_KEY || "";
 const mailFrom = process.env.MAIL_FROM || "";
 const mailReplyTo = process.env.MAIL_REPLY_TO || "";
+const googleClientId = String(process.env.GOOGLE_CLIENT_ID || "").trim();
 const siteBaseUrl = String(process.env.SITE_BASE_URL || "").replace(/\/$/, "");
 const pdfFontUrl = process.env.PDF_FONT_URL || "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf";
 const tierPricing = {
@@ -555,6 +556,10 @@ function createUserRecordFromCredentials(email, credentials, displayName) {
 
 function createUserRecord(email, password, displayName) {
   return createUserRecordFromCredentials(email, hashPassword(password), displayName);
+}
+
+function createSocialUserRecord(email, displayName) {
+  return createUserRecordFromCredentials(email, hashPassword(crypto.randomBytes(24).toString("hex")), displayName);
 }
 
 function cleanupPendingRegistrations() {
@@ -3687,6 +3692,84 @@ async function handleLogin(req, res) {
   }, "application/json; charset=utf-8", { "Set-Cookie": buildSessionCookie(sessionToken, sessionLifetimeSeconds) });
 }
 
+async function verifyGoogleCredential(credential) {
+  const trimmed = String(credential || "").trim();
+  if (!trimmed) throw new Error("Google credential is required.");
+  if (!googleClientId) throw new Error("Google Sign-In is not configured yet.");
+  const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(trimmed)}`);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error_description || data.error || "Google token verification failed.");
+  }
+  if (data.aud !== googleClientId) throw new Error("Google token audience does not match this site.");
+  if (!["accounts.google.com", "https://accounts.google.com"].includes(String(data.iss || ""))) {
+    throw new Error("Google token issuer is invalid.");
+  }
+  if (String(data.email_verified || "").toLowerCase() !== "true") {
+    throw new Error("Google account email is not verified.");
+  }
+  const email = normalizeEmail(data.email);
+  if (!validateEmail(email)) throw new Error("Google account did not provide a valid email address.");
+  return {
+    email,
+    displayName: String(data.name || data.given_name || email.split("@")[0] || "Member").trim(),
+    picture: String(data.picture || "").trim() || null
+  };
+}
+
+async function persistNewUser(user) {
+  if (!useSupabase) {
+    database.users.push(user);
+    saveDatabase();
+    return user;
+  }
+  await supabaseRpc("app_register_user", {
+    p_user_id: user.id,
+    p_email: user.email,
+    p_display_name: user.displayName,
+    p_password_hash: user.passwordHash,
+    p_password_salt: user.passwordSalt,
+    p_welcome_credits: welcomeCredits
+  });
+  return user;
+}
+
+async function handleGoogleLogin(req, res) {
+  if (!googleClientId) return send(res, 503, { error: "Google Sign-In is not configured yet." });
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  try {
+    const googleUser = await verifyGoogleCredential(body.credential);
+    let user = await findUserByEmail(googleUser.email);
+    let isNewUser = false;
+    if (!user) {
+      user = createSocialUserRecord(googleUser.email, googleUser.displayName);
+      await persistNewUser(user);
+      isNewUser = true;
+    }
+    const sessionToken = await createSession(user.id);
+    send(res, 200, {
+      user: publicUser(user),
+      catalog: getPublicCatalog(),
+      message: isNewUser
+        ? `Google 登录成功，已自动创建账户并发放 ${welcomeCredits} welcome credits。`
+        : "Google 登录成功。",
+      googleAuth: {
+        enabled: Boolean(googleClientId),
+        clientId: googleClientId
+      }
+    }, "application/json; charset=utf-8", { "Set-Cookie": buildSessionCookie(sessionToken, sessionLifetimeSeconds) });
+  } catch (error) {
+    send(res, 401, {
+      error: error.message || "Google Sign-In failed.",
+      googleAuth: {
+        enabled: Boolean(googleClientId),
+        clientId: googleClientId || null
+      }
+    });
+  }
+}
+
 async function handleLogout(req, res) {
   await destroySession(req);
   send(res, 200, { ok: true }, "application/json; charset=utf-8", { "Set-Cookie": buildSessionCookie("", 0) });
@@ -3698,7 +3781,11 @@ async function handleSession(req, res) {
     loggedIn: Boolean(user),
     user: user ? publicUser(user) : null,
     catalog: getPublicCatalog(),
-    authChallenge: createAuthChallenge()
+    authChallenge: createAuthChallenge(),
+    googleAuth: {
+      enabled: Boolean(googleClientId),
+      clientId: googleClientId || null
+    }
   });
 }
 
@@ -3965,6 +4052,7 @@ http.createServer((req, res) => {
 
     if (req.method === "POST" && pathname === "/api/auth/register") return handleRegister(req, res);
     if (req.method === "POST" && pathname === "/api/auth/login") return handleLogin(req, res);
+    if (req.method === "POST" && pathname === "/api/auth/google") return handleGoogleLogin(req, res);
     if (req.method === "POST" && pathname === "/api/auth/logout") return handleLogout(req, res);
     if (req.method === "GET" && pathname === "/api/auth/session") return handleSession(req, res);
     if (req.method === "GET" && pathname === "/api/auth/challenge") return handleAuthChallenge(req, res);

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>会员中心 | 名屿 Mingyu</title>
-  <link rel="stylesheet" href="/account.css?v=20260828-plan-admin-db" />
+  <link rel="stylesheet" href="/account.css?v=20260830-google-login-simple" />
 </head>
 <body>
   <main class="account-shell">
@@ -65,6 +65,10 @@
           </div>
           <button type="submit" id="registerSubmitBtn">发送邮箱验证码 / Send Code</button>
         </form>
+        <div class="oauth-block" id="registerGoogleBlock" hidden>
+          <p class="inline-note">或使用 Google 一键注册登录<br />Or continue with Google</p>
+          <div class="google-button-host" id="registerGoogleButton"></div>
+        </div>
       </article>
 
       <article class="auth-card">
@@ -89,6 +93,10 @@
           </div>
           <button type="submit">登录 / Sign In</button>
         </form>
+        <div class="oauth-block" id="loginGoogleBlock" hidden>
+          <p class="inline-note">也可以直接使用 Google 登录，首次会自动创建账户<br />Sign in with Google. Your first visit creates the account automatically.</p>
+          <div class="google-button-host" id="loginGoogleButton"></div>
+        </div>
       </article>
     </section>
 
@@ -172,6 +180,7 @@
     </section>
   </main>
 
-  <script src="/account.js?v=20260828-plan-admin-db"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="/account.js?v=20260830-google-login-simple"></script>
 </body>
 </html>

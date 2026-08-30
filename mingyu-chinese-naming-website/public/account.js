@@ -11,10 +11,14 @@ const registerChallengeAnswer = document.querySelector("#registerChallengeAnswer
 const registerChallengeRefreshBtn = document.querySelector("#registerChallengeRefreshBtn");
 const registerSubmitBtn = document.querySelector("#registerSubmitBtn");
 const resendRegisterCodeBtn = document.querySelector("#resendRegisterCodeBtn");
+const registerGoogleBlock = document.querySelector("#registerGoogleBlock");
+const registerGoogleButton = document.querySelector("#registerGoogleButton");
 const loginChallengePrompt = document.querySelector("#loginChallengePrompt");
 const loginChallengeAnswer = document.querySelector("#loginChallengeAnswer");
 const loginChallengeRefreshBtn = document.querySelector("#loginChallengeRefreshBtn");
 const loginSubmitBtn = loginForm?.querySelector('button[type="submit"]');
+const loginGoogleBlock = document.querySelector("#loginGoogleBlock");
+const loginGoogleButton = document.querySelector("#loginGoogleButton");
 const logoutBtn = document.querySelector("#logoutBtn");
 const memberName = document.querySelector("#memberName");
 const memberEmail = document.querySelector("#memberEmail");
@@ -28,7 +32,12 @@ const serviceOrderList = document.querySelector("#serviceOrderList");
 const planGrid = document.querySelector("#planGrid");
 const paypalPurchaseNote = document.querySelector("#paypalPurchaseNote");
 const nextPath = new URLSearchParams(window.location.search).get("next") || "/";
-let sessionState = { loggedIn: false, user: null, catalog: null };
+let sessionState = {
+  loggedIn: false,
+  user: null,
+  catalog: null,
+  googleAuth: { enabled: false, clientId: null }
+};
 let purchasePendingPlanId = null;
 let payPalState = { enabled: false, mode: null };
 let registerVerificationPending = false;
@@ -40,6 +49,9 @@ let resendSubmitting = false;
 let loginSubmitting = false;
 let registerChallengeToken = "";
 let loginChallengeToken = "";
+let googleInitializedClientId = "";
+let googleButtonsRendered = false;
+let googleInitPromise = null;
 
 const registerFieldLabels = {
   displayName: "显示名称",
@@ -135,6 +147,149 @@ function reportTierDescription(tier) {
   return normalizeTier(tier) === "complete"
     ? "生成全部起名结果 / Full naming report"
     : "生成名字及生肖 / Names and zodiac";
+}
+
+function mergeSessionState(data = {}) {
+  const nextGoogleAuth = data.googleAuth
+    ? {
+        enabled: Boolean(data.googleAuth?.enabled),
+        clientId: String(data.googleAuth?.clientId || "").trim() || null
+      }
+    : sessionState.googleAuth || { enabled: false, clientId: null };
+  sessionState = {
+    ...sessionState,
+    ...data,
+    googleAuth: nextGoogleAuth
+  };
+  return sessionState;
+}
+
+function getGoogleButtonWidth(host) {
+  const measuredWidth = Number(host?.clientWidth || 0);
+  if (!measuredWidth) return 320;
+  return Math.max(220, Math.min(380, Math.round(measuredWidth)));
+}
+
+function setGoogleBlocksVisible(visible) {
+  if (registerGoogleBlock) registerGoogleBlock.hidden = !visible;
+  if (loginGoogleBlock) loginGoogleBlock.hidden = !visible;
+}
+
+function wait(ms) {
+  return new Promise(resolve => window.setTimeout(resolve, ms));
+}
+
+async function waitForGoogleIdentity(maxAttempts = 20) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (window.google?.accounts?.id) return true;
+    await wait(300);
+  }
+  return false;
+}
+
+function normalizeGoogleError(message) {
+  const text = String(message || "").trim();
+  if (!text) return "Google 登录失败，请稍后重试。";
+  if (/not configured/i.test(text)) return "Google 登录暂未配置完成。";
+  if (/credential is required/i.test(text)) return "没有拿到 Google 登录凭证，请重试。";
+  if (/audience does not match/i.test(text)) return "Google 登录配置中的 Client ID 与当前网站不匹配。";
+  if (/email is not verified/i.test(text)) return "你的 Google 邮箱还没有验证，暂时无法登录。";
+  if (/valid email address/i.test(text)) return "Google 账户没有返回有效邮箱地址。";
+  if (/failed to load/i.test(text)) return "Google 登录组件加载失败，请刷新页面重试。";
+  return text;
+}
+
+async function handleGoogleCredentialResponse(googleResponse) {
+  const credential = String(googleResponse?.credential || "").trim();
+  if (!credential) {
+    showStatus("没有拿到 Google 登录凭证，请重试。", true);
+    return;
+  }
+
+  hideStatus();
+  showStatus("正在通过 Google 登录，请稍候... / Signing in with Google...");
+
+  try {
+    const response = await fetch("/api/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Google 登录失败，请稍后重试。");
+    renderSession({
+      loggedIn: true,
+      user: data.user,
+      catalog: data.catalog,
+      googleAuth: data.googleAuth
+    });
+    showStatus(data.message || "Google 登录成功。 / Signed in with Google.");
+    await fetchOverview();
+    redirectAfterAuth();
+  } catch (error) {
+    showStatus(normalizeGoogleError(error.message), true);
+  }
+}
+
+function renderGoogleButtons() {
+  if (!window.google?.accounts?.id) return;
+  const hosts = [
+    { node: registerGoogleButton, text: "signup_with" },
+    { node: loginGoogleButton, text: "signin_with" }
+  ];
+  hosts.forEach(({ node, text }) => {
+    if (!node) return;
+    node.innerHTML = "";
+    window.google.accounts.id.renderButton(node, {
+      type: "standard",
+      theme: "outline",
+      shape: "rectangular",
+      size: "large",
+      text,
+      logo_alignment: "left",
+      width: getGoogleButtonWidth(node)
+    });
+  });
+  googleButtonsRendered = true;
+}
+
+async function ensureGoogleAuthReady() {
+  const googleAuth = sessionState.googleAuth || {};
+  const clientId = String(googleAuth.clientId || "").trim();
+  const enabled = Boolean(googleAuth.enabled && clientId);
+
+  setGoogleBlocksVisible(enabled);
+  if (!enabled) return;
+  if (googleInitPromise) return googleInitPromise;
+
+  googleInitPromise = (async () => {
+    const ready = await waitForGoogleIdentity();
+    if (!ready) throw new Error("Google Sign-In failed to load.");
+
+    if (googleInitializedClientId !== clientId) {
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCredentialResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
+      googleInitializedClientId = clientId;
+      googleButtonsRendered = false;
+    }
+
+    if (!googleButtonsRendered) {
+      renderGoogleButtons();
+    }
+  })()
+    .catch(error => {
+      setGoogleBlocksVisible(false);
+      showStatus(normalizeGoogleError(error.message), true);
+    })
+    .finally(() => {
+      googleInitPromise = null;
+    });
+
+  return googleInitPromise;
 }
 
 function redirectAfterAuth() {
@@ -577,9 +732,10 @@ function renderServiceOrders(orders) {
 }
 
 function renderSession(data) {
-  sessionState = data;
-  renderCatalog(data.catalog);
-  if (!data.loggedIn || !data.user) {
+  const nextState = mergeSessionState(data);
+  renderCatalog(nextState.catalog);
+  void ensureGoogleAuthReady();
+  if (!nextState.loggedIn || !nextState.user) {
     authGrid.hidden = false;
     dashboard.hidden = true;
     return;
@@ -587,14 +743,14 @@ function renderSession(data) {
 
   authGrid.hidden = true;
   dashboard.hidden = false;
-  memberName.textContent = `${data.user.displayName || "会员"} / Member`;
-  memberEmail.textContent = data.user.email;
-  memberCredits.textContent = String(data.user.creditsBalance);
-  memberPlan.textContent = data.user.membership?.planName
-    ? `${data.user.membership.planName} / Active Plan`
+  memberName.textContent = `${nextState.user.displayName || "会员"} / Member`;
+  memberEmail.textContent = nextState.user.email;
+  memberCredits.textContent = String(nextState.user.creditsBalance);
+  memberPlan.textContent = nextState.user.membership?.planName
+    ? `${nextState.user.membership.planName} / Active Plan`
     : "当前未开通会员 / No Active Membership";
-  memberRenewal.innerHTML = data.user.membership?.renewalAt
-    ? `续期时间：${new Date(data.user.membership.renewalAt).toLocaleDateString()}<br />Renewal date: ${new Date(data.user.membership.renewalAt).toLocaleDateString()}`
+  memberRenewal.innerHTML = nextState.user.membership?.renewalAt
+    ? `续期时间：${new Date(nextState.user.membership.renewalAt).toLocaleDateString()}<br />Renewal date: ${new Date(nextState.user.membership.renewalAt).toLocaleDateString()}`
     : "当前没有待续期计划。<br />No renewal is scheduled yet.";
 }
 

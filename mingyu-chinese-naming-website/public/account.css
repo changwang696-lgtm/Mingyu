@@ -236,6 +236,21 @@ body {
 .verification-actions .secondary {
   min-width: 180px;
 }
+.oauth-block {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(48,37,29,.12);
+}
+.oauth-block .inline-note {
+  margin-bottom: 0;
+}
+.google-button-host {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
 
 input {
   width: 100%;
