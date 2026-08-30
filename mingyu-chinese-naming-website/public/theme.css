@@ -1137,4 +1137,5 @@ dialog:not([open]) { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+  .hero-emblem img { animation: hero-emblem-spin 18s linear infinite !important; }
 }
