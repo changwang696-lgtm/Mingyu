@@ -27,6 +27,10 @@ const registerVerificationLifetimeSeconds = 60 * 10;
 const registerVerificationCooldownSeconds = 60;
 const maxRegisterVerificationAttempts = 6;
 const authChallengeLifetimeSeconds = 60 * 10;
+const loginAttemptWindowSeconds = 60 * 10;
+const loginLockSeconds = 60 * 15;
+const maxLoginAttempts = 8;
+const maxAdminLoginAttempts = 6;
 const adminUsername = process.env.ADMIN_USERNAME || "";
 const adminPassword = process.env.ADMIN_PASSWORD || "";
 const adminSessionSecret = process.env.ADMIN_SESSION_SECRET || adminPassword || "";
@@ -38,6 +42,8 @@ const googleClientId = String(process.env.GOOGLE_CLIENT_ID || "").trim();
 const siteBaseUrl = String(process.env.SITE_BASE_URL || "").replace(/\/$/, "");
 const pdfFontUrl = process.env.PDF_FONT_URL || "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf";
 const tierCreditCosts = { simple: 1, complete: 3 };
+const failedLoginAttempts = new Map();
+const failedAdminLoginAttempts = new Map();
 const types = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -193,12 +199,23 @@ function getTierPricing() {
 }
 
 function sanitizeFeedbackMessage(entry = {}) {
+  const reply = entry.reply && typeof entry.reply === "object" ? entry.reply : null;
   return {
     id: String(entry.id || "").trim(),
+    userId: String(entry.userId || "").trim() || null,
+    displayName: String(entry.displayName || "").trim() || null,
     email: normalizeEmail(entry.email || "") || "",
     message: String(entry.message || "").trim(),
     page: String(entry.page || "/").trim() || "/",
-    createdAt: entry.createdAt || nowIso()
+    createdAt: entry.createdAt || nowIso(),
+    reply: reply ? {
+      message: String(reply.message || "").trim(),
+      repliedAt: reply.repliedAt || null,
+      repliedBy: String(reply.repliedBy || "").trim() || null,
+      emailSent: Boolean(reply.emailSent),
+      emailError: String(reply.emailError || "").trim() || null,
+      deliveredTo: normalizeEmail(reply.deliveredTo || "") || ""
+    } : null
   };
 }
 
@@ -218,6 +235,16 @@ function insertFeedbackMessage(entry) {
   database.feedbackMessages = database.feedbackMessages.slice(0, 500);
   saveDatabase();
   return nextEntry;
+}
+
+function updateFeedbackMessage(feedbackId, updates = {}) {
+  const entries = Array.isArray(database.feedbackMessages) ? database.feedbackMessages : [];
+  const index = entries.findIndex(item => String(item.id || "") === String(feedbackId || ""));
+  if (index < 0) return null;
+  entries[index] = sanitizeFeedbackMessage({ ...entries[index], ...updates });
+  database.feedbackMessages = entries;
+  saveDatabase();
+  return entries[index];
 }
 
 function isJwtLikeKey(value) {
@@ -1049,6 +1076,222 @@ async function listUserMemberOrders(userId, limit = 12) {
   return rows.map(mapMemberOrderRow);
 }
 
+function summarizeAdminUser(user) {
+  const publicData = publicUser(user);
+  return {
+    ...publicData,
+    membershipStatus: publicData.membership?.status || "inactive",
+    membershipPlanName: publicData.membership?.planName || "No active membership"
+  };
+}
+
+async function listAdminUsers(searchQuery = "", limit = 200) {
+  const normalizedLimit = Math.max(1, Math.min(Number(limit) || 200, 500));
+  const normalizedQuery = String(searchQuery || "").trim().toLowerCase();
+  let users = [];
+  if (!useSupabase) {
+    users = (database.users || []).map(sanitizeUserRecord);
+  } else {
+    const rows = await supabaseRequest("app_users", {
+      searchParams: {
+        select: "id,email,display_name,credits_balance,membership,created_at",
+        order: "created_at.desc",
+        limit: normalizedLimit
+      }
+    });
+    users = rows.map(row => summarizeAdminUser(mapUserRow(row)));
+  }
+  const mapped = users.map(user => summarizeAdminUser(user));
+  return mapped
+    .filter(user => !normalizedQuery || [
+      user.email,
+      user.displayName,
+      user.membershipPlanName,
+      user.membershipStatus
+    ].some(value => String(value || "").toLowerCase().includes(normalizedQuery)))
+    .sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)))
+    .slice(0, normalizedLimit);
+}
+
+async function listUserGuestOrdersByUser(userId, email, limit = 12) {
+  const normalizedLimit = Math.max(1, Math.min(Number(limit) || 12, 50));
+  if (!useSupabase) {
+    return (database.guestOrders || [])
+      .filter(item => item.userId === userId || item.email === email)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, normalizedLimit);
+  }
+  const [byUser, byEmail] = await Promise.all([
+    supabaseRequest("guest_orders", {
+      searchParams: {
+        select: "*",
+        user_id: `eq.${userId}`,
+        order: "created_at.desc",
+        limit: normalizedLimit
+      },
+      allowEmpty: true
+    }),
+    supabaseRequest("guest_orders", {
+      searchParams: {
+        select: "*",
+        email: `eq.${email}`,
+        order: "created_at.desc",
+        limit: normalizedLimit
+      },
+      allowEmpty: true
+    })
+  ]);
+  const merged = [...(byUser || []), ...(byEmail || [])];
+  const unique = Array.from(new Map(merged.map(row => [row.id, row])).values());
+  return unique
+    .map(mapGuestOrderRow)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, normalizedLimit);
+}
+
+function listLocalFeedbackForUser(userId, email, limit = 10) {
+  return listFeedbackMessages(500)
+    .filter(item => item.userId === userId || item.email === email)
+    .slice(0, limit);
+}
+
+async function getAdminUserDetail(userId) {
+  const user = await getUserById(userId);
+  if (!user) return null;
+  const [reports, memberOrders, guestOrders] = await Promise.all([
+    getUserReportSummaries(userId, 8),
+    listUserMemberOrders(userId, 8),
+    listUserGuestOrdersByUser(userId, user.email, 8)
+  ]);
+  const feedback = listLocalFeedbackForUser(userId, user.email, 8);
+  let sessionCount = 0;
+  let ledgerCount = Array.isArray(user.ledger) ? user.ledger.length : 0;
+  let reportCount = reports.length;
+  let memberOrderCount = memberOrders.length;
+  let guestOrderCount = guestOrders.length;
+  let feedbackCount = listFeedbackMessages(500).filter(item => item.userId === userId || item.email === user.email).length;
+  if (!useSupabase) {
+    sessionCount = (database.sessions || []).filter(item => item.userId === userId).length;
+    reportCount = (database.reports || []).filter(item => item.userId === userId).length;
+    memberOrderCount = (database.memberOrders || []).filter(item => item.userId === userId).length;
+    guestOrderCount = (database.guestOrders || []).filter(item => item.userId === userId || item.email === user.email).length;
+  } else {
+    const [sessionRows, ledgerRows, reportRows, memberOrderRows, guestOrderUserRows, guestOrderEmailRows] = await Promise.all([
+      supabaseRequest("app_sessions", {
+        searchParams: {
+          select: "id",
+          user_id: `eq.${userId}`
+        },
+        allowEmpty: true
+      }),
+      supabaseRequest("credit_ledger", {
+        searchParams: {
+          select: "id",
+          user_id: `eq.${userId}`
+        },
+        allowEmpty: true
+      }),
+      supabaseRequest("naming_reports", {
+        searchParams: {
+          select: "id",
+          user_id: `eq.${userId}`
+        },
+        allowEmpty: true
+      }),
+      supabaseRequest("member_orders", {
+        searchParams: {
+          select: "id",
+          user_id: `eq.${userId}`
+        },
+        allowEmpty: true
+      }),
+      supabaseRequest("guest_orders", {
+        searchParams: {
+          select: "id",
+          user_id: `eq.${userId}`
+        },
+        allowEmpty: true
+      }),
+      supabaseRequest("guest_orders", {
+        searchParams: {
+          select: "id",
+          email: `eq.${user.email}`
+        },
+        allowEmpty: true
+      })
+    ]);
+    sessionCount = (sessionRows || []).length;
+    ledgerCount = (ledgerRows || []).length;
+    reportCount = (reportRows || []).length;
+    memberOrderCount = (memberOrderRows || []).length;
+    guestOrderCount = new Map([...(guestOrderUserRows || []), ...(guestOrderEmailRows || [])].map(item => [item.id, true])).size;
+  }
+  return {
+    user: summarizeAdminUser(user),
+    storageMode: useSupabase ? "supabase" : "local",
+    counts: {
+      sessions: sessionCount,
+      ledger: ledgerCount,
+      reports: reportCount,
+      memberOrders: memberOrderCount,
+      guestOrders: guestOrderCount,
+      feedback: feedbackCount,
+      pendingRegistration: Boolean(findPendingRegistration(user.email))
+    },
+    reports,
+    memberOrders: memberOrders.map(summarizeMemberOrder),
+    guestOrders: guestOrders.map(summarizeGuestOrder),
+    feedback
+  };
+}
+
+function cleanupLocalUserArtifacts(userId, email) {
+  database.users = (database.users || []).filter(item => item.id !== userId);
+  database.sessions = (database.sessions || []).filter(item => item.userId !== userId);
+  database.reports = (database.reports || []).filter(item => item.userId !== userId);
+  database.memberOrders = (database.memberOrders || []).filter(item => item.userId !== userId);
+  database.guestOrders = (database.guestOrders || []).filter(item => item.userId !== userId && item.email !== email);
+  database.feedbackMessages = (database.feedbackMessages || []).filter(item => item.userId !== userId && item.email !== email);
+  database.pendingRegistrations = (database.pendingRegistrations || []).filter(item => item.email !== email);
+  saveDatabase();
+}
+
+async function deleteUserPermanently(userId, confirmationEmail) {
+  const user = await getUserById(userId);
+  if (!user) throw new Error("User account was not found.");
+  if (normalizeEmail(confirmationEmail || "") !== user.email) {
+    throw new Error("Please type the exact account email to confirm deletion.");
+  }
+
+  if (useSupabase) {
+    await Promise.all([
+      supabaseRequest("guest_orders", {
+        method: "DELETE",
+        searchParams: { user_id: `eq.${user.id}` },
+        allowEmpty: true
+      }),
+      supabaseRequest("guest_orders", {
+        method: "DELETE",
+        searchParams: { email: `eq.${user.email}` },
+        allowEmpty: true
+      }),
+      supabaseRequest("app_users", {
+        method: "DELETE",
+        searchParams: { id: `eq.${user.id}` },
+        allowEmpty: true
+      })
+    ]);
+  }
+
+  cleanupLocalUserArtifacts(user.id, user.email);
+
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.displayName
+  };
+}
+
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -1164,6 +1407,74 @@ async function sendRegistrationVerificationEmail({ email, code, displayName }) {
   if (!response.ok) {
     throw new Error(payload?.message || payload?.error || "Failed to send verification email.");
   }
+}
+
+function buildFeedbackReplyEmail({ feedback, replyMessage }) {
+  const safeName = escapeHtml(feedback.displayName || feedback.email.split("@")[0] || "Member");
+  const safeReply = escapeHtml(replyMessage).replace(/\n/g, "<br />");
+  const page = escapeHtml(feedback.page || "/");
+  const subject = "Reply from Mingyu support";
+  const html = `
+  <div style="font-family:Arial,sans-serif;background:#f6ecd8;padding:32px 16px;color:#30251d;">
+    <div style="max-width:680px;margin:0 auto;background:#fffdf8;border:1px solid rgba(48,37,29,.12);padding:32px;">
+      <p style="margin:0 0 12px;color:#9e392b;font-size:12px;letter-spacing:1.2px;">MINGYU SUPPORT</p>
+      <h1 style="margin:0 0 16px;color:#071c31;font-size:28px;font-weight:400;">Reply to your message</h1>
+      <p style="margin:0 0 14px;line-height:1.8;">Hello ${safeName}, thank you for your message on Mingyu. Here is our reply:</p>
+      <div style="margin:20px 0;padding:20px;background:#071c31;color:#f4ead3;line-height:1.9;border:1px solid rgba(216,168,78,.3);">${safeReply}</div>
+      <p style="margin:0 0 8px;line-height:1.8;">Original page: ${page}</p>
+      <p style="margin:0;color:#7a6b5f;font-size:13px;line-height:1.8;">You can continue replying to this email or sign in to Mingyu for more account help.</p>
+    </div>
+  </div>`;
+  const text = [
+    "Reply from Mingyu support",
+    "",
+    replyMessage,
+    "",
+    `Original page: ${feedback.page || "/"}`
+  ].join("\n");
+  return { subject, html, text };
+}
+
+async function sendFeedbackReplyEmail(feedback, replyMessage) {
+  if (!feedback?.email) {
+    return { emailSent: false, emailError: "No member email available.", deliveredTo: "" };
+  }
+  if (!isMailConfigured()) {
+    return { emailSent: false, emailError: "Email delivery is not configured.", deliveredTo: feedback.email };
+  }
+  const emailContent = buildFeedbackReplyEmail({ feedback, replyMessage });
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: mailFrom,
+      to: [feedback.email],
+      ...(mailReplyTo ? { reply_to: mailReplyTo } : {}),
+      subject: emailContent.subject,
+      html: emailContent.html,
+      text: emailContent.text
+    })
+  });
+  const rawText = await response.text();
+  let payload = {};
+  if (rawText) {
+    try {
+      payload = JSON.parse(rawText);
+    } catch {
+      payload = {};
+    }
+  }
+  if (!response.ok) {
+    return {
+      emailSent: false,
+      emailError: payload?.message || payload?.error || "Reply email delivery failed.",
+      deliveredTo: feedback.email
+    };
+  }
+  return { emailSent: true, emailError: null, deliveredTo: feedback.email };
 }
 
 function summarizeGuestOrder(order) {
@@ -2218,6 +2529,67 @@ function buildAdminCookie(value, maxAgeSeconds) {
   ];
   if (process.env.NODE_ENV === "production") parts.push("Secure");
   return parts.join("; ");
+}
+
+function getClientAddress(req) {
+  const forwarded = String(req.headers["x-forwarded-for"] || "")
+    .split(",")[0]
+    .trim();
+  return forwarded || String(req.socket?.remoteAddress || req.connection?.remoteAddress || "unknown");
+}
+
+function getAttemptWindowEntry(store, key, windowSeconds) {
+  const entry = store.get(key);
+  if (!entry) return null;
+  const now = Date.now();
+  if (Number(entry.lockedUntil) > now) return entry;
+  if (Number(entry.firstFailureAt) + windowSeconds * 1000 <= now) {
+    store.delete(key);
+    return null;
+  }
+  return entry;
+}
+
+function getAttemptRetryAfterSeconds(store, key, windowSeconds) {
+  const entry = getAttemptWindowEntry(store, key, windowSeconds);
+  if (!entry) return 0;
+  const retryAfterMs = Number(entry.lockedUntil || 0) - Date.now();
+  return retryAfterMs > 0 ? Math.ceil(retryAfterMs / 1000) : 0;
+}
+
+function registerFailedAttempt(store, key, { maxAttempts, windowSeconds, lockSeconds }) {
+  const now = Date.now();
+  const existing = getAttemptWindowEntry(store, key, windowSeconds);
+  const entry = existing && Number(existing.lockedUntil || 0) <= now
+    ? existing
+    : {
+        count: 0,
+        firstFailureAt: now,
+        lockedUntil: 0
+      };
+
+  if (now - Number(entry.firstFailureAt || 0) > windowSeconds * 1000) {
+    entry.count = 0;
+    entry.firstFailureAt = now;
+    entry.lockedUntil = 0;
+  }
+
+  entry.count += 1;
+  if (entry.count >= maxAttempts) {
+    entry.lockedUntil = now + lockSeconds * 1000;
+    store.set(key, entry);
+    return { blocked: true, retryAfterSeconds: lockSeconds };
+  }
+
+  store.set(key, entry);
+  return {
+    blocked: false,
+    remainingAttempts: Math.max(0, maxAttempts - entry.count)
+  };
+}
+
+function clearFailedAttempts(store, key) {
+  store.delete(key);
 }
 
 function signAuthChallengePayload(payload) {
@@ -3427,11 +3799,25 @@ async function handleAdminLogin(req, res) {
   if (!isAdminConfigured()) return send(res, 503, { error: "Admin login is not configured yet." });
   const body = await readJsonBody(req, res);
   if (!body) return;
+  const adminAttemptKey = getClientAddress(req);
+  const adminRetryAfterSeconds = getAttemptRetryAfterSeconds(failedAdminLoginAttempts, adminAttemptKey, loginAttemptWindowSeconds);
+  if (adminRetryAfterSeconds > 0) {
+    return send(res, 429, { error: `Too many admin login attempts. Please wait ${adminRetryAfterSeconds} seconds and try again.` });
+  }
   const username = String(body.username || "").trim();
   const password = String(body.password || "");
   if (username !== adminUsername || password !== adminPassword) {
+    const failedAttempt = registerFailedAttempt(failedAdminLoginAttempts, adminAttemptKey, {
+      maxAttempts: maxAdminLoginAttempts,
+      windowSeconds: loginAttemptWindowSeconds,
+      lockSeconds: loginLockSeconds
+    });
+    if (failedAttempt.blocked) {
+      return send(res, 429, { error: `Too many admin login attempts. Please wait ${failedAttempt.retryAfterSeconds} seconds and try again.` });
+    }
     return send(res, 401, { error: "Incorrect admin username or password." });
   }
+  clearFailedAttempts(failedAdminLoginAttempts, adminAttemptKey);
   const token = createAdminToken(username);
   send(res, 200, { ok: true, username }, "application/json; charset=utf-8", {
     "Set-Cookie": buildAdminCookie(token, adminSessionLifetimeSeconds)
@@ -3504,16 +3890,21 @@ async function handleAdminMemberPlansSave(req, res) {
 }
 
 async function handleFeedbackSubmit(req, res) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return send(res, 401, { error: "Please sign in first." });
   const body = await readJsonBody(req, res);
   if (!body) return;
-  const email = normalizeEmail(body.email || "");
   const message = String(body.message || "").trim();
   const page = String(body.page || "/").trim() || "/";
   if (!message) return send(res, 422, { error: "Message is required." });
   if (message.length > 2000) return send(res, 422, { error: "Message is too long." });
-  if (email && !validateEmail(email)) return send(res, 422, { error: "Email is invalid." });
-
-  const entry = insertFeedbackMessage({ email, message, page });
+  const entry = insertFeedbackMessage({
+    userId: user.id,
+    displayName: user.displayName,
+    email: user.email,
+    message,
+    page
+  });
   send(res, 201, {
     ok: true,
     message: "Feedback received.",
@@ -3522,7 +3913,8 @@ async function handleFeedbackSubmit(req, res) {
 }
 
 async function handleAdminFeedback(req, res, url) {
-  if (!requireAdmin(req, res)) return;
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
   const query = String(url.searchParams.get("q") || "").trim().toLowerCase();
   let feedback = listFeedbackMessages(Number.parseInt(url.searchParams.get("limit") || "100", 10) || 100);
   if (query) {
@@ -3533,7 +3925,77 @@ async function handleAdminFeedback(req, res, url) {
       || String(item.page || "").toLowerCase().includes(query)
     );
   }
-  send(res, 200, { feedback });
+  send(res, 200, { feedback, emailEnabled: isMailConfigured(), admin: admin.username });
+}
+
+async function handleAdminFeedbackReply(req, res) {
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  const feedbackId = String(body.feedbackId || "").trim();
+  const replyMessage = String(body.replyMessage || "").trim();
+  if (!feedbackId) return send(res, 422, { error: "Feedback ID is required." });
+  if (!replyMessage) return send(res, 422, { error: "Reply message is required." });
+  if (replyMessage.length > 4000) return send(res, 422, { error: "Reply message is too long." });
+
+  const feedback = listFeedbackMessages(500).find(item => item.id === feedbackId);
+  if (!feedback) return send(res, 404, { error: "Feedback not found." });
+
+  const delivery = await sendFeedbackReplyEmail(feedback, replyMessage);
+  const updated = updateFeedbackMessage(feedbackId, {
+    reply: {
+      message: replyMessage,
+      repliedAt: nowIso(),
+      repliedBy: admin.username,
+      emailSent: delivery.emailSent,
+      emailError: delivery.emailError,
+      deliveredTo: delivery.deliveredTo
+    }
+  });
+  send(res, 200, {
+    ok: true,
+    feedback: updated,
+    reply: updated?.reply || null
+  });
+}
+
+async function handleAdminUsers(req, res, url) {
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  const query = String(url.searchParams.get("q") || "").trim();
+  const users = await listAdminUsers(query, 200);
+  send(res, 200, {
+    users,
+    storageMode: useSupabase ? "supabase" : "local",
+    admin: admin.username
+  });
+}
+
+async function handleAdminUserDetail(req, res, url) {
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  const userId = String(url.searchParams.get("user") || "").trim();
+  if (!userId) return send(res, 422, { error: "User ID is required." });
+  const detail = await getAdminUserDetail(userId);
+  if (!detail) return send(res, 404, { error: "User account was not found." });
+  send(res, 200, { ...detail, admin: admin.username });
+}
+
+async function handleAdminUserDelete(req, res) {
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  const userId = String(body.userId || "").trim();
+  const confirmationEmail = String(body.confirmationEmail || "").trim();
+  if (!userId) return send(res, 422, { error: "User ID is required." });
+  const deleted = await deleteUserPermanently(userId, confirmationEmail);
+  send(res, 200, {
+    ok: true,
+    deleted,
+    message: `Account ${deleted.email} has been permanently deleted.`
+  });
 }
 
 async function handleAdminGuestOrders(req, res, url) {
@@ -3788,6 +4250,15 @@ async function handleRegister(req, res) {
 async function handleLogin(req, res) {
   const body = await readJsonBody(req, res);
   if (!body) return;
+  const email = normalizeEmail(body.email);
+  const loginAttemptKey = `${getClientAddress(req)}|${email || "unknown"}`;
+  const loginRetryAfterSeconds = getAttemptRetryAfterSeconds(failedLoginAttempts, loginAttemptKey, loginAttemptWindowSeconds);
+  if (loginRetryAfterSeconds > 0) {
+    return send(res, 429, {
+      error: `Too many login attempts. Please wait ${loginRetryAfterSeconds} seconds and try again.`,
+      authChallenge: createAuthChallenge()
+    });
+  }
   const authChallenge = validateAuthChallenge(body);
   if (!authChallenge.ok) {
     return send(res, authChallenge.status, {
@@ -3795,13 +4266,24 @@ async function handleLogin(req, res) {
       authChallenge: createAuthChallenge()
     });
   }
-  const email = normalizeEmail(body.email);
   const password = String(body.password || "");
   const user = await findUserByEmail(email);
   if (!user || !verifyPassword(password, user.passwordHash, user.passwordSalt)) {
+    const failedAttempt = registerFailedAttempt(failedLoginAttempts, loginAttemptKey, {
+      maxAttempts: maxLoginAttempts,
+      windowSeconds: loginAttemptWindowSeconds,
+      lockSeconds: loginLockSeconds
+    });
+    if (failedAttempt.blocked) {
+      return send(res, 429, {
+        error: `Too many login attempts. Please wait ${failedAttempt.retryAfterSeconds} seconds and try again.`,
+        authChallenge: createAuthChallenge()
+      });
+    }
     return send(res, 401, { error: "Incorrect email or password.", authChallenge: createAuthChallenge() });
   }
 
+  clearFailedAttempts(failedLoginAttempts, loginAttemptKey);
   const sessionToken = await createSession(user.id);
   send(res, 200, {
     user: publicUser(user),
@@ -4160,7 +4642,11 @@ http.createServer((req, res) => {
     if (req.method === "POST" && pathname === "/api/admin/login") return handleAdminLogin(req, res);
     if (req.method === "POST" && pathname === "/api/admin/logout") return handleAdminLogout(req, res);
     if (req.method === "GET" && pathname === "/api/admin/session") return handleAdminSession(req, res);
+    if (req.method === "GET" && pathname === "/api/admin/users") return handleAdminUsers(req, res, url);
+    if (req.method === "GET" && pathname === "/api/admin/users/detail") return handleAdminUserDetail(req, res, url);
+    if (req.method === "POST" && pathname === "/api/admin/users/delete") return handleAdminUserDelete(req, res);
     if (req.method === "GET" && pathname === "/api/admin/feedback") return handleAdminFeedback(req, res, url);
+    if (req.method === "POST" && pathname === "/api/admin/feedback/reply") return handleAdminFeedbackReply(req, res);
     if (req.method === "GET" && pathname === "/api/admin/member-plans") return handleAdminMemberPlans(req, res);
     if (req.method === "POST" && pathname === "/api/admin/member-plans") return handleAdminMemberPlansSave(req, res);
     if (req.method === "GET" && pathname === "/api/admin/guest-orders") return handleAdminGuestOrders(req, res, url);

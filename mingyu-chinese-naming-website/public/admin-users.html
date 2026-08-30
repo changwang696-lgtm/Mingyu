@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>用户管理后台 | Mingyu</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin.css?v=20260830-admin-users" />
+</head>
+<body>
+  <main class="admin-shell">
+    <div class="admin-wrap">
+      <header class="admin-topbar">
+        <div>
+          <a class="brand" href="/"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
+          <p class="admin-muted" id="adminSessionText">正在检查后台登录状态...</p>
+        </div>
+        <div class="admin-topbar-actions">
+          <a class="admin-link" href="/admin-orders.html">游客订单后台</a>
+          <a class="admin-link" href="/admin-plans.html">会员套餐管理</a>
+          <a class="admin-link" href="/admin-feedback.html">大师留言</a>
+          <button class="admin-ghost" type="button" id="adminLogoutBtn">退出登录</button>
+        </div>
+      </header>
+
+      <section class="admin-panel admin-filters">
+        <div class="admin-field admin-field-grow">
+          <span>搜索用户</span>
+          <input id="searchInput" type="search" placeholder="邮箱 / 昵称 / 会员状态" />
+        </div>
+        <button class="admin-primary" type="button" id="refreshUsersBtn">刷新清单</button>
+      </section>
+
+      <p class="admin-message" id="usersMessage"></p>
+
+      <section class="admin-layout">
+        <div class="admin-panel">
+          <div class="admin-list-header">
+            <h1>用户管理</h1>
+            <strong id="usersCount">0</strong>
+          </div>
+          <div class="admin-order-list" id="usersList"></div>
+        </div>
+
+        <aside class="admin-panel admin-detail-panel">
+          <div class="admin-list-header">
+            <h2>用户详情</h2>
+            <span class="admin-muted" id="storageModeText">-</span>
+          </div>
+          <div id="userDetailEmpty" class="admin-empty">请先从左侧选择一个用户。</div>
+          <div id="userDetailBox" hidden>
+            <div class="admin-detail-grid" id="userDetailMeta"></div>
+
+            <section class="admin-subpanel">
+              <h3>关联数据概览</h3>
+              <div class="admin-chip-grid" id="userCountsGrid"></div>
+            </section>
+
+            <section class="admin-subpanel">
+              <h3>最近生成记录</h3>
+              <div class="admin-related-list" id="userReportsList"></div>
+            </section>
+
+            <section class="admin-subpanel">
+              <h3>最近会员订单</h3>
+              <div class="admin-related-list" id="userMemberOrdersList"></div>
+            </section>
+
+            <section class="admin-subpanel">
+              <h3>旧游客订单</h3>
+              <div class="admin-related-list" id="userGuestOrdersList"></div>
+            </section>
+
+            <section class="admin-subpanel">
+              <h3>大师留言</h3>
+              <div class="admin-related-list" id="userFeedbackList"></div>
+            </section>
+
+            <section class="admin-subpanel admin-danger-panel">
+              <div class="admin-list-header">
+                <h3>永久删除用户</h3>
+                <span class="admin-danger-text">此操作不可恢复</span>
+              </div>
+              <p class="admin-muted" id="deleteWarningText">删除后会清理该用户的账号、会话、会员订单、生成记录、留言，以及关联旧游客订单。</p>
+              <form id="deleteUserForm" class="admin-form">
+                <label class="admin-field">
+                  <span>输入该用户邮箱以确认删除</span>
+                  <input id="deleteConfirmInput" type="text" autocomplete="off" placeholder="请准确输入邮箱" />
+                </label>
+                <button class="admin-danger-btn" id="deleteUserBtn" type="submit" disabled>永久删除这个用户</button>
+              </form>
+            </section>
+          </div>
+        </aside>
+      </section>
+    </div>
+  </main>
+  <script src="/admin-users.js?v=20260830-admin-users"></script>
+</body>
+</html>

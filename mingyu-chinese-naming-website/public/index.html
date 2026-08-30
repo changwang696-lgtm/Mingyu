@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="AI-powered Chinese naming reports rooted in language, symbolism, and traditional culture, with guest order recovery and email delivery." />
+  <meta name="description" content="AI-powered Chinese naming reports rooted in language, symbolism, and traditional culture, with member sign-in, PayPal checkout, and saved order recovery." />
   <title>名屿 Mingyu · Chinese Naming Studio</title>
   <link rel="stylesheet" href="/styles.css?v=20260822-register-fix" />
   <link rel="stylesheet" href="/theme.css?v=20260828-combined-profile-panel" />
@@ -26,7 +26,7 @@
       <div class="hero-copy">
         <p class="eyebrow" data-i18n="eyebrow">以字为舟 · 渡见东方</p>
         <h1><span data-i18n="heroA">一个名字，</span><br><em data-i18n="heroB">一生的东方寓意</em></h1>
-        <p data-i18n="heroBody">从你的原名、出生时刻与个性出发，获得由 AI 驱动的中文起名建议、文化解读，以及支持游客订单找回的付费报告服务。</p>
+        <p data-i18n="heroBody">从你的原名、出生时刻与个性出发，获得由 AI 驱动的中文起名建议、文化解读，以及面向注册会员的付费起名报告服务。</p>
         <a class="primary" href="#ritual"><span data-i18n="begin">开始寻名</span><b>↓</b></a>
       </div>
       <div class="hero-side"><span>天 地 人</span><i></i><small>NAME · SOUND · MEANING</small></div>
@@ -56,7 +56,7 @@
     </section>
 
     <section class="ritual" id="ritual">
-      <div class="form-heading"><p class="section-no">贰 / 02</p><h2 data-i18n="formTitle">告诉我们，你是谁</h2><p data-i18n="formSub">为支持游客订单交付与找回，我们会保存本次付款所需信息。若有顾虑，可只输入您的姓氏，生成效果仍约有 90%。</p></div>
+      <div class="form-heading"><p class="section-no">贰 / 02</p><h2 data-i18n="formTitle">告诉我们，你是谁</h2><p data-i18n="formSub">我们会保存本次付款交付、结果恢复与售后支持所需的信息。若有顾虑，可只输入您的姓氏，生成效果仍约有 90%。</p></div>
       <div class="auth-entry" aria-label="Member access">
         <a class="auth-entry-link primary-auth" href="/account.html#registerForm">立即注册</a>
         <a class="auth-entry-link secondary-auth" href="/account.html#loginForm">会员登录</a>
@@ -98,19 +98,19 @@
           </article>
         </div>
         <div class="guest-checkout-note" id="guestCheckoutNote" hidden>
-          <strong data-i18n="guestOrderSavedTitle">游客订单已保存</strong>
+          <strong data-i18n="guestOrderSavedTitle">支付记录已保存</strong>
               <p id="guestOrderSavedBody">付款完成后会自动回到本站，随后恢复并保存你的结果。若你取消支付，订单仍会保留，方便稍后继续或找回。</p>
           <div class="guest-checkout-actions">
             <a class="text-link" id="guestSuccessLink" href="/checkout-success.html">支付完成后继续</a>
-            <a class="text-link" id="findOrderLink" href="/order-lookup.html" data-i18n="findOrderLink">找回我的订单</a>
+            <a class="text-link" id="findOrderLink" href="/order-lookup.html" data-i18n="findOrderLink">找回我的服务订单</a>
           </div>
         </div>
-            <p class="paypal-hosted-note" id="paypalHostedNote">当前会先创建游客订单，再跳转到 PayPal 官方安全支付页。你可以使用 PayPal 账户登录付款，或选择支持的银行卡支付。你在本站填写的邮箱仅用于接收结果邮件，与 PayPal 登录邮箱可以不同。若你取消支付，订单也会保留，方便稍后继续或找回。</p>
+            <p class="paypal-hosted-note" id="paypalHostedNote">当前仅限已登录会员继续支付。系统会先保存这次服务订单，再跳转到 PayPal 官方安全支付页；完成付款后可回到本站继续交付，若中途关闭页面，也可以稍后凭邮箱和订单号找回。</p>
       </section>
       <div class="privacy"><span>✦</span><p><strong data-i18n="humanTitle">隐私优先 · 仅为交付保存必要信息</strong><br><small data-i18n="humanBody">我们会保存交付结果、找回订单与处理争议所需的信息；如有顾虑可只输入姓氏。结果为传统文化创意解读，不构成命运预测或专业建议。</small></p></div>
       <div class="launch-note">
         <strong data-i18n="launchTitle">当前站点状态</strong>
-        <p data-i18n="launchBody">当前站点以一次性游客订单为主，销售个性化数字起名结果。付款由 PayPal 处理，结果在站内交付，并支持邮件和订单找回。</p>
+        <p data-i18n="launchBody">当前站点已切换为会员优先流程：先注册或登录，再使用 welcome credits、购买套餐，或通过 PayPal 完成单次起名服务支付。</p>
       </div>
     </section>
 
@@ -169,11 +169,14 @@
           <a href="/cancellation.html" target="_blank" rel="noreferrer">Cancellation Policy</a>
           <a href="/order-lookup.html">Find My Order</a>
     </nav>
-    <button class="footer-feedback-trigger" id="feedbackTrigger" type="button">大师留言 / Leave a note</button>
+    <div class="footer-feedback-wrap">
+      <button class="footer-feedback-trigger" id="feedbackTrigger" type="button">大师留言</button>
+      <small>会员专属建议通道 / Member-only feedback</small>
+    </div>
     <small>© 2026 Mingyu Naming Studio</small>
   </footer>
 
-      <dialog id="feedbackDialog" class="feedback-dialog"><button class="close" aria-label="Close">×</button><p class="eyebrow">MASTER NOTE · 大师留言</p><h2>请留下你宝贵的建议或者邮箱<br /><small>Leave your suggestion or contact email</small></h2><form id="feedbackForm" class="feedback-form" novalidate><label><span>邮箱（选填） / Email (optional)</span><input id="feedbackEmail" name="email" type="email" placeholder="you@example.com" autocomplete="email" /></label><label><span>留言内容 / Message</span><textarea id="feedbackMessage" name="message" rows="5" maxlength="2000" placeholder="请留下你的建议、问题，或希望我们联系你的方式 / Share your suggestion, issue, or how we can reach you"></textarea></label><p class="feedback-status" id="feedbackStatus" role="status" aria-live="polite"></p><button class="submit" id="feedbackSubmitBtn" type="submit"><span>提交留言 / Send</span><b>→</b></button></form></dialog>
+      <dialog id="feedbackDialog" class="feedback-dialog"><button class="close" aria-label="Close">×</button><p class="eyebrow">MASTER NOTE · 大师留言</p><h2>会员建议通道<br /><small>Please leave your suggestion</small></h2><p class="feedback-intro">仅注册会员可留言，我们会优先通过你的会员邮箱回复。<br />Only signed-in members can leave a note. We will reply to your member email.</p><form id="feedbackForm" class="feedback-form" novalidate><label><span>会员邮箱 / Member email</span><input id="feedbackEmail" name="email" type="email" autocomplete="email" readonly /></label><label><span>留言内容 / Message</span><textarea id="feedbackMessage" name="message" rows="5" maxlength="2000" placeholder="请留下你的建议、问题，或希望我们协助你的内容 / Share your suggestion or what you need help with"></textarea></label><p class="feedback-status" id="feedbackStatus" role="status" aria-live="polite"></p><button class="submit" id="feedbackSubmitBtn" type="submit"><span>提交留言 / Send</span><b>→</b></button></form></dialog>
   <p class="home-status-banner" id="homeStatusBanner" role="status" aria-live="polite" hidden></p>
       <dialog id="payment"><button class="close" aria-label="Close">×</button><p class="eyebrow" id="paymentEyebrow">MINGYU EDITION</p><h2 id="paymentTitle">确认生成简约版</h2><div class="preview-sheet"><span>名屿</span><b>名</b><small>CHINESE NAMING EDITION</small></div><ul id="paymentBenefits"></ul><div id="paypalButtons" hidden></div><div class="paypal-hosted-dialog" id="hostedCheckout" hidden><a class="primary paypal-hosted-link" id="dialogHostedLink" href="#">PayPal Checkout</a></div><button id="confirmPurchase" class="submit"><span id="confirmPurchaseText">支付并生成</span><b>→</b></button><small id="paymentNote" data-i18n="demoNote">支付将由 PayPal 处理；付款成功后，结果会在本站交付。</small><small class="legal-note">By purchasing, you agree to our <a href="/delivery.html" target="_blank" rel="noreferrer">Delivery</a>, <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>, <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>, <a href="/refund.html" target="_blank" rel="noreferrer">Refund Policy</a>, and <a href="/cancellation.html" target="_blank" rel="noreferrer">Cancellation Policy</a>.</small></dialog>
   <div class="loading" id="loading" hidden role="status" aria-live="polite"><div class="loader-seal">名</div><p data-i18n="loading">正在研读你的名字与时辰...</p></div>

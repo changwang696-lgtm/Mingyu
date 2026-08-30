@@ -2,7 +2,7 @@ const translations = {
   en: {
     navPlans: "Packages", navNaming: "Naming", navCulture: "Zodiac Culture", navCraft: "Crafts", accountLinkGuest: "Sign in",
     eyebrow: "Words become a vessel · Meet the East", heroA: "One name,", heroB: "a lifetime of meaning",
-    heroBody: "From your original name, birth moment and personality, discover AI-powered Chinese naming suggestions, cultural readings, and paid naming reports with guest order recovery.",
+    heroBody: "From your original name, birth moment and personality, discover AI-powered Chinese naming suggestions, cultural readings, and paid naming reports designed for signed-in members.",
     begin: "Find my name", introTitle: "Not a translation, but a new way to see you.",
     introBody: "A Chinese name is a choice of sound, form and meaning. Starting from your identity, we interpret zodiac symbolism and character traditions to create names that are thoughtful, explained and usable in real life.",
     pricingTitle: "Transparent one-time digital naming editions",
@@ -15,8 +15,8 @@ const translations = {
     studioPoint1: "Complete bilingual interpretations for each suggested name",
     studioPoint2: "Zodiac traits, symbolism, stems, branches, and birth-hour reading",
     studioPoint3: "Full result page, PDF download, and email recovery",
-    creditType: "DELIVERY & RECOVERY", creditTitle: "Guest order protection", oneTime: "",
-    creditPoint1: "A guest order is created before you leave for PayPal",
+    creditType: "DELIVERY & RECOVERY", creditTitle: "Order protection", oneTime: "",
+    creditPoint1: "Your payment record is saved before you leave for PayPal",
     creditPoint2: "After payment, you return to the site and the result is restored automatically",
     creditPoint3: "Order lookup and support remain available if the page is lost",
     billingTitle: "What buyers and PayPal reviewers can verify before payment",
@@ -28,7 +28,7 @@ const translations = {
     flowTitle: "How payment and delivery work",
     flowBody: "The buyer completes the form, pays through PayPal, returns to Mingyu, and can then view the result, download the PDF, or reopen the order from email.",
     flowStep1Title: "Fill the form", flowStep1Body: "The buyer enters name details and a delivery email used for order recovery and support.",
-    flowStep2Title: "Create guest order", flowStep2Body: "The site saves a pending guest order before redirecting the buyer to the official PayPal page.",
+    flowStep2Title: "Save payment record", flowStep2Body: "The site saves the pending service order before redirecting the signed-in member to the official PayPal page.",
     flowStep3Title: "Pay on PayPal", flowStep3Body: "PayPal securely processes the payment. If the buyer cancels, PayPal returns them to the site and the order remains saved.",
     flowStep4Title: "Receive digital delivery", flowStep4Body: "After payment, the site restores the result, offers PDF download, sends an email, and provides an order lookup page.",
     memberStripEyebrow: "MEMBER ACCESS",
@@ -38,10 +38,10 @@ const translations = {
     memberStripLoggedInBody: "Signed in as {name}. You have {credits} credits available and can generate directly with member balance.",
     simpleCreditCaption: "Use 1 credit when signed in",
     completeCreditCaption: "Use 3 credits when signed in",
-    memberPaymentFallback: "Not enough credits for this request. Continue with PayPal checkout instead.",
+    memberPaymentFallback: "Not enough credits for this request. Continue with PayPal checkout for this one-time service.",
     creditUsed: "{count} credit used. {remaining} credits remaining.",
     accountLinkMember: "My account",
-    formTitle: "Tell us who you are", formSub: "For guest checkout recovery, we store the information required to deliver and reopen your paid result. If you prefer, enter only your surname; results remain about 90% as effective.",
+    formTitle: "Tell us who you are", formSub: "We store the information required to deliver your paid result, reopen it later, and support you if anything goes wrong. If you prefer, enter only your surname; results remain about 90% as effective.",
     nameLabel: "Your current name", nameHint: "Any language is welcome. We consider pronunciation and context.",
     deliveryEmailLabel: "Delivery email",
     deliveryEmailHint: "Used to recover your order, reopen your result, and receive support if anything goes wrong.",
@@ -63,24 +63,24 @@ const translations = {
     craftTitle: "An Eastern gift bearing your name to admire", craftSub: "Objects made by artisans, turning your name into a keepsake you can touch.",
     product1: "Custom name seal", product2: "Silk round fan", product3: "Name calligraphy scroll",
     launchTitle: "Current site status",
-    launchBody: "The site currently focuses on one-time guest orders for personalized digital naming results. Payment is handled by PayPal, and delivery happens on-site with email and order recovery support.",
+    launchBody: "The site now uses a member-first flow: sign in first, then use welcome credits, buy plans, or complete one-time naming payment through PayPal.",
     demoNote: "Payment is handled by PayPal. Your result will be delivered on this site after successful payment.", loading: "Reading the sound, meaning and moment of your name...",
          paypalInlineTitle: "Pay with PayPal directly",
          paypalInlineBody: "Use PayPal directly to pay and generate your result.",
     paypalValidation: "Please complete the required form fields before starting PayPal checkout.",
-         paypalHostedNote: "After your order is prepared, you will be redirected to the official PayPal payment page. You can pay with a PayPal account or an eligible bank card. The email entered on this site is only used to deliver your result and can differ from your PayPal login email. If you cancel payment, the order will still be kept for later recovery.",
-              paypalHostedDialogNote: "You will be redirected to the official PayPal payment page. After payment, return to Mingyu and continue delivery from the saved order page. If you cancel payment, the order will remain saved for later recovery.",
+         paypalHostedNote: "Signed-in members can continue to the official PayPal payment page. We save this service order first so your result can be restored after payment, and you can still recover it later if you close the page.",
+              paypalHostedDialogNote: "You will be redirected to the official PayPal payment page. After payment, return to Mingyu and continue delivery from the saved service order page. If you cancel payment, the order will remain saved for later recovery.",
     paypalHostedOpen: "Open PayPal checkout",
     paypalHostedOpened: "Redirecting to the PayPal checkout page...",
-    guestOrderSavedTitle: "Guest order saved",
-             guestOrderSavedBody: "Order {orderId} is ready. Complete payment on PayPal, then return to the saved order page to continue delivery. If you close the page, you can still recover this order later by email and order ID.",
-    findOrderLink: "Find my order",
-    guestOrderCreateFailed: "We could not create your guest order. Please try again.",
+    guestOrderSavedTitle: "Service order saved",
+             guestOrderSavedBody: "Order {orderId} is ready. Complete payment on PayPal, then return to the saved order page to continue delivery. If you close the page, you can still recover it later by email and order ID.",
+    findOrderLink: "Find my service order",
+    guestOrderCreateFailed: "We could not prepare your payment record. Please try again.",
     guestOrderRecovered: "Your saved order result has been restored."
   },
   zh: {
     navPlans: "服务与交付", navNaming: "起名", navCulture: "生肖文化", navCraft: "东方好物", accountLinkGuest: "注册 / 登录", eyebrow: "以字为舟 · 渡见东方",
-    heroA: "一个名字，", heroB: "一生的东方寓意", heroBody: "从你的原名、出生时刻与个性出发，获得由 AI 驱动的中文起名建议、文化解读，以及支持游客订单找回的付费报告服务。",
+    heroA: "一个名字，", heroB: "一生的东方寓意", heroBody: "从你的原名、出生时刻与个性出发，获得由 AI 驱动的中文起名建议、文化解读，以及面向注册会员的付费起名报告服务。",
     begin: "开始寻名", introTitle: "不是翻译名字，而是重新认识你。",
     introBody: "中文名字是声音、字形与意义的共同选择。我们以你的身份为起点，参考生肖的文化意象与汉字传统，提供有出处、有解释、可被真实使用的名字。",
     pricingTitle: "清晰透明的一次性数字起名服务",
@@ -93,8 +93,8 @@ const translations = {
     studioPoint1: "每个名字均附带完整中英双语释义",
     studioPoint2: "包含生肖性格、象征寓意、干支五行与出生时辰解读",
     studioPoint3: "提供完整结果页、PDF 下载与邮件找回",
-    creditType: "交付与找回", creditTitle: "游客订单保护", oneTime: "",
-    creditPoint1: "跳转 PayPal 前会先创建游客订单",
+    creditType: "交付与找回", creditTitle: "订单保护", oneTime: "",
+    creditPoint1: "跳转 PayPal 前会先保存本次支付记录",
     creditPoint2: "付款完成后会自动回到本站恢复结果",
     creditPoint3: "即使页面关闭，也能通过订单找回页和客服继续处理",
     billingTitle: "买家与 PayPal 审核都能先看到的关键信息",
@@ -106,7 +106,7 @@ const translations = {
     flowTitle: "付款与交付如何完成",
     flowBody: "买家先填写资料，再通过 PayPal 付款，返回名屿后即可查看结果、下载 PDF，或通过邮件重新打开订单。",
     flowStep1Title: "填写资料", flowStep1Body: "买家填写姓名信息与交付邮箱。这个邮箱用于订单找回、邮件交付和客服支持。",
-    flowStep2Title: "创建游客订单", flowStep2Body: "跳转到 PayPal 之前，网站会先保存一条待支付游客订单。",
+    flowStep2Title: "保存支付记录", flowStep2Body: "跳转到 PayPal 之前，网站会先保存一条待支付的服务订单记录。",
     flowStep3Title: "在 PayPal 付款", flowStep3Body: "PayPal 安全处理付款。若买家取消支付，PayPal 会带其返回本站，订单仍然保留。",
     flowStep4Title: "接收数字交付", flowStep4Body: "付款完成后，网站恢复结果、提供 PDF 下载、发送邮件，并支持通过订单找回页再次打开。",
     memberStripEyebrow: "会员入口",
@@ -116,10 +116,10 @@ const translations = {
     memberStripLoggedInBody: "已登录为 {name}，当前剩余 {credits} credits，可直接使用会员余额生成结果。",
     simpleCreditCaption: "登录后可使用 1 credit",
     completeCreditCaption: "登录后可使用 3 credits",
-    memberPaymentFallback: "当前 credits 不足，本次将继续使用 PayPal 结账。",
+    memberPaymentFallback: "当前 credits 不足，本次将转到 PayPal 完成单次服务支付。",
     creditUsed: "已消耗 {count} credit，当前剩余 {remaining} credits。",
     accountLinkMember: "会员中心",
-    formTitle: "告诉我们，你是谁", formSub: "为支持游客订单交付与找回，我们会保存本次付款所需信息。若有顾虑，可只输入您的姓氏，生成效果仍约有 90%。",
+    formTitle: "告诉我们，你是谁", formSub: "我们会保存本次付款交付、结果恢复与售后支持所需的信息。若有顾虑，可只输入您的姓氏，生成效果仍约有 90%。",
     nameLabel: "你现在的姓名",
     nameHint: "支持任何语言，我们会理解读音与文化背景", genderLabel: "性别表达", female: "女性", male: "男性", neutral: "中性 / 不限",
     deliveryEmailLabel: "交付邮箱",
@@ -139,19 +139,19 @@ const translations = {
     craftTitle: "一件带着名字的东方礼物欣赏", craftSub: "来自手艺人的小物，为名字留下可以触摸的纪念。",
     product1: "定制姓名印章", product2: "缂丝团扇", product3: "姓名书法卷",
     launchTitle: "当前站点状态",
-    launchBody: "当前站点以一次性游客订单为主，销售个性化数字起名结果。付款由 PayPal 处理，结果在站内交付，并支持邮件和订单找回。",
+    launchBody: "当前站点已切换为会员优先流程：先注册或登录，再使用 welcome credits、购买套餐，或通过 PayPal 完成单次起名服务支付。",
     demoNote: "支付将由 PayPal 处理；付款成功后，结果会在本站交付。", loading: "正在研读你的名字与时辰...",
          paypalInlineTitle: "使用 PayPal 直接付款",
          paypalInlineBody: "可直接使用 PayPal 支付并生成结果。",
     paypalValidation: "请先完整填写必填信息，再使用 PayPal 付款。",
-             paypalHostedNote: "当前会先创建游客订单，再跳转到 PayPal 官方安全支付页。你可以使用 PayPal 账户登录付款，或选择支持的银行卡支付。你在本站填写的邮箱仅用于接收结果邮件，与 PayPal 登录邮箱可以不同。若中途关闭页面，也可以凭邮箱和订单号稍后找回。",
-             paypalHostedDialogNote: "当前将跳转到 PayPal 官方安全支付页进行付款。付款完成后，请返回名屿并通过已保存的订单继续交付；若你取消支付，订单也会保留，方便稍后找回。",
+             paypalHostedNote: "当前仅限已登录会员继续支付。系统会先保存这次服务订单，再跳转到 PayPal 官方安全支付页；完成付款后可回到本站继续交付，若中途关闭页面，也可以稍后凭邮箱和订单号找回。",
+             paypalHostedDialogNote: "当前将跳转到 PayPal 官方安全支付页进行付款。付款完成后，请返回名屿并通过已保存的服务订单继续交付；若你取消支付，订单也会保留，方便稍后找回。",
     paypalHostedOpen: "打开 PayPal 付款页",
     paypalHostedOpened: "正在跳转到 PayPal 付款页...",
-    guestOrderSavedTitle: "游客订单已保存",
+    guestOrderSavedTitle: "支付记录已保存",
              guestOrderSavedBody: "订单号 {orderId} 已创建。请在 PayPal 完成付款后返回本站继续交付；若关闭页面，也可以稍后通过邮箱和订单号找回。",
-    findOrderLink: "找回我的订单",
-    guestOrderCreateFailed: "创建游客订单失败，请稍后重试。",
+    findOrderLink: "找回我的服务订单",
+    guestOrderCreateFailed: "创建支付记录失败，请稍后重试。",
     guestOrderRecovered: "已为你恢复已保存的订单结果。"
   }
 };
@@ -230,6 +230,12 @@ function showHomeStatus(message, isError = false) {
   }, 2200);
 }
 
+function showFlowError(message) {
+  const text = String(message || "").trim() || (lang === "zh" ? "当前操作失败，请稍后重试。" : "This action failed. Please try again.");
+  if ($("#formMessage")) $("#formMessage").textContent = text;
+  showHomeStatus(text, true);
+}
+
 function t(key, replacements = {}) {
   const template = translations[lang][key] || "";
   return Object.entries(replacements).reduce((value, [token, replacement]) => value.replaceAll(`{${token}}`, replacement), template);
@@ -246,6 +252,8 @@ function updateMemberExperience() {
   const paypalSimpleLabel = $("#paypalSimpleLabel");
   const paypalCompleteLabel = $("#paypalCompleteLabel");
   const planButtons = document.querySelectorAll("#nameForm .plan-button[name=\"tier\"]");
+  const feedbackTrigger = $("#feedbackTrigger");
+  const feedbackEmail = $("#feedbackEmail");
 
   if (!simplePrice || !completePrice || !simpleCaption || !completeCaption) return;
 
@@ -275,6 +283,11 @@ function updateMemberExperience() {
       button.setAttribute("aria-disabled", "false");
       button.title = "";
     });
+    if (feedbackTrigger) {
+      feedbackTrigger.setAttribute("aria-disabled", "false");
+      feedbackTrigger.title = "";
+    }
+    if (feedbackEmail) feedbackEmail.value = sessionState.user.email || "";
   } else {
     accountLink.textContent = translations[lang].accountLinkGuest;
     memberStripText.textContent = translations[lang].memberStripGuestBody;
@@ -287,6 +300,11 @@ function updateMemberExperience() {
       button.setAttribute("aria-disabled", "true");
       button.title = lang === "zh" ? "请先注册或登录会员" : "Please sign in first";
     });
+    if (feedbackTrigger) {
+      feedbackTrigger.setAttribute("aria-disabled", "true");
+      feedbackTrigger.title = lang === "zh" ? "请先注册或登录会员后再留言" : "Please sign in before leaving a note";
+    }
+    if (feedbackEmail) feedbackEmail.value = "";
   }
   if (paypalSimpleLabel) paypalSimpleLabel.textContent = `${getEditionLabel("simple")} · ${getServicePriceText("simple")}`;
   if (paypalCompleteLabel) paypalCompleteLabel.textContent = `${getEditionLabel("complete")} · ${getServicePriceText("complete")}`;
@@ -452,7 +470,7 @@ $("#confirmPurchase").onclick = async () => {
     $("#result").hidden = false;
     $("#result").scrollIntoView({ behavior: "smooth" });
   } catch (error) {
-    alert((lang === "zh" ? "生成失败：" : "Generation failed: ") + error.message);
+    showFlowError((lang === "zh" ? "生成失败：" : "Generation failed: ") + error.message);
   } finally {
     $("#loading").hidden = true;
   }
@@ -589,7 +607,7 @@ function showGuestCheckoutNotice(order) {
 
 async function openHostedCheckout(tier) {
   const preparedBody = collectFormBody(tier, true);
-  $("#formMessage").textContent = lang === "zh" ? "正在创建游客订单..." : "Preparing your guest order...";
+  $("#formMessage").textContent = lang === "zh" ? "正在创建支付记录..." : "Preparing your payment record...";
   try {
     const order = await createGuestOrderForTier(tier, preparedBody);
     $("#formMessage").textContent = translations[lang].paypalHostedOpened;
@@ -702,7 +720,7 @@ async function startMemberGeneration() {
     $("#result").hidden = false;
     $("#result").scrollIntoView({ behavior: "smooth" });
   } catch (error) {
-    alert((lang === "zh" ? "生成失败：" : "Generation failed: ") + error.message);
+    showFlowError((lang === "zh" ? "生成失败：" : "Generation failed: ") + error.message);
   } finally {
     $("#loading").hidden = true;
   }
@@ -730,14 +748,14 @@ async function renderPayPalButtons() {
         try {
           await capturePayPalOrder(data.orderID, pendingTier);
         } catch (error) {
-          alert((lang === "zh" ? "支付后生成失败：" : "Generation failed after payment: ") + error.message);
+          showFlowError((lang === "zh" ? "支付后生成失败：" : "Generation failed after payment: ") + error.message);
         }
       },
       onCancel: () => {
         $("#paymentNote").textContent = lang === "zh" ? "你已取消 PayPal 支付，可再次点击完成购买。" : "You cancelled the PayPal checkout. You can try again when ready.";
       },
       onError: error => {
-        alert((lang === "zh" ? "PayPal 支付失败：" : "PayPal checkout failed: ") + error.message);
+        showFlowError((lang === "zh" ? "PayPal 支付失败：" : "PayPal checkout failed: ") + error.message);
       }
     });
     await paypalButtonsInstance.render("#paypalButtons");
@@ -764,11 +782,11 @@ async function renderInlinePayPalButtons() {
         try {
           await capturePayPalOrder(data.orderID, tier);
         } catch (error) {
-          alert((lang === "zh" ? "支付后生成失败：" : "Generation failed after payment: ") + error.message);
+          showFlowError((lang === "zh" ? "支付后生成失败：" : "Generation failed after payment: ") + error.message);
         }
       },
       onError: error => {
-        alert((lang === "zh" ? "PayPal 支付失败：" : "PayPal checkout failed: ") + error.message);
+        showFlowError((lang === "zh" ? "PayPal 支付失败：" : "PayPal checkout failed: ") + error.message);
       },
       onCancel: () => {
         $("#formMessage").textContent = lang === "zh" ? "你已取消 PayPal 支付，可重新发起付款。" : "You cancelled PayPal checkout. You can start again when ready.";
@@ -990,6 +1008,13 @@ restoreMemberReportFromUrl();
 
 $("#feedbackTrigger")?.addEventListener("click", () => {
   if (!feedbackDialog) return;
+  if (!sessionState.loggedIn) {
+    showHomeStatus(lang === "zh" ? "请先注册或登录会员后再留言" : "Please sign in before leaving a note", true);
+    setTimeout(() => {
+      window.location.assign(`/account.html?next=${encodeURIComponent("/")}`);
+    }, 500);
+    return;
+  }
   $("#feedbackStatus").textContent = "";
   try {
     feedbackDialog.showModal();
@@ -1000,10 +1025,15 @@ $("#feedbackTrigger")?.addEventListener("click", () => {
 
 $("#feedbackForm")?.addEventListener("submit", async event => {
   event.preventDefault();
-  const email = String($("#feedbackEmail")?.value || "").trim();
+  const form = event.currentTarget;
   const message = String($("#feedbackMessage")?.value || "").trim();
   const status = $("#feedbackStatus");
   const submitBtn = $("#feedbackSubmitBtn");
+  if (!sessionState.loggedIn) {
+    if (status) status.textContent = lang === "zh" ? "请先注册或登录会员后再留言。" : "Please sign in before leaving a note.";
+    showHomeStatus(lang === "zh" ? "请先注册或登录会员后再留言" : "Please sign in before leaving a note", true);
+    return;
+  }
   if (!message) {
     if (status) status.textContent = lang === "zh" ? "请先填写留言内容。" : "Please enter your message.";
     return;
@@ -1014,12 +1044,15 @@ $("#feedbackForm")?.addEventListener("submit", async event => {
     const response = await fetch("/api/feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, message, page: window.location.pathname })
+      body: JSON.stringify({ message, page: window.location.pathname })
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || (lang === "zh" ? "提交失败，请稍后重试。" : "Failed to send feedback."));
     if (status) status.textContent = lang === "zh" ? "留言已提交，感谢你的建议。" : "Feedback sent. Thank you.";
-    event.currentTarget.reset();
+    form?.reset();
+    if ($("#feedbackEmail") && sessionState.loggedIn && sessionState.user) {
+      $("#feedbackEmail").value = sessionState.user.email || "";
+    }
     showHomeStatus(lang === "zh" ? "留言已提交，感谢你的建议" : "Feedback sent. Thank you.");
     setTimeout(() => {
       if (feedbackDialog?.open) feedbackDialog.close();

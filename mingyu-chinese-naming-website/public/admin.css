@@ -233,6 +233,10 @@
   margin: 12px 0 18px;
 }
 
+.admin-message[data-state="error"] {
+  color: #9e392b;
+}
+
 .admin-list-header {
   display: flex;
   justify-content: space-between;
@@ -335,6 +339,69 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font: 12px/1.7 Consolas, Monaco, monospace;
+}
+
+.admin-chip-grid,
+.admin-related-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-chip-grid {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.admin-chip,
+.admin-related-card {
+  padding: 16px 18px;
+  border: 1px solid rgba(48, 37, 29, .12);
+  border-radius: 16px;
+  background: rgba(255, 248, 233, .7);
+}
+
+.admin-chip strong,
+.admin-related-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #071c31;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.admin-related-card span,
+.admin-related-card small {
+  display: block;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+
+.admin-danger-panel {
+  border-color: rgba(158, 57, 43, .28);
+  background: linear-gradient(180deg, rgba(255, 248, 244, .96), rgba(255, 241, 237, .92));
+}
+
+.admin-danger-text {
+  color: #9e392b;
+}
+
+.admin-danger-btn {
+  min-height: 48px;
+  padding: 0 18px;
+  color: #fff7f4;
+  background: #9e392b;
+  border: 1px solid rgba(158, 57, 43, .75);
+  border-radius: 999px;
+  cursor: pointer;
+  font: 13px Arial, sans-serif;
+  letter-spacing: .7px;
+}
+
+.admin-primary:disabled,
+.admin-ghost:disabled,
+.admin-danger-btn:disabled {
+  opacity: .58;
+  cursor: not-allowed;
+  filter: grayscale(.14);
 }
 
 @media (max-width: 980px) {

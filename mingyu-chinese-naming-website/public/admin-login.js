@@ -7,6 +7,18 @@ async function checkAdminSession() {
   return data;
 }
 
+function normalizeAdminError(message) {
+  const text = String(message || "").trim();
+  if (!text) return "后台登录失败，请稍后重试。";
+  if (/Too many admin login attempts/i.test(text)) {
+    return "后台登录尝试次数过多，请稍后再试。";
+  }
+  if (/Incorrect admin username or password/i.test(text)) {
+    return "管理员账号或密码不正确。";
+  }
+  return text;
+}
+
 document.querySelector("#adminLoginForm").addEventListener("submit", async event => {
   event.preventDefault();
   const message = document.querySelector("#adminLoginMessage");
@@ -22,10 +34,10 @@ document.querySelector("#adminLoginForm").addEventListener("submit", async event
     if (!response.ok) throw new Error(data.error || "后台登录失败。");
     window.location.href = "/admin-orders.html";
   } catch (error) {
-    message.textContent = error.message;
+    message.textContent = normalizeAdminError(error.message);
   }
 });
 
 checkAdminSession().catch(error => {
-  document.querySelector("#adminLoginMessage").textContent = error.message;
+  document.querySelector("#adminLoginMessage").textContent = normalizeAdminError(error.message);
 });

@@ -419,6 +419,9 @@ function showLoginFieldError(fieldName, message) {
 function normalizeAuthError(message) {
   const text = String(message || "").trim();
   if (!text) return "请求失败，请稍后重试。";
+  if (/Too many login attempts/i.test(text)) {
+    return "登录尝试次数过多，请稍后再试。";
+  }
   if (/Please complete the human verification question/i.test(text)) {
     return "请先完成人机验证题目。";
   }
