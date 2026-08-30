@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>大师留言后台 | Mingyu</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin.css?v=20260830-feedback-admin" />
+</head>
+<body>
+  <main class="admin-shell">
+    <div class="admin-wrap">
+      <header class="admin-topbar">
+        <div>
+          <a class="brand" href="/"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
+          <p class="admin-muted" id="adminSessionText">正在检查后台登录状态...</p>
+        </div>
+        <div class="admin-topbar-actions">
+          <a class="admin-link" href="/admin-orders.html">游客订单后台</a>
+          <a class="admin-link" href="/admin-plans.html">会员套餐管理</a>
+          <button class="admin-ghost" type="button" id="adminLogoutBtn">退出登录</button>
+        </div>
+      </header>
+
+      <section class="admin-panel admin-filters">
+        <div class="admin-field admin-field-grow">
+          <span>搜索留言</span>
+          <input id="searchInput" type="search" placeholder="留言内容 / 邮箱 / 页面路径" />
+        </div>
+        <button class="admin-primary" type="button" id="refreshFeedbackBtn">刷新清单</button>
+      </section>
+
+      <p class="admin-message" id="feedbackMessage"></p>
+
+      <section class="admin-layout">
+        <div class="admin-panel">
+          <div class="admin-list-header">
+            <h1>大师留言</h1>
+            <strong id="feedbackCount">0</strong>
+          </div>
+          <div class="admin-order-list" id="feedbackList"></div>
+        </div>
+
+        <aside class="admin-panel admin-detail-panel">
+          <div class="admin-list-header">
+            <h2>留言详情</h2>
+          </div>
+          <div id="feedbackDetailEmpty" class="admin-empty">请先从左侧选择一条留言。</div>
+          <div id="feedbackDetailBox" hidden>
+            <div class="admin-detail-grid" id="feedbackDetailMeta"></div>
+            <section class="admin-subpanel">
+              <h3>留言内容</h3>
+              <pre id="feedbackBody"></pre>
+            </section>
+          </div>
+        </aside>
+      </section>
+    </div>
+  </main>
+  <script src="/admin-feedback.js?v=20260830-feedback-admin"></script>
+</body>
+</html>

@@ -177,7 +177,9 @@ let memberReportMeta = null;
 let lastRequestedTier = "simple";
 const $ = selector => document.querySelector(selector);
 const dialog = $("#payment");
+const feedbackDialog = $("#feedbackDialog");
 const creditCosts = { simple: 1, complete: 3 };
+let homeStatusTimer = null;
 const defaultServicePricing = {
   simple: { value: "2.99", label: "Simple Edition" },
   complete: { value: "9.90", label: "Complete Edition" }
@@ -214,6 +216,18 @@ function getEditionLabel(tier) {
 function getEditionBadgeText(tier) {
   const zhLabel = tier === "complete" ? "完整版" : "简约版";
   return `${zhLabel} / ${getEditionLabel(tier)} · ${getServicePriceText(tier)}`;
+}
+
+function showHomeStatus(message, isError = false) {
+  const banner = $("#homeStatusBanner");
+  if (!banner) return;
+  banner.hidden = false;
+  banner.textContent = message;
+  banner.dataset.state = isError ? "error" : "success";
+  clearTimeout(homeStatusTimer);
+  homeStatusTimer = setTimeout(() => {
+    banner.hidden = true;
+  }, 2200);
 }
 
 function t(key, replacements = {}) {
@@ -258,7 +272,6 @@ function updateMemberExperience() {
     simpleCaption.textContent = translations[lang].simpleCreditCaption;
     completeCaption.textContent = translations[lang].completeCreditCaption;
     planButtons.forEach(button => {
-      button.disabled = false;
       button.setAttribute("aria-disabled", "false");
       button.title = "";
     });
@@ -271,7 +284,6 @@ function updateMemberExperience() {
     simpleCaption.textContent = translations[lang].simpleNoPdf;
     completeCaption.textContent = translations[lang].completeWithPdf;
     planButtons.forEach(button => {
-      button.disabled = true;
       button.setAttribute("aria-disabled", "true");
       button.title = lang === "zh" ? "请先注册或登录会员" : "Please sign in first";
     });
@@ -311,7 +323,15 @@ function rememberRequestedTier(tier) {
 document.querySelectorAll("#nameForm .plan-button[name=\"tier\"]").forEach(button => {
   const remember = () => rememberRequestedTier(button.value);
   button.addEventListener("pointerdown", remember);
-  button.addEventListener("click", remember);
+  button.addEventListener("click", event => {
+    remember();
+    if (!sessionState.loggedIn) {
+      event.preventDefault();
+      event.stopPropagation();
+      $("#formMessage").textContent = lang === "zh" ? "请注册会员" : "Please sign in first";
+      showHomeStatus(lang === "zh" ? "请注册会员" : "Please sign in first", true);
+    }
+  });
   button.addEventListener("keydown", event => {
     if (event.key === "Enter" || event.key === " ") remember();
   });
@@ -895,6 +915,10 @@ $("#restart").onclick = () => {
 };
 dialog.querySelector(".close").onclick = () => resetTransientLayers();
 dialog.addEventListener("cancel", () => resetTransientLayers());
+if (feedbackDialog) {
+  feedbackDialog.querySelector(".close").onclick = () => feedbackDialog.close();
+  feedbackDialog.addEventListener("cancel", () => feedbackDialog.close());
+}
 window.addEventListener("pageshow", () => resetTransientLayers());
 $("#savePdf").onclick = () => {
   if (memberReportMeta?.pdfUrl) {
@@ -963,3 +987,46 @@ refreshSession().then(() => {
 });
 restoreGuestOrderResultFromUrl();
 restoreMemberReportFromUrl();
+
+$("#feedbackTrigger")?.addEventListener("click", () => {
+  if (!feedbackDialog) return;
+  $("#feedbackStatus").textContent = "";
+  try {
+    feedbackDialog.showModal();
+  } catch {
+    feedbackDialog.setAttribute("open", "open");
+  }
+});
+
+$("#feedbackForm")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const email = String($("#feedbackEmail")?.value || "").trim();
+  const message = String($("#feedbackMessage")?.value || "").trim();
+  const status = $("#feedbackStatus");
+  const submitBtn = $("#feedbackSubmitBtn");
+  if (!message) {
+    if (status) status.textContent = lang === "zh" ? "请先填写留言内容。" : "Please enter your message.";
+    return;
+  }
+  if (submitBtn) submitBtn.disabled = true;
+  if (status) status.textContent = lang === "zh" ? "正在提交留言..." : "Sending feedback...";
+  try {
+    const response = await fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, message, page: window.location.pathname })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || (lang === "zh" ? "提交失败，请稍后重试。" : "Failed to send feedback."));
+    if (status) status.textContent = lang === "zh" ? "留言已提交，感谢你的建议。" : "Feedback sent. Thank you.";
+    event.currentTarget.reset();
+    showHomeStatus(lang === "zh" ? "留言已提交，感谢你的建议" : "Feedback sent. Thank you.");
+    setTimeout(() => {
+      if (feedbackDialog?.open) feedbackDialog.close();
+    }, 800);
+  } catch (error) {
+    if (status) status.textContent = error.message;
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+  }
+});

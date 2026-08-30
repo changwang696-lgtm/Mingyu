@@ -139,6 +139,7 @@ function createDefaultDatabase() {
     reports: [],
     guestOrders: [],
     memberOrders: [],
+    feedbackMessages: [],
     pendingRegistrations: [],
     memberPlans: getDefaultMemberPlans(),
     siteSettings: getDefaultSiteSettings()
@@ -160,6 +161,7 @@ function loadDatabase() {
         reports: Array.isArray(parsed.reports) ? parsed.reports : [],
         guestOrders: Array.isArray(parsed.guestOrders) ? parsed.guestOrders : [],
         memberOrders: Array.isArray(parsed.memberOrders) ? parsed.memberOrders : [],
+        feedbackMessages: Array.isArray(parsed.feedbackMessages) ? parsed.feedbackMessages : [],
         pendingRegistrations: Array.isArray(parsed.pendingRegistrations) ? parsed.pendingRegistrations : [],
         memberPlans: buildMemberPlansFromSource(parsed.memberPlans),
         siteSettings: sanitizeSiteSettings(parsed.siteSettings)
@@ -188,6 +190,34 @@ function getWelcomeCredits() {
 
 function getTierPricing() {
   return getSiteSettings().servicePricing;
+}
+
+function sanitizeFeedbackMessage(entry = {}) {
+  return {
+    id: String(entry.id || "").trim(),
+    email: normalizeEmail(entry.email || "") || "",
+    message: String(entry.message || "").trim(),
+    page: String(entry.page || "/").trim() || "/",
+    createdAt: entry.createdAt || nowIso()
+  };
+}
+
+function listFeedbackMessages(limit = 100) {
+  const entries = Array.isArray(database.feedbackMessages) ? database.feedbackMessages : [];
+  return entries
+    .map(sanitizeFeedbackMessage)
+    .filter(entry => entry.id && entry.message)
+    .sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)))
+    .slice(0, limit);
+}
+
+function insertFeedbackMessage(entry) {
+  const nextEntry = sanitizeFeedbackMessage({ ...entry, id: entry.id || nextId("feedback_"), createdAt: entry.createdAt || nowIso() });
+  database.feedbackMessages = Array.isArray(database.feedbackMessages) ? database.feedbackMessages : [];
+  database.feedbackMessages.unshift(nextEntry);
+  database.feedbackMessages = database.feedbackMessages.slice(0, 500);
+  saveDatabase();
+  return nextEntry;
 }
 
 function isJwtLikeKey(value) {
@@ -3473,6 +3503,39 @@ async function handleAdminMemberPlansSave(req, res) {
   });
 }
 
+async function handleFeedbackSubmit(req, res) {
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  const email = normalizeEmail(body.email || "");
+  const message = String(body.message || "").trim();
+  const page = String(body.page || "/").trim() || "/";
+  if (!message) return send(res, 422, { error: "Message is required." });
+  if (message.length > 2000) return send(res, 422, { error: "Message is too long." });
+  if (email && !validateEmail(email)) return send(res, 422, { error: "Email is invalid." });
+
+  const entry = insertFeedbackMessage({ email, message, page });
+  send(res, 201, {
+    ok: true,
+    message: "Feedback received.",
+    feedback: entry
+  });
+}
+
+async function handleAdminFeedback(req, res, url) {
+  if (!requireAdmin(req, res)) return;
+  const query = String(url.searchParams.get("q") || "").trim().toLowerCase();
+  let feedback = listFeedbackMessages(Number.parseInt(url.searchParams.get("limit") || "100", 10) || 100);
+  if (query) {
+    feedback = feedback.filter(item =>
+      item.id.toLowerCase().includes(query)
+      || item.message.toLowerCase().includes(query)
+      || String(item.email || "").toLowerCase().includes(query)
+      || String(item.page || "").toLowerCase().includes(query)
+    );
+  }
+  send(res, 200, { feedback });
+}
+
 async function handleAdminGuestOrders(req, res, url) {
   if (!requireAdmin(req, res)) return;
   const status = String(url.searchParams.get("status") || "").trim();
@@ -4093,9 +4156,11 @@ http.createServer((req, res) => {
     if (req.method === "POST" && pathname === "/api/guest-orders/fulfill") return handleGuestOrderFulfill(req, res);
     if (req.method === "GET" && pathname === "/api/guest-orders/result") return handleGuestOrderResult(req, res, url);
         if (req.method === "GET" && pathname === "/api/guest-orders/pdf") return handleGuestOrderPdf(req, res, url);
+    if (req.method === "POST" && pathname === "/api/feedback") return handleFeedbackSubmit(req, res);
     if (req.method === "POST" && pathname === "/api/admin/login") return handleAdminLogin(req, res);
     if (req.method === "POST" && pathname === "/api/admin/logout") return handleAdminLogout(req, res);
     if (req.method === "GET" && pathname === "/api/admin/session") return handleAdminSession(req, res);
+    if (req.method === "GET" && pathname === "/api/admin/feedback") return handleAdminFeedback(req, res, url);
     if (req.method === "GET" && pathname === "/api/admin/member-plans") return handleAdminMemberPlans(req, res);
     if (req.method === "POST" && pathname === "/api/admin/member-plans") return handleAdminMemberPlansSave(req, res);
     if (req.method === "GET" && pathname === "/api/admin/guest-orders") return handleAdminGuestOrders(req, res, url);
