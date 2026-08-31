@@ -2457,7 +2457,7 @@ async function buildNamingReportPdfBytes({
       color: colors.paper
     });
     if (cardWish) {
-      const wishTitle = "What should your name convey? / 你希望名字传达什么？";
+      const wishTitle = "What should your name convey?";
       const wishLines = wrapPdfText(cardWish, font, 12, maxWidth - 80).slice(0, 4);
       page.drawText(wishTitle, {
         x: margin,
@@ -2513,14 +2513,24 @@ async function buildNamingReportPdfBytes({
     });
     drawMysticCardOrnaments({
       dark: false,
-      backdropAsset: cardBackdrop,
+      backdropAsset: null,
       backdropOpacity: 0.16,
       backdropMaxSize: 340,
       centerY: pageHeight / 2 - 10,
       centerRadius: 136
     });
+    if (cardBackdrop) {
+      const backdropSize = fitPdfImage(cardBackdrop, 360, 360);
+      page.drawImage(cardBackdrop.image, {
+        x: -58,
+        y: -42,
+        width: backdropSize.width,
+        height: backdropSize.height,
+        opacity: 0.18
+      });
+    }
     const nameTopY = pageHeight - 122;
-    const imageTopY = pageHeight - 248;
+    const imageTopY = pageHeight - 212;
     const infoPanelX = margin + 18;
     const infoPanelY = 108;
     const infoPanelWidth = maxWidth - 36;
@@ -2561,7 +2571,7 @@ async function buildNamingReportPdfBytes({
     let panelTextY = drawCenteredTextBlock(`${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
       size: 15,
       color: colors.ink,
-      topY: 438,
+      topY: 426,
       width: maxWidth
     }) - 2;
     if (primaryName.tone) {
