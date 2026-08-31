@@ -2820,6 +2820,216 @@ async function buildNamingReportPdfBytes({
     y = panelY - 18;
   };
 
+  const drawZodiacSnapshotPanel = () => {
+    const panelX = margin;
+    const panelY = 96;
+    const panelWidth = maxWidth;
+    const panelHeight = 636;
+    const centerX = pageWidth / 2;
+    const imageCenterY = panelY + panelHeight - 188;
+    const imageSize = 176;
+    const imageX = centerX - imageSize / 2;
+    const imageY = imageCenterY - imageSize / 2;
+    const snapshotTitleZh = "生肖原型概览";
+    const snapshotTitleEn = "Zodiac Snapshot";
+    const identityLine = `${resultData.zodiac?.years || "-"} · ${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`;
+    const traitLine = zodiacTraits.join(" · ") || "传统特质待生成";
+    const summaryText = joinPdfBilingualText(
+      resultData.summary || "暂无概览说明。",
+      resultData.summaryEn || "Summary unavailable."
+    );
+    const summaryLines = wrapPdfText(summaryText, font, 10.5, panelWidth - 76).slice(0, 9);
+    const titleZhWidth = font.widthOfTextAtSize(snapshotTitleZh, 22);
+    const titleEnWidth = font.widthOfTextAtSize(snapshotTitleEn, 12.5);
+    const identityWidth = font.widthOfTextAtSize(identityLine, 17);
+    const traitLabel = "人格关键词 / TRAITS";
+    const traitLabelWidth = font.widthOfTextAtSize(traitLabel, 9.5);
+
+    ensureSpace(panelHeight + 20);
+    page.drawRectangle({
+      x: panelX,
+      y: panelY,
+      width: panelWidth,
+      height: panelHeight,
+      color: rgb(1, 1, 1),
+      opacity: 0.54,
+      borderWidth: 1,
+      borderColor: colors.line
+    });
+    page.drawRectangle({
+      x: panelX + 10,
+      y: panelY + 10,
+      width: panelWidth - 20,
+      height: panelHeight - 20,
+      borderWidth: 0.8,
+      borderColor: colors.line,
+      opacity: 0.5
+    });
+    [
+      { x: panelX + 16, y: panelY + panelHeight - 16, dx: 22, dy: -22 },
+      { x: panelX + panelWidth - 16, y: panelY + panelHeight - 16, dx: -22, dy: -22 },
+      { x: panelX + 16, y: panelY + 16, dx: 22, dy: 22 },
+      { x: panelX + panelWidth - 16, y: panelY + 16, dx: -22, dy: 22 }
+    ].forEach(corner => {
+      page.drawLine({
+        start: { x: corner.x, y: corner.y },
+        end: { x: corner.x + corner.dx, y: corner.y },
+        thickness: 0.8,
+        color: colors.line,
+        opacity: 0.42
+      });
+      page.drawLine({
+        start: { x: corner.x, y: corner.y },
+        end: { x: corner.x, y: corner.y + corner.dy },
+        thickness: 0.8,
+        color: colors.line,
+        opacity: 0.42
+      });
+    });
+
+    page.drawText(snapshotTitleZh, {
+      x: (pageWidth - titleZhWidth) / 2,
+      y: panelY + panelHeight - 56,
+      size: 22,
+      font,
+      color: colors.ink
+    });
+    page.drawText(snapshotTitleEn, {
+      x: (pageWidth - titleEnWidth) / 2,
+      y: panelY + panelHeight - 84,
+      size: 12.5,
+      font,
+      color: colors.warm
+    });
+    page.drawLine({
+      start: { x: panelX + 76, y: panelY + panelHeight - 102 },
+      end: { x: panelX + panelWidth - 76, y: panelY + panelHeight - 102 },
+      thickness: 1,
+      color: colors.line,
+      opacity: 0.5
+    });
+
+    if (zodiacImage) {
+      const zodiacSize = fitPdfImage(zodiacImage, imageSize, imageSize);
+      page.drawCircle({
+        x: centerX,
+        y: imageCenterY,
+        size: zodiacSize.width / 2 + 34,
+        borderWidth: 1.2,
+        borderColor: colors.gold,
+        opacity: 0.58
+      });
+      page.drawCircle({
+        x: centerX,
+        y: imageCenterY,
+        size: zodiacSize.width / 2 + 20,
+        borderWidth: 0.9,
+        borderColor: colors.line,
+        opacity: 0.42
+      });
+      page.drawCircle({
+        x: centerX,
+        y: imageCenterY,
+        size: zodiacSize.width / 2 + 8,
+        borderWidth: 0.8,
+        borderColor: colors.paper,
+        opacity: 0.46
+      });
+      [
+        { angle: -90, radius: zodiacSize.width / 2 + 34 },
+        { angle: -18, radius: zodiacSize.width / 2 + 34 },
+        { angle: 54, radius: zodiacSize.width / 2 + 34 },
+        { angle: 138, radius: zodiacSize.width / 2 + 34 }
+      ].forEach(marker => {
+        const rad = marker.angle * (Math.PI / 180);
+        page.drawCircle({
+          x: centerX + Math.cos(rad) * marker.radius,
+          y: imageCenterY + Math.sin(rad) * marker.radius,
+          size: 4.4,
+          color: colors.goldLight,
+          opacity: 0.5,
+          borderWidth: 0.5,
+          borderColor: colors.gold
+        });
+      });
+      page.drawImage(zodiacImage.image, {
+        x: imageX,
+        y: imageY,
+        width: zodiacSize.width,
+        height: zodiacSize.height
+      });
+    }
+
+    page.drawText(identityLine, {
+      x: (pageWidth - identityWidth) / 2,
+      y: panelY + 290,
+      size: 17,
+      font,
+      color: colors.ink
+    });
+
+    page.drawRectangle({
+      x: panelX + 42,
+      y: panelY + 226,
+      width: panelWidth - 84,
+      height: 44,
+      color: rgb(0.98, 0.96, 0.92),
+      opacity: 0.82,
+      borderWidth: 1,
+      borderColor: colors.line
+    });
+    page.drawText(traitLabel, {
+      x: (pageWidth - traitLabelWidth) / 2,
+      y: panelY + 250,
+      size: 9.5,
+      font,
+      color: colors.warm
+    });
+    drawCenteredTextBlock(traitLine, {
+      size: 11.5,
+      color: colors.soft,
+      topY: panelY + 232,
+      width: panelWidth - 116
+    });
+
+    page.drawRectangle({
+      x: panelX + 34,
+      y: panelY + 34,
+      width: panelWidth - 68,
+      height: 164,
+      color: rgb(0.99, 0.98, 0.95),
+      opacity: 0.78,
+      borderWidth: 1,
+      borderColor: colors.line
+    });
+    page.drawLine({
+      start: { x: panelX + 58, y: panelY + 174 },
+      end: { x: panelX + panelWidth - 58, y: panelY + 174 },
+      thickness: 1,
+      color: colors.line,
+      opacity: 0.45
+    });
+    page.drawText("东方文化启示 / Eastern Reflection", {
+      x: panelX + 52,
+      y: panelY + 182,
+      size: 10,
+      font,
+      color: colors.warm
+    });
+    let summaryY = panelY + 152;
+    summaryLines.forEach(line => {
+      page.drawText(line || " ", {
+        x: panelX + 52,
+        y: summaryY,
+        size: 10.5,
+        font,
+        color: colors.soft
+      });
+      summaryY -= 14;
+    });
+    y = panelY - 14;
+  };
+
   if (!isComplete) {
     const backMeaning = joinPdfBilingualText(
       primaryName.meaning || "该名字用于表达你的气质、节奏与文化联想。",
@@ -3266,25 +3476,7 @@ async function buildNamingReportPdfBytes({
       showShootingStars: false,
       showBeidou: true
     });
-    drawSectionTitle("生肖原型概览 / Zodiac Snapshot", "这一页展示你的生肖原型、人格关键词与东方文化概览");
-    drawCenteredAsset(zodiacImage, 150, 150, 18);
-    drawTextLine(`${resultData.zodiac?.years || "-"} · ${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
-      size: 15,
-      color: colors.ink
-    });
-    if (zodiacTraits.length) {
-      drawParagraph(`Traits / 特征: ${zodiacTraits.join(" · ")}`, {
-        size: 10,
-        color: colors.warm,
-        gapAfter: 6
-      });
-    }
-    drawParagraph(joinPdfBilingualText(resultData.summary || "暂无概览说明。", resultData.summaryEn || "Summary unavailable."), {
-      size: 11,
-      color: colors.soft,
-      gapAfter: 10
-    });
-    drawDivider();
+    drawZodiacSnapshotPanel();
 
     beginNewPage(true);
     drawSectionTitle("生肖文化详解 / Zodiac Culture", "新增网页同款的双栏文化版式，保留性格特征与象征寓意");
