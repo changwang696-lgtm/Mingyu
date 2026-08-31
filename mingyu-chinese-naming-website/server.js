@@ -1780,7 +1780,7 @@ async function buildNamingReportPdfBytes({
   const simpleTraitsZh = zodiacTraits.slice(0, 3).join(" · ") || "待生成";
   const simpleTraitsEn = (Array.isArray(resultData.zodiac?.traitsEn) ? resultData.zodiac.traitsEn : []).slice(0, 3).join(" · ") || "Traits pending";
   const zodiacImage = await embedPdfAsset(pdfDoc, getZodiacAssetRelativePath(resultData));
-  const cardBackdrop = !isComplete ? await embedPdfAsset(pdfDoc, "/assets/zodiac/001.png") : null;
+  const cardBackdrop = await embedPdfAsset(pdfDoc, "/assets/zodiac/001.png");
   const reportPreview = isComplete ? await embedPdfAsset(pdfDoc, "/assets/zodiac/report-overview.jpg") : null;
   const reportHeaderTitle = isComplete ? "Mingyu 5-Phase Personality Blueprint" : "Mingyu Elemental DNA Card";
 
@@ -1920,6 +1920,45 @@ async function buildNamingReportPdfBytes({
       font,
       color: textColor,
       opacity: dark ? 0.55 : 0.44
+    });
+  };
+
+  const drawPageBottomBrandMark = ({
+    asset = null,
+    title = "Your Elemental DNA -",
+    subtitle = "The 5-Phase Personality Blueprint",
+    dark = false
+  } = {}) => {
+    if (asset) {
+      const backdropSize = fitPdfImage(asset, 300, 300);
+      page.drawImage(asset.image, {
+        x: pageWidth - backdropSize.width - 28,
+        y: -78,
+        width: backdropSize.width,
+        height: backdropSize.height,
+        opacity: dark ? 0.12 : 0.1
+      });
+    }
+    const titleSize = 15;
+    const subtitleSize = 11;
+    const titleWidth = font.widthOfTextAtSize(title, titleSize);
+    const subtitleWidth = font.widthOfTextAtSize(subtitle, subtitleSize);
+    const textColor = dark ? colors.goldLight : colors.soft;
+    page.drawText(title, {
+      x: pageWidth - titleWidth - 40,
+      y: 54,
+      size: titleSize,
+      font,
+      color: textColor,
+      opacity: dark ? 0.5 : 0.4
+    });
+    page.drawText(subtitle, {
+      x: pageWidth - subtitleWidth - 40,
+      y: 36,
+      size: subtitleSize,
+      font,
+      color: dark ? colors.warm : colors.warm,
+      opacity: dark ? 0.5 : 0.42
     });
   };
 
@@ -2555,6 +2594,167 @@ async function buildNamingReportPdfBytes({
       color: rgb(0.82, 0.78, 0.7)
     });
     y = panelY - 16;
+  };
+
+  const drawTraditionalReadingNotesPanel = (cultureData, additionalZh = "", additionalEn = "") => {
+    const panelX = margin;
+    const panelWidth = maxWidth;
+    const sectionItems = [
+      `年柱 / Year pillar: ${cultureData?.pillar || "-"}`,
+      `六十甲子位次 / Cycle position: ${cultureData?.cycleNumber || "-"}`,
+      `天干 / Heavenly stem: ${cultureData?.stem?.char || "-"} · ${cultureData?.stem?.polarity || "-"}${cultureData?.stem?.element || ""}`,
+      `地支与生肖 / Earthly branch: ${cultureData?.branch?.char || "-"} · ${cultureData?.branch?.element || "-"} · ${cultureData?.branch?.zodiac || "-"}`,
+      `出生时辰 / Birth hour: ${cultureData?.hourBranch?.char || "-"}时 · ${cultureData?.hourBranch?.range || "-"}`,
+      `原始出生时间 / Original birth time: ${cultureData?.originalBirthLabel || "-"}`,
+      `时区换算 / Timezone: ${cultureData?.sourceTimeZone || "-"} -> ${cultureData?.chinaBirthLabel || "-"}`
+    ];
+    const metaLines = sectionItems.flatMap(item => wrapPdfText(item, font, 10, panelWidth - 52));
+    const noteZhLines = wrapPdfText(String(cultureData?.note || "暂无传统文化说明。"), font, 10.2, panelWidth - 52).slice(0, 4);
+    const noteEnLines = wrapPdfText(String(cultureData?.noteEn || "Traditional reading unavailable."), font, 9.6, panelWidth - 52).slice(0, 5);
+    const extraZhLines = additionalZh ? wrapPdfText(String(additionalZh), font, 10, panelWidth - 52).slice(0, 3) : [];
+    const extraEnLines = additionalEn ? wrapPdfText(String(additionalEn), font, 9.4, panelWidth - 52).slice(0, 3) : [];
+    const panelHeight =
+      24
+      + (metaLines.length * 13)
+      + 18
+      + 16
+      + (noteZhLines.length * 13)
+      + 14
+      + 16
+      + (noteEnLines.length * 12)
+      + (extraZhLines.length || extraEnLines.length ? 24 + (extraZhLines.length * 12.5) + (extraEnLines.length * 11.5) : 0)
+      + 18;
+
+    ensureSpace(panelHeight + 12);
+    const panelY = y - panelHeight;
+    page.drawRectangle({
+      x: panelX,
+      y: panelY,
+      width: panelWidth,
+      height: panelHeight,
+      color: rgb(0.99, 0.98, 0.95),
+      opacity: 0.84,
+      borderWidth: 1,
+      borderColor: colors.line
+    });
+    page.drawRectangle({
+      x: panelX + 10,
+      y: panelY + 10,
+      width: panelWidth - 20,
+      height: panelHeight - 20,
+      borderWidth: 0.8,
+      borderColor: colors.line,
+      opacity: 0.45
+    });
+    page.drawText("传统文化注解 / Traditional Notes", {
+      x: panelX + 18,
+      y: panelY + panelHeight - 20,
+      size: 10,
+      font,
+      color: colors.warm
+    });
+
+    let cursorY = panelY + panelHeight - 40;
+    metaLines.forEach(line => {
+      page.drawText(line || " ", {
+        x: panelX + 18,
+        y: cursorY,
+        size: 10,
+        font,
+        color: colors.soft
+      });
+      cursorY -= 13;
+    });
+
+    page.drawLine({
+      start: { x: panelX + 18, y: cursorY - 2 },
+      end: { x: panelX + panelWidth - 18, y: cursorY - 2 },
+      thickness: 0.8,
+      color: colors.line,
+      opacity: 0.35
+    });
+    cursorY -= 20;
+
+    page.drawText("中文解读", {
+      x: panelX + 18,
+      y: cursorY,
+      size: 8.5,
+      font,
+      color: colors.warm
+    });
+    cursorY -= 16;
+    noteZhLines.forEach(line => {
+      page.drawText(line || " ", {
+        x: panelX + 18,
+        y: cursorY,
+        size: 10.2,
+        font,
+        color: colors.soft
+      });
+      cursorY -= 13;
+    });
+
+    cursorY -= 4;
+    page.drawText("English Reflection", {
+      x: panelX + 18,
+      y: cursorY,
+      size: 8.5,
+      font,
+      color: colors.warm
+    });
+    cursorY -= 16;
+    noteEnLines.forEach(line => {
+      page.drawText(line || " ", {
+        x: panelX + 18,
+        y: cursorY,
+        size: 9.6,
+        font,
+        color: colors.soft
+      });
+      cursorY -= 12;
+    });
+
+    if (extraZhLines.length || extraEnLines.length) {
+      cursorY -= 4;
+      page.drawLine({
+        start: { x: panelX + 18, y: cursorY },
+        end: { x: panelX + panelWidth - 18, y: cursorY },
+        thickness: 0.8,
+        color: colors.line,
+        opacity: 0.3
+      });
+      cursorY -= 16;
+      page.drawText("补充说明 / Additional Note", {
+        x: panelX + 18,
+        y: cursorY,
+        size: 8.5,
+        font,
+        color: colors.warm
+      });
+      cursorY -= 16;
+      extraZhLines.forEach(line => {
+        page.drawText(line || " ", {
+          x: panelX + 18,
+          y: cursorY,
+          size: 10,
+          font,
+          color: colors.soft
+        });
+        cursorY -= 12.5;
+      });
+      extraEnLines.forEach(line => {
+        page.drawText(line || " ", {
+          x: panelX + 18,
+          y: cursorY,
+          size: 9.4,
+          font,
+          color: colors.soft
+        });
+        cursorY -= 11.5;
+      });
+    }
+
+    y = panelY - 12;
   };
 
   const drawZodiacCulturePanel = profileData => {
@@ -3518,39 +3718,21 @@ async function buildNamingReportPdfBytes({
     beginNewPage(true);
     drawSectionTitle("生肖文化详解 / Zodiac Culture", "新增网页同款的双栏文化版式，保留性格特征与象征寓意");
     drawZodiacCulturePanel(profile);
+    drawPageBottomBrandMark({
+      asset: cardBackdrop,
+      title: "Your Elemental DNA -",
+      subtitle: "The 5-Phase Personality Blueprint",
+      dark: false
+    });
 
     beginNewPage(true);
     drawSectionTitle("传统时序文化解读 / Traditional Reading", "对应网页中的年柱、时辰与文化注解");
     drawTraditionalSnapshotPanel(culture);
-    drawParagraph(
-      [
-        `年柱 / Year pillar: ${culture.pillar || "-"}`,
-        `六十甲子位次 / Cycle position: ${culture.cycleNumber || "-"}`,
-        `天干 / Heavenly stem: ${culture.stem?.char || "-"} · ${culture.stem?.polarity || "-"}${culture.stem?.element || ""}`,
-        `地支与生肖 / Earthly branch: ${culture.branch?.char || "-"} · ${culture.branch?.element || "-"} · ${culture.branch?.zodiac || "-"}`,
-        `出生时辰 / Birth hour: ${culture.hourBranch?.char || "-"}时 · ${culture.hourBranch?.range || "-"}`,
-        `原始出生时间 / Original birth time: ${culture.originalBirthLabel || "-"}`,
-        `时区换算 / Timezone: ${culture.sourceTimeZone || "-"} -> ${culture.chinaBirthLabel || "-"}`
-      ].join("\n"),
-      {
-        size: 11,
-        color: colors.soft,
-        gapAfter: 8
-      }
+    drawTraditionalReadingNotesPanel(
+      culture,
+      resultData.culturalNote || "",
+      resultData.culturalNoteEn || ""
     );
-    drawParagraph(joinPdfBilingualText(culture.note || "暂无传统文化说明。", culture.noteEn || "Traditional reading unavailable."), {
-      size: 11,
-      color: colors.soft,
-      gapAfter: 10
-    });
-    if (resultData.culturalNote) {
-      drawSectionTitle("补充说明 / Additional Note", "对应网页结果底部的文化注解");
-      drawParagraph(joinPdfBilingualText(resultData.culturalNote, resultData.culturalNoteEn || ""), {
-        size: 11,
-        color: colors.soft,
-        gapAfter: 10
-      });
-    }
   } else {
     drawSectionTitle("DNA 名片候选名 / DNA Card Options", "一页式分享型 PDF 名片");
     drawCompactNameOptions(resultData.names);
