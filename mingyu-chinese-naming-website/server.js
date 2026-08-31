@@ -2273,6 +2273,65 @@ async function buildNamingReportPdfBytes({
     y = cardY - 12;
   };
 
+  const drawLargeNameSealRow = options => {
+    const list = Array.isArray(options) ? options.slice(0, 3) : [];
+    if (!list.length) return;
+    const sealSize = 88;
+    const gap = 22;
+    const totalWidth = sealSize * list.length + gap * Math.max(0, list.length - 1);
+    const startX = (pageWidth - totalWidth) / 2;
+    const sealY = y - sealSize;
+    ensureSpace(sealSize + 26);
+    list.forEach((option, index) => {
+      const sealText = String(option?.seal || option?.hanzi || "名").trim().slice(0, 2) || "名";
+      const x = startX + index * (sealSize + gap);
+      page.drawRectangle({
+        x,
+        y: sealY,
+        width: sealSize,
+        height: sealSize,
+        color: colors.cinnabar,
+        borderWidth: 1.4,
+        borderColor: colors.goldLight
+      });
+      page.drawRectangle({
+        x: x + 5,
+        y: sealY + 5,
+        width: sealSize - 10,
+        height: sealSize - 10,
+        borderWidth: 0.9,
+        borderColor: colors.goldLight,
+        opacity: 0.7
+      });
+      page.drawRectangle({
+        x: x + 10,
+        y: sealY + 10,
+        width: sealSize - 20,
+        height: sealSize - 20,
+        borderWidth: 0.8,
+        borderColor: colors.paper,
+        opacity: 0.45
+      });
+      const sealFontSize = sealText.length > 1 ? 26 : 34;
+      const sealWidth = font.widthOfTextAtSize(sealText, sealFontSize);
+      page.drawText(sealText, {
+        x: x + (sealSize - sealWidth) / 2,
+        y: sealY + (sealText.length > 1 ? 28 : 24),
+        size: sealFontSize,
+        font,
+        color: colors.paper
+      });
+      page.drawText(`0${index + 1}`, {
+        x: x + 8,
+        y: sealY + sealSize - 16,
+        size: 8,
+        font,
+        color: colors.goldLight
+      });
+    });
+    y = sealY - 18;
+  };
+
   const drawCompactNameOptions = options => {
     const list = Array.isArray(options) ? options.slice(0, 3) : [];
     list.forEach((option, index) => {
@@ -3152,10 +3211,31 @@ async function buildNamingReportPdfBytes({
       showShootingStars: true,
       showBeidou: true
     });
-    drawSectionTitle("候选名字 / Name Options", "每个名字说明都同步输出中文与英文");
+    const namePageTitle = "My Eastern Element DNA Name";
+    const namePageSubtitle = "我的东方元素 DNA 名字";
+    const titleWidth = font.widthOfTextAtSize(namePageTitle, 23);
+    const subtitleWidth = font.widthOfTextAtSize(namePageSubtitle, 13);
+    y -= 6;
+    page.drawText(namePageTitle, {
+      x: (pageWidth - titleWidth) / 2,
+      y,
+      size: 23,
+      font,
+      color: colors.ink
+    });
+    y -= 30;
+    page.drawText(namePageSubtitle, {
+      x: (pageWidth - subtitleWidth) / 2,
+      y,
+      size: 13,
+      font,
+      color: colors.warm
+    });
+    y -= 24;
     for (const option of Array.isArray(resultData.names) ? resultData.names : []) {
       drawNameOptionCard(option);
     }
+    drawLargeNameSealRow(Array.isArray(resultData.names) ? resultData.names : []);
 
     beginNewPage(true);
     drawMysticCardOrnaments({
