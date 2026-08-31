@@ -1789,6 +1789,121 @@ async function buildNamingReportPdfBytes({
     return cursorY;
   };
 
+  const drawMysticCardOrnaments = ({
+    dark = false,
+    backdropAsset = null,
+    backdropOpacity = 0.08,
+    backdropMaxSize = 260,
+    centerY = pageHeight / 2,
+    centerRadius = 118
+  } = {}) => {
+    const stroke = dark ? colors.goldLight : colors.line;
+    const accent = dark ? colors.gold : colors.warm;
+    const softStroke = dark ? colors.mutedLight : colors.soft;
+    const centerX = pageWidth / 2;
+    const corners = [
+      { x: 34, y: pageHeight - 34, dx: 24, dy: -24 },
+      { x: pageWidth - 34, y: pageHeight - 34, dx: -24, dy: -24 },
+      { x: 34, y: 34, dx: 24, dy: 24 },
+      { x: pageWidth - 34, y: 34, dx: -24, dy: 24 }
+    ];
+    const stars = [
+      { x: 88, y: pageHeight - 106, r: 1.9 },
+      { x: 136, y: pageHeight - 168, r: 1.1 },
+      { x: pageWidth - 96, y: pageHeight - 148, r: 1.7 },
+      { x: pageWidth - 142, y: pageHeight - 102, r: 1.2 },
+      { x: 92, y: 132, r: 1.5 },
+      { x: pageWidth - 88, y: 118, r: 1.8 },
+      { x: pageWidth / 2 - 128, y: centerY + 24, r: 1.1 },
+      { x: pageWidth / 2 + 134, y: centerY - 16, r: 1.4 }
+    ];
+
+    if (backdropAsset) {
+      const backdropSize = fitPdfImage(backdropAsset, backdropMaxSize, backdropMaxSize);
+      page.drawImage(backdropAsset.image, {
+        x: (pageWidth - backdropSize.width) / 2,
+        y: centerY - backdropSize.height / 2,
+        width: backdropSize.width,
+        height: backdropSize.height,
+        opacity: backdropOpacity
+      });
+    }
+
+    page.drawCircle({
+      x: centerX,
+      y: centerY,
+      size: centerRadius,
+      borderWidth: 1,
+      borderColor: stroke,
+      opacity: dark ? 0.26 : 0.2
+    });
+    page.drawCircle({
+      x: centerX,
+      y: centerY,
+      size: centerRadius - 18,
+      borderWidth: 0.8,
+      borderColor: softStroke,
+      opacity: dark ? 0.18 : 0.14
+    });
+    page.drawCircle({
+      x: centerX,
+      y: centerY,
+      size: centerRadius + 26,
+      borderWidth: 0.7,
+      borderColor: accent,
+      opacity: dark ? 0.14 : 0.1
+    });
+
+    for (let index = 0; index < 5; index += 1) {
+      const angle = (-90 + index * 72) * (Math.PI / 180);
+      const orbitX = centerX + Math.cos(angle) * (centerRadius - 6);
+      const orbitY = centerY + Math.sin(angle) * (centerRadius - 6);
+      page.drawCircle({
+        x: orbitX,
+        y: orbitY,
+        size: 6.5,
+        color: accent,
+        opacity: dark ? 0.24 : 0.16,
+        borderWidth: 0.5,
+        borderColor: stroke
+      });
+    }
+
+    corners.forEach(corner => {
+      page.drawLine({
+        start: { x: corner.x, y: corner.y },
+        end: { x: corner.x + corner.dx, y: corner.y },
+        thickness: 1,
+        color: stroke,
+        opacity: dark ? 0.6 : 0.45
+      });
+      page.drawLine({
+        start: { x: corner.x, y: corner.y },
+        end: { x: corner.x, y: corner.y + corner.dy },
+        thickness: 1,
+        color: stroke,
+        opacity: dark ? 0.6 : 0.45
+      });
+      page.drawCircle({
+        x: corner.x,
+        y: corner.y,
+        size: 1.8,
+        color: accent,
+        opacity: dark ? 0.5 : 0.3
+      });
+    });
+
+    stars.forEach(star => {
+      page.drawCircle({
+        x: star.x,
+        y: star.y,
+        size: star.r,
+        color: dark ? colors.goldLight : colors.warm,
+        opacity: dark ? 0.45 : 0.22
+      });
+    });
+  };
+
   const measurePdfLinesHeight = (lineCount, size, gapAfter = 0) => (lineCount * (size + lineGap)) + gapAfter;
 
   const drawNameOptionCard = option => {
@@ -2317,6 +2432,14 @@ async function buildNamingReportPdfBytes({
       borderWidth: 1,
       borderColor: colors.gold
     });
+    drawMysticCardOrnaments({
+      dark: true,
+      backdropAsset: cardBackdrop,
+      backdropOpacity: 0.12,
+      backdropMaxSize: 320,
+      centerY: pageHeight / 2 + 6,
+      centerRadius: 138
+    });
     page.drawText("My Card", {
       x: margin,
       y: pageHeight - 56,
@@ -2388,85 +2511,131 @@ async function buildNamingReportPdfBytes({
       borderWidth: 1,
       borderColor: colors.line
     });
-    if (cardBackdrop) {
-      const backdropSize = fitPdfImage(cardBackdrop, 300, 300);
-      page.drawImage(cardBackdrop.image, {
-        x: (pageWidth - backdropSize.width) / 2,
-        y: (pageHeight - backdropSize.height) / 2 - 24,
-        width: backdropSize.width,
-        height: backdropSize.height,
-        opacity: 0.12
-      });
-    }
-    y = pageHeight - 58;
-    drawTextLine("My Oriental Elemental DNA Card", { size: 17, color: colors.ink });
-    drawDivider(18);
-    const cardNameSize = 30;
+    drawMysticCardOrnaments({
+      dark: false,
+      backdropAsset: cardBackdrop,
+      backdropOpacity: 0.16,
+      backdropMaxSize: 340,
+      centerY: pageHeight / 2 - 10,
+      centerRadius: 136
+    });
+    const nameTopY = pageHeight - 122;
+    const imageTopY = pageHeight - 248;
+    const infoPanelX = margin + 18;
+    const infoPanelY = 108;
+    const infoPanelWidth = maxWidth - 36;
+    const infoPanelHeight = 228;
+    const cardNameSize = 35;
     const cardNameWidth = font.widthOfTextAtSize(cardNameLine, cardNameSize);
+    drawCenteredTextBlock("My Oriental Elemental DNA Card", {
+      size: 17,
+      color: colors.ink,
+      topY: pageHeight - 58,
+      width: maxWidth
+    });
     page.drawText(cardNameLine, {
       x: (pageWidth - cardNameWidth) / 2,
-      y: y - 18,
+      y: nameTopY,
       size: cardNameSize,
       font,
       color: colors.ink
     });
-    y -= cardNameSize + 28;
-    drawCenteredAsset(zodiacImage, 146, 146, 16);
-    y = drawCenteredTextBlock(`${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
+    if (zodiacImage) {
+      const zodiacSize = fitPdfImage(zodiacImage, 170, 170);
+      page.drawImage(zodiacImage.image, {
+        x: (pageWidth - zodiacSize.width) / 2,
+        y: imageTopY - zodiacSize.height,
+        width: zodiacSize.width,
+        height: zodiacSize.height
+      });
+      page.drawRectangle({
+        x: (pageWidth - zodiacSize.width) / 2,
+        y: imageTopY - zodiacSize.height,
+        width: zodiacSize.width,
+        height: zodiacSize.height,
+        borderWidth: 1,
+        borderColor: colors.line,
+        opacity: 0.7
+      });
+    }
+    let panelTextY = drawCenteredTextBlock(`${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
       size: 15,
       color: colors.ink,
-      topY: y,
+      topY: 438,
       width: maxWidth
     }) - 2;
     if (primaryName.tone) {
-      y = drawCenteredTextBlock(`Tone / 声调: ${primaryName.tone}`, {
+      panelTextY = drawCenteredTextBlock(`Tone / 声调: ${primaryName.tone}`, {
         size: 10,
         color: colors.warm,
-        topY: y,
+        topY: panelTextY,
         width: maxWidth
       }) - 4;
     }
+    page.drawRectangle({
+      x: infoPanelX,
+      y: infoPanelY,
+      width: infoPanelWidth,
+      height: infoPanelHeight,
+      color: rgb(1, 1, 1),
+      opacity: 0.52,
+      borderWidth: 1,
+      borderColor: colors.line
+    });
+    page.drawLine({
+      start: { x: infoPanelX + 18, y: infoPanelY + 122 },
+      end: { x: infoPanelX + infoPanelWidth - 18, y: infoPanelY + 122 },
+      thickness: 1,
+      color: colors.line,
+      opacity: 0.6
+    });
+    page.drawLine({
+      start: { x: infoPanelX + 18, y: infoPanelY + 68 },
+      end: { x: infoPanelX + infoPanelWidth - 18, y: infoPanelY + 68 },
+      thickness: 1,
+      color: colors.line,
+      opacity: 0.45
+    });
+    panelTextY = infoPanelY + infoPanelHeight - 28;
     backMeaningLines.forEach(line => {
-      y = drawCenteredTextBlock(line || " ", {
+      panelTextY = drawCenteredTextBlock(line || " ", {
         size: 10.5,
         color: colors.soft,
-        topY: y,
-        width: maxWidth - 34
+        topY: panelTextY,
+        width: infoPanelWidth - 42
       });
     });
-    y -= 6;
-    drawDivider(18);
-    y = drawCenteredTextBlock("ACTIVE ELEMENTS", {
+    panelTextY -= 8;
+    panelTextY = drawCenteredTextBlock("ACTIVE ELEMENTS", {
       size: 10,
       color: colors.warm,
-      topY: y,
-      width: maxWidth
+      topY: panelTextY,
+      width: infoPanelWidth - 28
     }) - 2;
-    y = drawCenteredTextBlock(`${simpleElementZh} / ${simpleElementEn}`, {
+    panelTextY = drawCenteredTextBlock(`${simpleElementZh} / ${simpleElementEn}`, {
       size: 10.5,
       color: colors.soft,
-      topY: y,
-      width: maxWidth - 20
+      topY: panelTextY,
+      width: infoPanelWidth - 28
     }) - 4;
-    y = drawCenteredTextBlock("TRAITS", {
+    panelTextY = drawCenteredTextBlock("TRAITS", {
       size: 10,
       color: colors.warm,
-      topY: y,
-      width: maxWidth
+      topY: panelTextY,
+      width: infoPanelWidth - 28
     }) - 2;
-    y = drawCenteredTextBlock(`${simpleTraitsZh} / ${simpleTraitsEn}`, {
+    panelTextY = drawCenteredTextBlock(`${simpleTraitsZh} / ${simpleTraitsEn}`, {
       size: 10.5,
       color: colors.soft,
-      topY: y,
-      width: maxWidth - 20
+      topY: panelTextY,
+      width: infoPanelWidth - 28
     });
     if (socialEmail) {
-      y -= 4;
-      y = drawCenteredTextBlock(`Social email / 社交邮箱: ${socialEmail}`, {
+      panelTextY = drawCenteredTextBlock(`Social email / 社交邮箱: ${socialEmail}`, {
         size: 10.5,
         color: colors.soft,
-        topY: y,
-        width: maxWidth - 20
+        topY: infoPanelY + 26,
+        width: infoPanelWidth - 28
       });
     }
     return Buffer.from(await pdfDoc.save());
