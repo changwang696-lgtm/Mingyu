@@ -2275,16 +2275,7 @@ async function buildNamingReportPdfBytes({
       primaryName.meaningEn || "This chosen name reflects your tone, rhythm, and cultural identity."
     );
     const backMeaningLines = wrapPdfText(backMeaning, font, 10.5, maxWidth).slice(0, 5);
-    const backNoteLines = wrapPdfText(
-      joinPdfBilingualText(
-        resultData.culturalNote || "该结果属于文化创意解读，用于个性表达与分享。",
-        resultData.culturalNoteEn || "This result is a cultural identity card designed for expression and sharing."
-      ),
-      font,
-      9.5,
-      maxWidth
-    ).slice(0, 6);
-    const backAccessLines = accessLines.flatMap(line => wrapPdfText(line, font, 8.2, maxWidth)).slice(0, 8);
+    const cardNameLine = `${primaryName.hanzi || "-"} · ${primaryName.pinyin || "-"}`;
 
     page.drawRectangle({
       x: 0,
@@ -2301,7 +2292,7 @@ async function buildNamingReportPdfBytes({
       borderWidth: 1,
       borderColor: colors.gold
     });
-    page.drawText("Mingyu Elemental DNA", {
+    page.drawText("My Card", {
       x: margin,
       y: pageHeight - 56,
       size: 14,
@@ -2356,14 +2347,6 @@ async function buildNamingReportPdfBytes({
         color: colors.goldLight
       });
     }
-    page.drawText("Your 5-Phase Personality Blueprint", {
-      x: margin,
-      y: 58,
-      size: 11,
-      font,
-      color: colors.paper
-    });
-
     beginNewPage(false);
     page.drawRectangle({
       x: 0,
@@ -2381,37 +2364,34 @@ async function buildNamingReportPdfBytes({
       borderColor: colors.line
     });
     y = pageHeight - 58;
-    drawTextLine("Mingyu Elemental DNA Card", { size: 17, color: colors.ink });
+    drawTextLine("My Oriental Elemental DNA Card", { size: 17, color: colors.ink });
     drawDivider(18);
+    const cardNameSize = 24;
+    const cardNameWidth = font.widthOfTextAtSize(cardNameLine, cardNameSize);
+    page.drawText(cardNameLine, {
+      x: (pageWidth - cardNameWidth) / 2,
+      y,
+      size: cardNameSize,
+      font,
+      color: colors.ink
+    });
+    y -= cardNameSize + 10;
     drawCenteredAsset(zodiacImage, 146, 146, 16);
-    drawTextLine(`${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"} · ${resultData.zodiac?.years || "-"}`, {
+    drawTextLine(`${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
       size: 15,
       color: colors.ink
     });
     y -= 4;
-    drawSectionTitle("主名说明 / Selected Name");
-    drawTextLine(`${primaryName.hanzi || "-"} · ${primaryName.pinyin || "-"}`, { size: 19, color: colors.ink });
     if (primaryName.tone) drawTextLine(`Tone / 声调: ${primaryName.tone}`, { size: 10, color: colors.warm });
     backMeaningLines.forEach(line => drawTextLine(line || " ", { size: 10.5, color: colors.soft }));
     y -= 6;
     drawDivider(18);
-    drawSectionTitle("人格快照 / Identity Snapshot");
     drawTextLine("ACTIVE ELEMENTS", { size: 10, color: colors.warm });
     drawTextLine(`${simpleElementZh} / ${simpleElementEn}`, { size: 10.5, color: colors.soft });
     y -= 2;
     drawTextLine("TRAITS", { size: 10, color: colors.warm });
     drawTextLine(`${simpleTraitsZh} / ${simpleTraitsEn}`, { size: 10.5, color: colors.soft });
     if (socialEmail) drawTextLine(`Social email / 社交邮箱: ${socialEmail}`, { size: 10.5, color: colors.soft });
-    y -= 6;
-    drawDivider(18);
-    drawSectionTitle("文化说明 / Cultural Note");
-    backNoteLines.forEach(line => drawTextLine(line || " ", { size: 9.5, color: colors.soft }));
-    y -= 6;
-    drawTextLine("Your 5-Phase Personality Blueprint", { size: 11, color: colors.ink });
-    y -= 6;
-    drawDivider(18);
-    drawSectionTitle("访问方式 / Access");
-    backAccessLines.forEach(line => drawTextLine(line || " ", { size: 8.2, color: colors.soft }));
     return Buffer.from(await pdfDoc.save());
   }
 
