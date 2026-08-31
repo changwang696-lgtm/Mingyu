@@ -1795,7 +1795,11 @@ async function buildNamingReportPdfBytes({
     backdropOpacity = 0.08,
     backdropMaxSize = 260,
     centerY = pageHeight / 2,
-    centerRadius = 118
+    centerRadius = 118,
+    showCenterCircles = true,
+    showOrbitDots = true,
+    showShootingStars = false,
+    showBeidou = false
   } = {}) => {
     const stroke = dark ? colors.goldLight : colors.line;
     const accent = dark ? colors.gold : colors.warm;
@@ -1817,6 +1821,33 @@ async function buildNamingReportPdfBytes({
       { x: pageWidth / 2 - 128, y: centerY + 24, r: 1.1 },
       { x: pageWidth / 2 + 134, y: centerY - 16, r: 1.4 }
     ];
+    const shootingStars = dark
+      ? [
+          { from: { x: 126, y: pageHeight - 120 }, to: { x: 188, y: pageHeight - 78 }, glow: 2.2 },
+          { from: { x: pageWidth - 172, y: pageHeight - 198 }, to: { x: pageWidth - 108, y: pageHeight - 150 }, glow: 1.8 },
+          { from: { x: pageWidth - 136, y: 192 }, to: { x: pageWidth - 78, y: 236 }, glow: 1.5 }
+        ]
+      : [
+          { from: { x: 118, y: pageHeight - 154 }, to: { x: 182, y: pageHeight - 112 }, glow: 1.8 },
+          { from: { x: pageWidth - 156, y: pageHeight - 170 }, to: { x: pageWidth - 94, y: pageHeight - 126 }, glow: 1.6 }
+        ];
+    const beidouStars = [
+      { x: pageWidth - 182, y: pageHeight - 128, r: 2.4 },
+      { x: pageWidth - 156, y: pageHeight - 154, r: 2.1 },
+      { x: pageWidth - 124, y: pageHeight - 166, r: 2.1 },
+      { x: pageWidth - 96, y: pageHeight - 198, r: 2.3 },
+      { x: pageWidth - 74, y: pageHeight - 236, r: 2.1 },
+      { x: pageWidth - 112, y: pageHeight - 256, r: 1.9 },
+      { x: pageWidth - 148, y: pageHeight - 276, r: 1.9 }
+    ];
+    const beidouLinks = [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 6]
+    ];
 
     if (backdropAsset) {
       const backdropSize = fitPdfImage(backdropAsset, backdropMaxSize, backdropMaxSize);
@@ -1829,44 +1860,48 @@ async function buildNamingReportPdfBytes({
       });
     }
 
-    page.drawCircle({
-      x: centerX,
-      y: centerY,
-      size: centerRadius,
-      borderWidth: 1,
-      borderColor: stroke,
-      opacity: dark ? 0.26 : 0.2
-    });
-    page.drawCircle({
-      x: centerX,
-      y: centerY,
-      size: centerRadius - 18,
-      borderWidth: 0.8,
-      borderColor: softStroke,
-      opacity: dark ? 0.18 : 0.14
-    });
-    page.drawCircle({
-      x: centerX,
-      y: centerY,
-      size: centerRadius + 26,
-      borderWidth: 0.7,
-      borderColor: accent,
-      opacity: dark ? 0.14 : 0.1
-    });
-
-    for (let index = 0; index < 5; index += 1) {
-      const angle = (-90 + index * 72) * (Math.PI / 180);
-      const orbitX = centerX + Math.cos(angle) * (centerRadius - 6);
-      const orbitY = centerY + Math.sin(angle) * (centerRadius - 6);
+    if (showCenterCircles) {
       page.drawCircle({
-        x: orbitX,
-        y: orbitY,
-        size: 6.5,
-        color: accent,
-        opacity: dark ? 0.24 : 0.16,
-        borderWidth: 0.5,
-        borderColor: stroke
+        x: centerX,
+        y: centerY,
+        size: centerRadius,
+        borderWidth: 1,
+        borderColor: stroke,
+        opacity: dark ? 0.26 : 0.2
       });
+      page.drawCircle({
+        x: centerX,
+        y: centerY,
+        size: centerRadius - 18,
+        borderWidth: 0.8,
+        borderColor: softStroke,
+        opacity: dark ? 0.18 : 0.14
+      });
+      page.drawCircle({
+        x: centerX,
+        y: centerY,
+        size: centerRadius + 26,
+        borderWidth: 0.7,
+        borderColor: accent,
+        opacity: dark ? 0.14 : 0.1
+      });
+    }
+
+    if (showOrbitDots) {
+      for (let index = 0; index < 5; index += 1) {
+        const angle = (-90 + index * 72) * (Math.PI / 180);
+        const orbitX = centerX + Math.cos(angle) * (centerRadius - 6);
+        const orbitY = centerY + Math.sin(angle) * (centerRadius - 6);
+        page.drawCircle({
+          x: orbitX,
+          y: orbitY,
+          size: 6.5,
+          color: accent,
+          opacity: dark ? 0.24 : 0.16,
+          borderWidth: 0.5,
+          borderColor: stroke
+        });
+      }
     }
 
     corners.forEach(corner => {
@@ -1902,6 +1937,60 @@ async function buildNamingReportPdfBytes({
         opacity: dark ? 0.45 : 0.22
       });
     });
+
+    if (showShootingStars) {
+      shootingStars.forEach(star => {
+        page.drawLine({
+          start: star.from,
+          end: star.to,
+          thickness: star.glow,
+          color: accent,
+          opacity: dark ? 0.18 : 0.14
+        });
+        page.drawLine({
+          start: star.from,
+          end: star.to,
+          thickness: 0.8,
+          color: dark ? colors.goldLight : colors.paper,
+          opacity: dark ? 0.54 : 0.42
+        });
+        page.drawCircle({
+          x: star.to.x,
+          y: star.to.y,
+          size: 2.2,
+          color: dark ? colors.goldLight : colors.warm,
+          opacity: dark ? 0.55 : 0.34
+        });
+      });
+    }
+
+    if (showBeidou) {
+      beidouLinks.forEach(([startIndex, endIndex]) => {
+        page.drawLine({
+          start: { x: beidouStars[startIndex].x, y: beidouStars[startIndex].y },
+          end: { x: beidouStars[endIndex].x, y: beidouStars[endIndex].y },
+          thickness: 0.7,
+          color: accent,
+          opacity: dark ? 0.24 : 0.18
+        });
+      });
+      beidouStars.forEach(star => {
+        page.drawCircle({
+          x: star.x,
+          y: star.y,
+          size: star.r + 2.4,
+          color: accent,
+          opacity: dark ? 0.08 : 0.06
+        });
+        page.drawCircle({
+          x: star.x,
+          y: star.y,
+          size: star.r,
+          color: dark ? colors.goldLight : colors.warm,
+          opacity: dark ? 0.58 : 0.34
+        });
+      });
+    }
   };
 
   const measurePdfLinesHeight = (lineCount, size, gapAfter = 0) => (lineCount * (size + lineGap)) + gapAfter;
@@ -2438,7 +2527,11 @@ async function buildNamingReportPdfBytes({
       backdropOpacity: 0.12,
       backdropMaxSize: 320,
       centerY: pageHeight / 2 + 6,
-      centerRadius: 138
+      centerRadius: 138,
+      showCenterCircles: true,
+      showOrbitDots: true,
+      showShootingStars: true,
+      showBeidou: true
     });
     page.drawText("My Card", {
       x: margin,
@@ -2517,13 +2610,17 @@ async function buildNamingReportPdfBytes({
       backdropOpacity: 0.16,
       backdropMaxSize: 340,
       centerY: pageHeight / 2 - 10,
-      centerRadius: 136
+      centerRadius: 136,
+      showCenterCircles: false,
+      showOrbitDots: false,
+      showShootingStars: false,
+      showBeidou: true
     });
     if (cardBackdrop) {
-      const backdropSize = fitPdfImage(cardBackdrop, 360, 360);
+      const backdropSize = fitPdfImage(cardBackdrop, 540, 540);
       page.drawImage(cardBackdrop.image, {
-        x: -58,
-        y: -42,
+        x: -152,
+        y: -118,
         width: backdropSize.width,
         height: backdropSize.height,
         opacity: 0.18
@@ -2552,20 +2649,55 @@ async function buildNamingReportPdfBytes({
     });
     if (zodiacImage) {
       const zodiacSize = fitPdfImage(zodiacImage, 170, 170);
+      const zodiacX = (pageWidth - zodiacSize.width) / 2;
+      const zodiacY = imageTopY - zodiacSize.height;
+      const zodiacCenterX = zodiacX + zodiacSize.width / 2;
+      const zodiacCenterY = zodiacY + zodiacSize.height / 2;
       page.drawImage(zodiacImage.image, {
-        x: (pageWidth - zodiacSize.width) / 2,
-        y: imageTopY - zodiacSize.height,
+        x: zodiacX,
+        y: zodiacY,
         width: zodiacSize.width,
         height: zodiacSize.height
       });
-      page.drawRectangle({
-        x: (pageWidth - zodiacSize.width) / 2,
-        y: imageTopY - zodiacSize.height,
-        width: zodiacSize.width,
-        height: zodiacSize.height,
-        borderWidth: 1,
-        borderColor: colors.line,
+      page.drawCircle({
+        x: zodiacCenterX,
+        y: zodiacCenterY,
+        size: zodiacSize.width / 2 + 12,
+        borderWidth: 1.4,
+        borderColor: colors.gold,
         opacity: 0.7
+      });
+      page.drawCircle({
+        x: zodiacCenterX,
+        y: zodiacCenterY,
+        size: zodiacSize.width / 2 + 24,
+        borderWidth: 0.9,
+        borderColor: colors.line,
+        opacity: 0.4
+      });
+      page.drawCircle({
+        x: zodiacCenterX,
+        y: zodiacCenterY,
+        size: zodiacSize.width / 2 + 5,
+        borderWidth: 0.7,
+        borderColor: colors.paper,
+        opacity: 0.38
+      });
+      [
+        { angle: -90, radius: zodiacSize.width / 2 + 12 },
+        { angle: 18, radius: zodiacSize.width / 2 + 12 },
+        { angle: 126, radius: zodiacSize.width / 2 + 12 }
+      ].forEach(marker => {
+        const rad = marker.angle * (Math.PI / 180);
+        page.drawCircle({
+          x: zodiacCenterX + Math.cos(rad) * marker.radius,
+          y: zodiacCenterY + Math.sin(rad) * marker.radius,
+          size: 4.2,
+          color: colors.goldLight,
+          opacity: 0.46,
+          borderWidth: 0.5,
+          borderColor: colors.gold
+        });
       });
     }
     let panelTextY = drawCenteredTextBlock(`${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
