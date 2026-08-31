@@ -2955,10 +2955,32 @@ async function buildNamingReportPdfBytes({
     drawCenteredAsset(reportPreview, 260, 320, 18);
   }
 
-  drawSectionTitle(
-    isComplete ? "你的生肖意象 / Zodiac" : "你的元素原型 / Elemental Archetype",
-    isComplete ? "网页上的生肖图现在也会进入 PDF" : "单生肖图标会作为你的分享型 DNA 名片主视觉"
-  );
+  if (isComplete) {
+    const zhTitle = "东方智慧自我探索";
+    const enTitle = "Self-Exploration Through Eastern Wisdom";
+    const zhTitleSize = 21;
+    const enTitleSize = 12.5;
+    const zhTitleWidth = font.widthOfTextAtSize(zhTitle, zhTitleSize);
+    const enTitleWidth = font.widthOfTextAtSize(enTitle, enTitleSize);
+    page.drawText(zhTitle, {
+      x: (pageWidth - zhTitleWidth) / 2,
+      y,
+      size: zhTitleSize,
+      font,
+      color: colors.ink
+    });
+    y -= 28;
+    page.drawText(enTitle, {
+      x: (pageWidth - enTitleWidth) / 2,
+      y,
+      size: enTitleSize,
+      font,
+      color: colors.warm
+    });
+    y -= 20;
+  } else {
+    drawSectionTitle("你的元素原型 / Elemental Archetype", "单生肖图标会作为你的分享型 DNA 名片主视觉");
+  }
   drawCenteredAsset(zodiacImage, 130, 130, 14);
   drawTextLine(`${resultData.zodiac?.years || "-"} · ${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
     size: 15,
