@@ -1789,6 +1789,42 @@ async function buildNamingReportPdfBytes({
     return cursorY;
   };
 
+  const drawCardSignature = ({
+    dark = false,
+    text = "chinesenamepro.com",
+    y: signatureY = 34
+  } = {}) => {
+    const strokeColor = dark ? colors.goldLight : colors.line;
+    const textColor = dark ? colors.goldLight : colors.soft;
+    const textSize = 8.5;
+    const textWidth = font.widthOfTextAtSize(text, textSize);
+    const lineWidth = 54;
+    const gap = 14;
+    const centerX = pageWidth / 2;
+    page.drawLine({
+      start: { x: centerX - textWidth / 2 - gap - lineWidth, y: signatureY + 5 },
+      end: { x: centerX - textWidth / 2 - gap, y: signatureY + 5 },
+      thickness: 0.8,
+      color: strokeColor,
+      opacity: dark ? 0.35 : 0.22
+    });
+    page.drawLine({
+      start: { x: centerX + textWidth / 2 + gap, y: signatureY + 5 },
+      end: { x: centerX + textWidth / 2 + gap + lineWidth, y: signatureY + 5 },
+      thickness: 0.8,
+      color: strokeColor,
+      opacity: dark ? 0.35 : 0.22
+    });
+    page.drawText(text, {
+      x: (pageWidth - textWidth) / 2,
+      y: signatureY,
+      size: textSize,
+      font,
+      color: textColor,
+      opacity: dark ? 0.55 : 0.44
+    });
+  };
+
   const drawMysticCardOrnaments = ({
     dark = false,
     backdropAsset = null,
@@ -2588,6 +2624,10 @@ async function buildNamingReportPdfBytes({
         color: colors.goldLight
       });
     }
+    drawCardSignature({
+      dark: true,
+      y: 34
+    });
     beginNewPage(false);
     page.drawRectangle({
       x: 0,
@@ -2780,6 +2820,10 @@ async function buildNamingReportPdfBytes({
         width: infoPanelWidth - 28
       });
     }
+    drawCardSignature({
+      dark: false,
+      y: 32
+    });
     return Buffer.from(await pdfDoc.save());
   }
 
