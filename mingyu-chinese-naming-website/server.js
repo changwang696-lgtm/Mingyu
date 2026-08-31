@@ -1656,6 +1656,7 @@ async function buildNamingReportPdfBytes({
   const profile = culture.zodiacProfile || {};
   const zodiacImage = await embedPdfAsset(pdfDoc, getZodiacAssetRelativePath(resultData));
   const reportPreview = isComplete ? await embedPdfAsset(pdfDoc, "/assets/zodiac/report-overview.jpg") : null;
+  const reportHeaderTitle = isComplete ? "Mingyu 5-Phase Personality Blueprint" : "Mingyu Elemental DNA Card";
 
   let page = pdfDoc.addPage(pageSize);
   let y = pageHeight - margin;
@@ -1664,7 +1665,7 @@ async function buildNamingReportPdfBytes({
     page = pdfDoc.addPage(pageSize);
     y = pageHeight - margin;
     if (!withHeader) return;
-    page.drawText("Mingyu Chinese Naming Report", {
+    page.drawText(reportHeaderTitle, {
       x: margin,
       y,
       size: 12,
@@ -1769,6 +1770,27 @@ async function buildNamingReportPdfBytes({
       x: margin + 12,
       width: maxWidth - 24,
       gapAfter: 10
+    });
+  };
+
+  const drawCompactNameOptions = options => {
+    const list = Array.isArray(options) ? options.slice(0, 3) : [];
+    list.forEach((option, index) => {
+      drawTextLine(`0${index + 1} · ${option.hanzi || "-"} · ${option.pinyin || "-"}`, {
+        size: 14,
+        color: colors.ink
+      });
+      if (option.tone) {
+        drawTextLine(`Tone / 声调: ${option.tone}`, {
+          size: 10,
+          color: colors.warm
+        });
+      }
+      drawParagraph(joinPdfBilingualText(option.meaning || "", option.meaningEn || ""), {
+        size: 10,
+        color: colors.soft,
+        gapAfter: 8
+      });
     });
   };
 
@@ -2269,7 +2291,10 @@ async function buildNamingReportPdfBytes({
     drawCenteredAsset(reportPreview, 260, 320, 18);
   }
 
-  drawSectionTitle("你的生肖意象 / Zodiac", "网页上的生肖图现在也会进入 PDF");
+  drawSectionTitle(
+    isComplete ? "你的生肖意象 / Zodiac" : "你的元素原型 / Elemental Archetype",
+    isComplete ? "网页上的生肖图现在也会进入 PDF" : "单生肖图标会作为你的分享型 DNA 名片主视觉"
+  );
   drawCenteredAsset(zodiacImage, 130, 130, 14);
   drawTextLine(`${resultData.zodiac?.years || "-"} · ${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
     size: 15,
@@ -2289,13 +2314,13 @@ async function buildNamingReportPdfBytes({
   });
   drawDivider();
 
-  beginNewPage(true);
-  drawSectionTitle("候选名字 / Name Options", "每个名字说明都同步输出中文与英文");
-  for (const option of Array.isArray(resultData.names) ? resultData.names : []) {
-    drawNameOptionCard(option);
-  }
-
   if (isComplete) {
+    beginNewPage(true);
+    drawSectionTitle("候选名字 / Name Options", "每个名字说明都同步输出中文与英文");
+    for (const option of Array.isArray(resultData.names) ? resultData.names : []) {
+      drawNameOptionCard(option);
+    }
+
     beginNewPage(true);
     drawSectionTitle("生肖文化详解 / Zodiac Culture", "新增网页同款的双栏文化版式，保留性格特征与象征寓意");
     drawZodiacCulturePanel(profile);
@@ -2332,14 +2357,18 @@ async function buildNamingReportPdfBytes({
         gapAfter: 10
       });
     }
-  } else if (resultData.culturalNote || resultData.culturalNoteEn) {
-    drawDivider();
-    drawSectionTitle("文化说明 / Cultural Note");
-    drawParagraph(joinPdfBilingualText(resultData.culturalNote, resultData.culturalNoteEn || ""), {
-      size: 11,
-      color: colors.soft,
-      gapAfter: 10
-    });
+  } else {
+    drawSectionTitle("DNA 名片候选名 / DNA Card Options", "一页式分享型 PDF 名片");
+    drawCompactNameOptions(resultData.names);
+    if (resultData.culturalNote || resultData.culturalNoteEn) {
+      drawDivider();
+      drawSectionTitle("文化说明 / Cultural Note");
+      drawParagraph(joinPdfBilingualText(resultData.culturalNote, resultData.culturalNoteEn || ""), {
+        size: 11,
+        color: colors.soft,
+        gapAfter: 10
+      });
+    }
   }
 
   drawDivider();

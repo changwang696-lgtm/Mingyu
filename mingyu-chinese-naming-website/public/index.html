@@ -125,6 +125,34 @@
           <p class="full-only" id="summary"></p>
         </div>
       </article>
+      <section class="dna-card simple-only" aria-labelledby="dnaCardTitle">
+        <div class="dna-card-head">
+          <div>
+            <p class="eyebrow" data-i18n="simpleCardEyebrow">ELEMENTAL DNA CARD</p>
+            <h3 id="dnaCardTitle" data-i18n="simpleCardTitle">你的可分享人格名片</h3>
+          </div>
+          <span class="dna-card-badge" data-i18n="simpleCardBadge">Shareable PDF Included</span>
+        </div>
+        <div class="dna-card-lockup">
+          <strong id="dnaCardName">明宇</strong>
+          <span id="dnaCardPinyin">Ming Yu</span>
+        </div>
+        <div class="dna-meta-grid">
+          <article>
+            <small data-i18n="simpleCardZodiacLabel">ZODIAC</small>
+            <div id="dnaCardZodiac"></div>
+          </article>
+          <article>
+            <small data-i18n="simpleCardElementLabel">ACTIVE ELEMENTS</small>
+            <div id="dnaCardElements"></div>
+          </article>
+          <article>
+            <small data-i18n="simpleCardTraitsLabel">TRAITS</small>
+            <div id="dnaCardTraits"></div>
+          </article>
+        </div>
+        <p class="dna-card-body" id="dnaCardMeaning"></p>
+      </section>
       <section class="zodiac-profile full-only" aria-labelledby="zodiacProfileTitle">
         <div class="folio-mark" aria-hidden="true"><span>十二灵兽</span><b>命名文化卷</b><i>PERSONAL FOLIO</i></div>
         <div class="profile-heading"><p class="section-no">生肖文化 · ZODIAC CULTURE</p><h3 id="zodiacProfileTitle" data-i18n="zodiacProfileTitle">生肖文化详解</h3></div>
@@ -150,7 +178,7 @@
       </section>
       <div class="name-list" id="nameList"></div>
       <aside class="culture-note full-only"><b>注 / NOTE</b><p id="culturalNote"></p></aside>
-      <div class="report-cta full-only"><img class="report-preview" src="/assets/zodiac/report-overview.jpg" alt="十二生肖 PDF 报告内页预览"><div><p class="eyebrow" data-i18n="reportEyebrow">珍藏版 · PERSONAL EDITION</p><h3 data-i18n="pdfReadyTitle">完整报告已经生成</h3><p data-i18n="pdfReadyBody">可将当前完整结果保存为精美 A4 PDF，用于珍藏、打印或赠礼。</p></div><div><button id="savePdf" class="primary" data-i18n="savePdf">保存 PDF</button></div></div>
+      <div class="report-cta"><img class="report-preview" id="reportPreviewImage" src="/assets/zodiac/report-overview.jpg" alt="十二生肖 PDF 报告内页预览"><div><p class="eyebrow" id="reportEyebrowText" data-i18n="reportEyebrow">珍藏版 · PERSONAL EDITION</p><h3 id="pdfReadyTitleText" data-i18n="pdfReadyTitle">完整报告已经生成</h3><p id="pdfReadyBodyText" data-i18n="pdfReadyBody">可将当前完整结果保存为精美 A4 PDF，用于珍藏、打印或赠礼。</p></div><div><button id="savePdf" class="primary" data-i18n="savePdf">保存 PDF</button></div></div>
     </section>
 
         <section class="craft" id="craft">
@@ -180,6 +208,6 @@
   <p class="home-status-banner" id="homeStatusBanner" role="status" aria-live="polite" hidden></p>
       <dialog id="payment"><button class="close" aria-label="Close">×</button><p class="eyebrow" id="paymentEyebrow">MINGYU EDITION</p><h2 id="paymentTitle">确认生成简约版</h2><div class="preview-sheet"><span>名屿</span><b>名</b><small>CHINESE NAMING EDITION</small></div><ul id="paymentBenefits"></ul><div id="paypalButtons" hidden></div><div class="paypal-hosted-dialog" id="hostedCheckout" hidden><a class="primary paypal-hosted-link" id="dialogHostedLink" href="#">PayPal Checkout</a></div><button id="confirmPurchase" class="submit"><span id="confirmPurchaseText">支付并生成</span><b>→</b></button><small id="paymentNote" data-i18n="demoNote">支付将由 PayPal 处理；付款成功后，结果会在本站交付。</small><small class="legal-note">By purchasing, you agree to our <a href="/delivery.html" target="_blank" rel="noreferrer">Delivery</a>, <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>, <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>, <a href="/refund.html" target="_blank" rel="noreferrer">Refund Policy</a>, and <a href="/cancellation.html" target="_blank" rel="noreferrer">Cancellation Policy</a>.</small></dialog>
   <div class="loading" id="loading" hidden role="status" aria-live="polite"><div class="loader-seal">名</div><p data-i18n="loading">正在研读你的名字与时辰...</p></div>
-  <script src="/app.js?v=20260831-homepage-copy-refresh" ></script>
+  <script src="/app.js?v=20260831-dna-card-result" ></script>
 </body>
 </html>

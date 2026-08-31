@@ -616,6 +616,7 @@ footer > small {
 }
 .result > * { position: relative; z-index: 1; }
 .result .section-no, .result .eyebrow { color: var(--cinnabar); }
+.simple-only { display: none; }
 .edition-badge { display: inline-block; margin-right: 7px; padding: 6px 10px; color: var(--ink); background: var(--gold); font: 10px Arial,sans-serif; letter-spacing: 1px; }
 .demo-badge { display: inline-block; padding: 6px 10px; color: var(--paper); background: var(--teal); font: 10px Arial,sans-serif; letter-spacing: 1px; }
 .demo-badge[hidden] { display: none; }
@@ -681,6 +682,95 @@ footer > small {
   border-color: var(--teal);
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+}
+
+.dna-card {
+  margin: 2px 0 28px;
+  padding: 26px 28px 28px;
+  border: 1px solid rgba(48,37,29,.16);
+  background:
+    radial-gradient(circle at top right, rgba(23,109,104,.12), transparent 30%),
+    linear-gradient(180deg, rgba(255,255,255,.9), rgba(245,239,226,.94));
+  box-shadow: 0 18px 38px rgba(48,37,29,.08);
+}
+
+.dna-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 18px;
+}
+
+.dna-card-head h3 {
+  margin: 8px 0 0;
+  color: var(--ink);
+  font-size: 31px;
+  font-weight: 400;
+}
+
+.dna-card-badge {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  color: var(--paper);
+  background: linear-gradient(135deg, var(--teal), #15586f);
+  border: 1px solid rgba(23,109,104,.38);
+  font: 10px Arial, sans-serif;
+  letter-spacing: 1px;
+}
+
+.dna-card-lockup {
+  margin-top: 20px;
+  display: grid;
+  gap: 8px;
+}
+
+.dna-card-lockup strong {
+  color: var(--ink);
+  font-size: 54px;
+  font-weight: 400;
+  letter-spacing: 2px;
+}
+
+.dna-card-lockup span {
+  color: #756c61;
+  font-size: 17px;
+  letter-spacing: .8px;
+}
+
+.dna-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.dna-meta-grid article {
+  min-width: 0;
+  padding: 16px 16px 18px;
+  border: 1px solid rgba(48,37,29,.12);
+  background: rgba(255,248,233,.78);
+}
+
+.dna-meta-grid small {
+  color: var(--cinnabar);
+  font: 10px Arial, sans-serif;
+  letter-spacing: 1.3px;
+}
+
+.dna-meta-grid .bilingual-line:first-child {
+  margin-top: 10px;
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.dna-meta-grid .bilingual-en {
+  font-size: 13px;
+}
+
+.dna-card-body {
+  margin: 18px 0 0;
+  color: #5f5145;
+  line-height: 1.9;
 }
 
 .trait-dual {
@@ -946,13 +1036,35 @@ footer > small {
 }
 
 .simple-result .full-only { display: none !important; }
+.simple-result .simple-only { display: block; }
 .simple-result .zodiac { margin-bottom: 8px; }
+.simple-result .zodiac-copy h3 { font-size: 38px; }
 .simple-result .name-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 36px; }
 .simple-result .name-card { display: block; padding: 28px; border: 1px solid rgba(48,37,29,.25); background: rgba(216,168,78,.1); text-align: center; }
 .simple-result .name-card small { color: var(--cinnabar); font: 10px Arial,sans-serif; }
 .simple-result .name-card .hanzi { margin-top: 12px; font-size: 40px; }
 .simple-result .name-card .pinyin { margin-top: 8px; }
 .simple-result .name-detail, .simple-result .name-card .seal { display: none; }
+.simple-result .report-cta {
+  color: #30251d;
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(245,239,226,.98));
+  border-color: rgba(48,37,29,.18);
+  box-shadow: 0 18px 38px rgba(48,37,29,.08);
+}
+
+.simple-result .report-cta .primary {
+  background: var(--teal);
+}
+
+.report-preview.is-zodiac-preview {
+  width: 180px;
+  height: 180px;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  box-shadow: 0 0 0 8px rgba(216,168,78,.14);
+}
 
 .tradition {
   margin: 44px 0 26px;
@@ -1115,7 +1227,13 @@ dialog:not([open]) { display: none; }
   .zodiac-glyph { width: 150px; }
   .report-cta { grid-template-columns: 1fr; }
   .report-preview { width: 100%; height: 280px; object-position: center 12%; }
+  .report-preview.is-zodiac-preview { width: 180px; height: 180px; margin: 0 auto; }
   .report-cta > div:last-child { grid-column: auto; }
+  .dna-card { padding: 22px 18px; }
+  .dna-card-head { display: block; }
+  .dna-card-badge { display: inline-block; margin-top: 12px; }
+  .dna-card-lockup strong { font-size: 42px; }
+  .dna-meta-grid { grid-template-columns: 1fr; }
   .tradition { padding: 24px 18px; }
   .tradition-head { align-items: flex-start; }
   .tradition-head h3 { font-size: 26px; }

@@ -843,14 +843,14 @@ registerForm.addEventListener("submit", async event => {
         maskedEmail: data.maskedEmail || maskEmail(formData.email || ""),
         cooldownSeconds: data.cooldownSeconds || 0
       });
-      showStatus(data.message || "验证码已发送，请检查邮箱。 / Verification code sent. Please check your inbox.");
+      showStatus(data.message || "验证码已发送，请检查邮箱。 / Verification code sent. Please check your inbox.", false, { autoHideMs: 2200 });
       return;
     }
 
     form.reset();
     setAuthChallenge("register", data?.authChallenge);
     setRegisterVerificationMode(false);
-    showStatus(data.message || "注册成功。 / Registration completed.");
+    showStatus(data.message || "注册成功。 / Registration completed.", false, { autoHideMs: 2200 });
     await fetchOverview();
     redirectAfterAuth();
   } catch (error) {
@@ -882,7 +882,7 @@ loginForm.addEventListener("submit", async event => {
     if (data?.authChallenge) setAuthChallenge("login", data.authChallenge);
     if (!response.ok) throw new Error(data.error || "登录失败，请稍后重试。");
     form.reset();
-    showStatus(data.message || "登录成功。 / Signed in successfully.");
+    showStatus(data.message || "登录成功。 / Signed in successfully.", false, { autoHideMs: 2200 });
     await fetchOverview();
     redirectAfterAuth();
   } catch (error) {
@@ -902,7 +902,7 @@ logoutBtn.addEventListener("click", async () => {
   renderMemberOrders([]);
   renderServiceOrders([]);
   await fetchSession();
-  showStatus("已退出登录。 / Signed out.");
+  showStatus("已退出登录。 / Signed out.", false, { autoHideMs: 2200 });
 });
 
 resendRegisterCodeBtn.addEventListener("click", async () => {
@@ -937,7 +937,7 @@ resendRegisterCodeBtn.addEventListener("click", async () => {
       maskedEmail: data.maskedEmail || registerVerificationMaskedEmail || maskEmail(formData.email || ""),
       cooldownSeconds: data.cooldownSeconds || 0
     });
-    showStatus(data.message || "验证码已重新发送。 / Verification code resent.");
+    showStatus(data.message || "验证码已重新发送。 / Verification code resent.", false, { autoHideMs: 2200 });
   } catch (error) {
     showStatus(normalizeRegisterError(error.message), true);
     await refreshAuthChallenge("register");
@@ -1011,7 +1011,7 @@ async function handleReturnedMemberPurchase() {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || "暂时无法确认这笔 PayPal 付款。");
 
-  showStatus("购买已完成，credits 已入账。 / Purchase completed and credits added.");
+  showStatus("购买已完成，credits 已入账。 / Purchase completed and credits added.", false, { autoHideMs: 2200 });
   history.replaceState({}, "", "/account.html");
   await fetchOverview();
 }

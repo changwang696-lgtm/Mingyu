@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>找回我的订单 | Mingyu</title>
+  <title>找回我的订单 / Find My Order | Mingyu</title>
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/guest-order.css" />
 </head>
@@ -13,31 +13,31 @@
       <header class="guest-topbar">
         <a class="brand" href="/"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
         <nav>
-          <a href="/">返回首页</a>
-          <a href="/checkout-success.html">支付完成后继续</a>
+          <a href="/">返回首页 / Home</a>
+          <a href="/checkout-success.html">支付完成后继续 / Continue After Payment</a>
         </nav>
       </header>
 
       <section class="guest-panel">
         <p class="guest-eyebrow">ORDER RECOVERY</p>
-        <h2>通过邮箱和订单号找回结果</h2>
-        <p>如果你已经完成付款，但当前页面已刷新或关闭，可以输入下单时填写的邮箱和订单号，重新打开你的订单结果。</p>
+        <h2>通过邮箱和订单号找回结果<br /><small>Recover your result with email and order ID</small></h2>
+        <p>如果你已经完成付款，但当前页面已刷新或关闭，可以输入下单时填写的邮箱和订单号，重新打开你的订单结果。<br />If you already completed payment but this page was refreshed or closed, enter the email and order ID used at checkout to reopen your saved result.</p>
         <form class="guest-form" id="lookupForm">
           <label>
-            <span>交付邮箱</span>
+            <span>交付邮箱 / Delivery Email</span>
             <input name="email" type="email" required placeholder="you@example.com" autocomplete="email" />
           </label>
           <label>
-            <span>订单号</span>
+            <span>订单号 / Order ID</span>
             <input name="orderId" required placeholder="guest_xxxxxxxxx" />
           </label>
-          <button class="guest-primary" type="submit">找回我的订单</button>
+          <button class="guest-primary" type="submit">找回我的订单 / Find My Order</button>
         </form>
         <p class="guest-message" id="lookupMessage"></p>
       </section>
     </div>
   </main>
 
-  <script src="/order-lookup.js"></script>
+  <script src="/order-lookup.js?v=20260831-bilingual-status"></script>
 </body>
 </html>

@@ -10,10 +10,10 @@ const translations = {
     atlasBody: "Here, the zodiac is not a fortune verdict. It is a set of twelve cultural archetypes used to understand time, temperament, and the rhythm of life.",
     pricingTitle: "Transparent one-time digital naming editions",
     pricingBody: "Mingyu currently sells two one-time digital naming editions. Payment is captured through PayPal, then the result is delivered on-site with email delivery and order recovery.",
-    starterType: "SIMPLE EDITION", starterTitle: "Names and zodiac", perMonth: "",
+    starterType: "SIMPLE EDITION", starterTitle: "DNA name card", perMonth: "",
     starterPoint1: "Three Chinese name options with pinyin",
-    starterPoint2: "A concise zodiac and cultural reading",
-    starterPoint3: "Saved order with result reopening and PDF download",
+    starterPoint2: "Your personal zodiac icon and elemental snapshot",
+    starterPoint3: "Shareable PDF card with saved result reopening",
     studioType: "COMPLETE EDITION", studioTitle: "Complete naming result",
     studioPoint1: "Complete bilingual interpretations for each suggested name",
     studioPoint2: "Zodiac traits, symbolism, stems, branches, and birth-hour reading",
@@ -39,7 +39,7 @@ const translations = {
     memberStripLoggedIn: "Open member center",
     memberStripGuestBody: "Sign in to receive welcome credits, generate with your balance, and keep a saved history in your account.",
     memberStripLoggedInBody: "Signed in as {name}. You have {credits} credits available and can generate directly with member balance.",
-    simpleCreditCaption: "Use 1 credit when signed in",
+    simpleCreditCaption: "Use 1 credit for your DNA card",
     completeCreditCaption: "Use 3 credits when signed in",
     memberPaymentFallback: "Not enough credits for this request. Continue with PayPal checkout for this one-time service.",
     creditUsed: "{count} credit used. {remaining} credits remaining.",
@@ -51,11 +51,11 @@ const translations = {
     genderLabel: "Gender expression", female: "Female", male: "Male", neutral: "Neutral / Any",
     birthLabel: "Date and time of birth", birthHint: "The more accurate, the more nuanced the cultural reading.",
     timezoneLabel: "Birthplace time zone", timezonePlaceholder: "Select the birthplace time zone", timezoneHint: "Daylight saving is applied before conversion to China Standard Time (UTC+8).", wishLabel: "What should your name convey?",
-    simpleEdition: "SIMPLE EDITION", simpleGenerate: "Names and zodiac", simpleNoPdf: "View online · No PDF download",
-    completeEdition: "COMPLETE EDITION", completeGenerate: "Complete naming result", completeWithPdf: "Full result · Save as PDF",
+    simpleEdition: "SIMPLE EDITION", simpleGenerate: "Unlock DNA card", simpleNoPdf: "Shareable result · PDF included",
+    completeEdition: "COMPLETE EDITION", completeGenerate: "Full 5-Phase blueprint", completeWithPdf: "Full result · Save as PDF",
     humanTitle: "Privacy first · Stored only for delivery", humanBody: "We store the details needed to deliver your paid result, reopen your order, and support dispute handling. This is a cultural interpretation, not fortune-telling or professional advice.",
-    resultTitle: "Your Chinese name folio", simpleResultTitle: "Your names and zodiac", restart: "Start again ↺",
-    zodiacTitle: "Your zodiac imagery", traditionTitle: "Traditional time & element reading", yearPillar: "Year pillar",
+    resultTitle: "Your 5-Phase Personality Blueprint", simpleResultTitle: "Your Elemental DNA Card", restart: "Start again ↺",
+    zodiacTitle: "Your elemental archetype", traditionTitle: "Traditional time & element reading", yearPillar: "Year pillar",
     heavenlyStem: "Heavenly stem", earthlyBranch: "Earthly branch & zodiac", birthHour: "Birth hour",
     stemMeaning: "The yin-yang and element carried by the year's heavenly stem", branchMeaning: "Each earthly branch has a fixed zodiac correspondence", methodNote: "Method note",
     zodiacProfileTitle: "Zodiac culture in detail", personalityEyebrow: "PERSONALITY", personalityTitle: "Personality traits",
@@ -63,6 +63,10 @@ const translations = {
     symbolismEyebrow: "SYMBOLISM & MEANING", symbolismTitle: "Symbolism & meaning",
     reportEyebrow: "PERSONAL EDITION", pdfReadyTitle: "Your complete report is ready",
     pdfReadyBody: "Save the complete result as a polished A4 PDF for printing, gifting or keeping.", savePdf: "Save PDF",
+    simpleCardEyebrow: "ELEMENTAL DNA CARD", simpleCardTitle: "Your shareable identity card", simpleCardBadge: "Shareable PDF Included",
+    simpleCardZodiacLabel: "ZODIAC", simpleCardElementLabel: "ACTIVE ELEMENTS", simpleCardTraitsLabel: "TRAITS",
+    simplePdfEyebrow: "DNA CARD · SHAREABLE EDITION", simplePdfReadyTitle: "Your shareable PDF card is ready",
+    simplePdfReadyBody: "Download a clean one-page PDF card with your chosen Chinese name, zodiac icon, and elemental snapshot.", saveCardPdf: "Download Card PDF",
     craftTitle: "An Eastern gift bearing your name to admire", craftSub: "Objects made by artisans, turning your name into a keepsake you can touch.",
     product1: "Custom name seal", product2: "Silk round fan", product3: "Name calligraphy scroll",
     launchTitle: "Current site status",
@@ -91,10 +95,10 @@ const translations = {
     atlasBody: "在这里，十二生肖不是命运判词，而是帮助理解时间、性格与生命节律的十二种文化原型。",
     pricingTitle: "清晰透明的一次性数字起名服务",
     pricingBody: "名屿当前提供两档一次性数字起名服务。买家通过 PayPal 付款后，结果会在站内交付，并同步提供邮件与订单找回。",
-    starterType: "简约版", starterTitle: "名字与生肖", perMonth: "",
+    starterType: "简约版", starterTitle: "DNA 名片", perMonth: "",
     starterPoint1: "提供 3 个中文候选名字与拼音",
-    starterPoint2: "附带简明生肖与文化解读",
-    starterPoint3: "订单保存结果，并支持重新打开与 PDF 下载",
+    starterPoint2: "包含你的专属生肖图标与五行快照",
+    starterPoint3: "支持分享型 PDF 名片下载与结果找回",
     studioType: "完整版", studioTitle: "完整起名结果",
     studioPoint1: "每个名字均附带完整中英双语释义",
     studioPoint2: "包含生肖性格、象征寓意、干支五行与出生时辰解读",
@@ -120,7 +124,7 @@ const translations = {
     memberStripLoggedIn: "打开会员中心",
     memberStripGuestBody: "登录后可获得欢迎 credits，直接用余额生成结果，并在会员中心查看历史记录。",
     memberStripLoggedInBody: "已登录为 {name}，当前剩余 {credits} credits，可直接使用会员余额生成结果。",
-    simpleCreditCaption: "登录后可使用 1 credit",
+    simpleCreditCaption: "登录后可使用 1 credit 解锁 DNA 名片",
     completeCreditCaption: "登录后可使用 3 credits",
     memberPaymentFallback: "当前 credits 不足，本次将转到 PayPal 完成单次服务支付。",
     creditUsed: "已消耗 {count} credit，当前剩余 {remaining} credits。",
@@ -131,10 +135,10 @@ const translations = {
     deliveryEmailLabel: "交付邮箱",
     deliveryEmailHint: "用于找回订单、重新打开结果，以及后续客服协助",
     birthLabel: "出生日期与时间", birthHint: "越准确，文化解读越细致", timezoneLabel: "出生地时区", timezonePlaceholder: "请选择出生地对应时区", timezoneHint: "系统会处理夏令时，并换算为中国标准时间（UTC+8）", wishLabel: "你希望名字传达什么？",
-    simpleEdition: "简约版", simpleGenerate: "生成名字及生肖", simpleNoPdf: "页面查看 · 不含 PDF 下载",
-    completeEdition: "完整版", completeGenerate: "生成全部起名结果", completeWithPdf: "完整页面 · 可保存 PDF",
+    simpleEdition: "简约版", simpleGenerate: "解锁 DNA 名片", simpleNoPdf: "分享型结果 · 含 PDF 下载",
+    completeEdition: "完整版", completeGenerate: "完整五行人格蓝图", completeWithPdf: "完整页面 · 可保存 PDF",
     humanTitle: "隐私优先 · 仅为交付保存必要信息", humanBody: "我们会保存交付结果、找回订单与处理争议所需的信息；如有顾虑可只输入姓氏。结果为传统文化创意解读，不构成命运预测或专业建议。",
-    resultTitle: "你的东方名字卷", simpleResultTitle: "你的名字与生肖", restart: "重新填写 ↺", zodiacTitle: "你的生肖意象",
+    resultTitle: "你的五行人格蓝图", simpleResultTitle: "你的元素 DNA 名片", restart: "重新填写 ↺", zodiacTitle: "你的元素原型",
     traditionTitle: "传统时序文化解读", yearPillar: "年柱", heavenlyStem: "天干", earthlyBranch: "地支与生肖", birthHour: "出生时辰",
     stemMeaning: "体现年柱天干的阴阳与五行属性", branchMeaning: "地支与生肖为固定对应关系", methodNote: "计算说明",
     zodiacProfileTitle: "生肖文化详解", personalityEyebrow: "性格意象 · PERSONALITY", personalityTitle: "性格特征",
@@ -142,6 +146,10 @@ const translations = {
     symbolismEyebrow: "文化意象 · SYMBOLISM & MEANING", symbolismTitle: "象征与寓意",
     reportEyebrow: "珍藏版 · PERSONAL EDITION", pdfReadyTitle: "完整报告已经生成",
     pdfReadyBody: "可将当前完整结果保存为精美 A4 PDF，用于珍藏、打印或赠礼。", savePdf: "保存 PDF",
+    simpleCardEyebrow: "元素 DNA 名片", simpleCardTitle: "你的可分享人格名片", simpleCardBadge: "含分享型 PDF",
+    simpleCardZodiacLabel: "生肖原型", simpleCardElementLabel: "活跃五行", simpleCardTraitsLabel: "人格关键词",
+    simplePdfEyebrow: "DNA 名片 · SHAREABLE EDITION", simplePdfReadyTitle: "你的分享型 PDF 名片已生成",
+    simplePdfReadyBody: "可下载一页式 PDF 名片，包含你的中文名、专属生肖图标与五行快照，适合保存与分享。", saveCardPdf: "下载名片 PDF",
     craftTitle: "一件带着名字的东方礼物欣赏", craftSub: "来自手艺人的小物，为名字留下可以触摸的纪念。",
     product1: "定制姓名印章", product2: "缂丝团扇", product3: "姓名书法卷",
     launchTitle: "当前站点状态",
@@ -197,8 +205,8 @@ let servicePricing = {
 
 const tierCopy = {
   simple: {
-    zh: { title: "确认生成简约版", eyebrow: "简约版 · SIMPLE EDITION", benefits: ["生成 3 个中文候选名字及拼音", "展示对应的固定十二生肖", "结果保存到订单并支持 PDF 下载"] },
-    en: { title: "Confirm Simple Edition", eyebrow: "SIMPLE EDITION", benefits: ["Three Chinese name options with pinyin", "Your fixed Chinese zodiac sign", "Saved to your order with PDF download access"] }
+    zh: { title: "确认生成 DNA 名片", eyebrow: "简约版 · SIMPLE EDITION", benefits: ["生成 3 个中文候选名字及拼音", "展示你的专属生肖图标与五行快照", "结果保存到订单并支持分享型 PDF 下载"] },
+    en: { title: "Confirm Your DNA Card", eyebrow: "SIMPLE EDITION", benefits: ["Three Chinese name options with pinyin", "Your personal zodiac icon and elemental snapshot", "Saved to your order with shareable PDF access"] }
   },
   complete: {
     zh: { title: "确认生成完整版", eyebrow: "完整版 · COMPLETE EDITION", benefits: ["全部名字释义与中英双语解读", "生肖性格、象征寓意、干支五行与时辰", "完整结果可保存为 A4 PDF"] },
@@ -487,7 +495,7 @@ function render(data) {
   const animalKey = data.zodiac.animalEn.toLowerCase();
   const usedCredits = data.membership?.consumedCredits;
   $("#result").classList.toggle("simple-result", simple);
-  $("#resultTitle").textContent = simple ? "你的东方名字卷 / Simple Naming Result" : "你的东方名字卷 / Complete Naming Result";
+  $("#resultTitle").textContent = simple ? t("simpleResultTitle") : t("resultTitle");
   $("#editionBadge").textContent = usedCredits
     ? `${simple ? "简约版 / Simple Edition" : "完整版 / Complete Edition"} · ${usedCredits} credits`
     : getEditionBadgeText(simple ? "simple" : "complete");
@@ -505,12 +513,22 @@ function render(data) {
   $("#culturalNote").innerHTML = bilingualText(data.culturalNote, data.culturalNoteEn);
   renderZodiacProfile(data.traditionalCulture);
   renderCulture(data.traditionalCulture);
+  renderSimpleCard(data);
   $("#nameList").innerHTML = data.names.map((name, index) => `
     <article class="name-card">
       <div><small>候选 / NAME 0${index + 1}</small><div class="hanzi">${esc(name.hanzi)}</div><div class="pinyin">${esc(name.pinyin)}</div></div>
       <div class="name-detail"><p class="bilingual-block">${bilingualText(name.meaning, name.meaningEn)}</p><span class="tone">${esc(name.tone)}</span></div>
       <div class="seal"><span class="seal-mark" aria-hidden="true">印</span><span class="seal-text">${esc(name.seal)}</span></div>
     </article>`).join("");
+  if ($("#reportEyebrowText")) $("#reportEyebrowText").textContent = simple ? t("simplePdfEyebrow") : t("reportEyebrow");
+  if ($("#pdfReadyTitleText")) $("#pdfReadyTitleText").textContent = simple ? t("simplePdfReadyTitle") : t("pdfReadyTitle");
+  if ($("#pdfReadyBodyText")) $("#pdfReadyBodyText").textContent = simple ? t("simplePdfReadyBody") : t("pdfReadyBody");
+  if ($("#savePdf")) $("#savePdf").textContent = simple ? t("saveCardPdf") : t("savePdf");
+  if ($("#reportPreviewImage")) {
+    $("#reportPreviewImage").src = simple ? `/assets/zodiac/${animalKey}.jpg` : "/assets/zodiac/report-overview.jpg";
+    $("#reportPreviewImage").alt = simple ? `${data.zodiac.animal} ${lang === "zh" ? "名片预览" : "identity card preview"}` : "十二生肖 PDF 报告内页预览";
+    $("#reportPreviewImage").classList.toggle("is-zodiac-preview", simple);
+  }
   $("#demoBadge").hidden = !data.demo;
   $("#demoBadge").textContent = "文化体验版 / Cultural preview";
 }
@@ -918,6 +936,31 @@ function renderCulture(culture) {
     element.textContent = element.dataset.element;
     element.title = `${element.dataset.element} / ${elements[element.dataset.element]}`;
   });
+}
+
+function getElementalSnapshot(culture = {}) {
+  const order = ["木", "火", "土", "金", "水"];
+  const elements = { 木: "Wood", 火: "Fire", 土: "Earth", 金: "Metal", 水: "Water" };
+  const present = new Set([culture.stem?.element, culture.branch?.element, culture.hourBranch?.element].filter(Boolean));
+  const ordered = order.filter(element => present.has(element));
+  return {
+    zh: ordered.join(" · ") || "-",
+    en: ordered.map(element => elements[element] || element).join(" · ") || "-"
+  };
+}
+
+function renderSimpleCard(data) {
+  if (!$("#dnaCardName")) return;
+  const firstName = Array.isArray(data.names) && data.names.length ? data.names[0] : {};
+  const elementSnapshot = getElementalSnapshot(data.traditionalCulture || {});
+  const zhTraits = Array.isArray(data.zodiac?.traits) ? data.zodiac.traits.slice(0, 3) : [];
+  const enTraits = Array.isArray(data.zodiac?.traitsEn) ? data.zodiac.traitsEn.slice(0, 3) : [];
+  $("#dnaCardName").textContent = firstName.hanzi || data.inputName || data.zodiac?.animal || "-";
+  $("#dnaCardPinyin").textContent = firstName.pinyin || data.zodiac?.animalEn || "";
+  $("#dnaCardZodiac").innerHTML = bilingualText(`${data.zodiac?.animal || "-"} · ${data.zodiac?.years || "-"}`, `${data.zodiac?.animalEn || "-"} · ${data.zodiac?.years || "-"}`);
+  $("#dnaCardElements").innerHTML = bilingualText(elementSnapshot.zh, elementSnapshot.en);
+  $("#dnaCardTraits").innerHTML = bilingualText(zhTraits.join(" · ") || "-", enTraits.join(" · ") || "");
+  $("#dnaCardMeaning").innerHTML = bilingualText(firstName.meaning || data.summary || "-", firstName.meaningEn || data.summaryEn || "");
 }
 
 function esc(value) {
