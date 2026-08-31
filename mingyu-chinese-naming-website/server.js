@@ -3107,28 +3107,39 @@ async function buildNamingReportPdfBytes({
       font,
       color: colors.warm
     });
-    y -= 26;
+    y -= 18;
+    drawParagraph("这是一份围绕名字、生肖原型与东方文化意象展开的完整人格探索报告。候选名字将从下一页开始呈现。", {
+      size: 10.5,
+      color: colors.soft,
+      x: margin + 26,
+      width: maxWidth - 52,
+      gapAfter: 10
+    });
+    drawCardSignature({
+      dark: false,
+      y: 34
+    });
   } else {
     drawSectionTitle("你的元素原型 / Elemental Archetype", "单生肖图标会作为你的分享型 DNA 名片主视觉");
-  }
-  drawCenteredAsset(zodiacImage, 130, 130, 14);
-  drawTextLine(`${resultData.zodiac?.years || "-"} · ${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
-    size: 15,
-    color: colors.ink
-  });
-  if (zodiacTraits.length) {
-    drawParagraph(`Traits / 特征: ${zodiacTraits.join(" · ")}`, {
-      size: 10,
-      color: colors.warm,
-      gapAfter: 6
+    drawCenteredAsset(zodiacImage, 130, 130, 14);
+    drawTextLine(`${resultData.zodiac?.years || "-"} · ${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
+      size: 15,
+      color: colors.ink
     });
+    if (zodiacTraits.length) {
+      drawParagraph(`Traits / 特征: ${zodiacTraits.join(" · ")}`, {
+        size: 10,
+        color: colors.warm,
+        gapAfter: 6
+      });
+    }
+    drawParagraph(joinPdfBilingualText(resultData.summary || "暂无概览说明。", resultData.summaryEn || "Summary unavailable."), {
+      size: 11,
+      color: colors.soft,
+      gapAfter: 10
+    });
+    drawDivider();
   }
-  drawParagraph(joinPdfBilingualText(resultData.summary || "暂无概览说明。", resultData.summaryEn || "Summary unavailable."), {
-    size: 11,
-    color: colors.soft,
-    gapAfter: 10
-  });
-  drawDivider();
 
   if (isComplete) {
     beginNewPage(true);
@@ -3145,6 +3156,36 @@ async function buildNamingReportPdfBytes({
     for (const option of Array.isArray(resultData.names) ? resultData.names : []) {
       drawNameOptionCard(option);
     }
+
+    beginNewPage(true);
+    drawMysticCardOrnaments({
+      dark: false,
+      centerY: pageHeight / 2 + 4,
+      centerRadius: 118,
+      showCenterCircles: false,
+      showOrbitDots: false,
+      showShootingStars: false,
+      showBeidou: true
+    });
+    drawSectionTitle("生肖原型概览 / Zodiac Snapshot", "这一页展示你的生肖原型、人格关键词与东方文化概览");
+    drawCenteredAsset(zodiacImage, 150, 150, 18);
+    drawTextLine(`${resultData.zodiac?.years || "-"} · ${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
+      size: 15,
+      color: colors.ink
+    });
+    if (zodiacTraits.length) {
+      drawParagraph(`Traits / 特征: ${zodiacTraits.join(" · ")}`, {
+        size: 10,
+        color: colors.warm,
+        gapAfter: 6
+      });
+    }
+    drawParagraph(joinPdfBilingualText(resultData.summary || "暂无概览说明。", resultData.summaryEn || "Summary unavailable."), {
+      size: 11,
+      color: colors.soft,
+      gapAfter: 10
+    });
+    drawDivider();
 
     beginNewPage(true);
     drawSectionTitle("生肖文化详解 / Zodiac Culture", "新增网页同款的双栏文化版式，保留性格特征与象征寓意");
