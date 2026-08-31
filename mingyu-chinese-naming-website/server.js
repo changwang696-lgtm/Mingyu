@@ -1137,8 +1137,10 @@ async function listUserGuestOrdersByUser(userId, email, limit = 12) {
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice(0, normalizedLimit);
   }
-  const [byUser, byEmail] = await Promise.all([
-    supabaseRequest("guest_orders", {
+  const isMissingGuestOrderUserId = error => /guest_orders\.user_id|column\s+guest_orders\.user_id\s+does\s+not\s+exist/i.test(String(error?.message || error || ""));
+  let byUser = [];
+  try {
+    byUser = await supabaseRequest("guest_orders", {
       searchParams: {
         select: "*",
         user_id: `eq.${userId}`,
@@ -1146,17 +1148,19 @@ async function listUserGuestOrdersByUser(userId, email, limit = 12) {
         limit: normalizedLimit
       },
       allowEmpty: true
-    }),
-    supabaseRequest("guest_orders", {
-      searchParams: {
-        select: "*",
-        email: `eq.${email}`,
-        order: "created_at.desc",
-        limit: normalizedLimit
-      },
-      allowEmpty: true
-    })
-  ]);
+    });
+  } catch (error) {
+    if (!isMissingGuestOrderUserId(error)) throw error;
+  }
+  const byEmail = await supabaseRequest("guest_orders", {
+    searchParams: {
+      select: "*",
+      email: `eq.${email}`,
+      order: "created_at.desc",
+      limit: normalizedLimit
+    },
+    allowEmpty: true
+  });
   const merged = [...(byUser || []), ...(byEmail || [])];
   const unique = Array.from(new Map(merged.map(row => [row.id, row])).values());
   return unique
@@ -1192,7 +1196,20 @@ async function getAdminUserDetail(userId) {
     memberOrderCount = (database.memberOrders || []).filter(item => item.userId === userId).length;
     guestOrderCount = (database.guestOrders || []).filter(item => item.userId === userId || item.email === user.email).length;
   } else {
-    const [sessionRows, ledgerRows, reportRows, memberOrderRows, guestOrderUserRows, guestOrderEmailRows] = await Promise.all([
+    const isMissingGuestOrderUserId = error => /guest_orders\.user_id|column\s+guest_orders\.user_id\s+does\s+not\s+exist/i.test(String(error?.message || error || ""));
+    let guestOrderUserRows = [];
+    try {
+      guestOrderUserRows = await supabaseRequest("guest_orders", {
+        searchParams: {
+          select: "id",
+          user_id: `eq.${userId}`
+        },
+        allowEmpty: true
+      });
+    } catch (error) {
+      if (!isMissingGuestOrderUserId(error)) throw error;
+    }
+    const [sessionRows, ledgerRows, reportRows, memberOrderRows, guestOrderEmailRows] = await Promise.all([
       supabaseRequest("app_sessions", {
         searchParams: {
           select: "id",
@@ -1215,13 +1232,6 @@ async function getAdminUserDetail(userId) {
         allowEmpty: true
       }),
       supabaseRequest("member_orders", {
-        searchParams: {
-          select: "id",
-          user_id: `eq.${userId}`
-        },
-        allowEmpty: true
-      }),
-      supabaseRequest("guest_orders", {
         searchParams: {
           select: "id",
           user_id: `eq.${userId}`
@@ -1280,12 +1290,17 @@ async function deleteUserPermanently(userId, confirmationEmail) {
   }
 
   if (useSupabase) {
-    await Promise.all([
-      supabaseRequest("guest_orders", {
+    const isMissingGuestOrderUserId = error => /guest_orders\.user_id|column\s+guest_orders\.user_id\s+does\s+not\s+exist/i.test(String(error?.message || error || ""));
+    try {
+      await supabaseRequest("guest_orders", {
         method: "DELETE",
         searchParams: { user_id: `eq.${user.id}` },
         allowEmpty: true
-      }),
+      });
+    } catch (error) {
+      if (!isMissingGuestOrderUserId(error)) throw error;
+    }
+    await Promise.all([
       supabaseRequest("guest_orders", {
         method: "DELETE",
         searchParams: { email: `eq.${user.email}` },
@@ -1305,6 +1320,70 @@ async function deleteUserPermanently(userId, confirmationEmail) {
     id: user.id,
     email: user.email,
     displayName: user.displayName
+  };
+}
+
+async function adjustAdminUserCredits(userId, creditsDelta, reason, adminUsername) {
+  const user = await getUserById(userId);
+  if (!user) throw new Error("User account was not found.");
+  const normalizedDelta = Number.parseInt(creditsDelta, 10);
+  if (!Number.isFinite(normalizedDelta) || normalizedDelta === 0) {
+    throw new Error("Credits adjustment must be a non-zero integer.");
+  }
+  const nextBalance = (Number(user.creditsBalance) || 0) + normalizedDelta;
+  if (nextBalance < 0) {
+    throw new Error(`Not enough credits. Current balance is ${Number(user.creditsBalance) || 0}.`);
+  }
+  const note = String(reason || "").trim();
+  const description = note
+    ? `Admin credits adjustment by ${adminUsername}: ${note}`
+    : `Admin credits adjustment by ${adminUsername}`;
+
+  if (!useSupabase) {
+    const liveUser = database.users.find(item => item.id === userId);
+    if (!liveUser) throw new Error("User account was not found.");
+    addLedgerEntry(liveUser, {
+      type: normalizedDelta > 0 ? "grant" : "consume",
+      source: "admin",
+      description,
+      creditsDelta: normalizedDelta
+    });
+    saveDatabase();
+    return {
+      user: summarizeAdminUser(liveUser),
+      creditsDelta: normalizedDelta,
+      currentBalance: liveUser.creditsBalance
+    };
+  }
+
+  await supabaseRequest("app_users", {
+    method: "PATCH",
+    searchParams: {
+      id: `eq.${userId}`
+    },
+    body: {
+      credits_balance: nextBalance
+    },
+    allowEmpty: true
+  });
+  await supabaseRequest("credit_ledger", {
+    method: "POST",
+    body: {
+      id: nextId("ledger_"),
+      user_id: userId,
+      entry_type: normalizedDelta > 0 ? "grant" : "consume",
+      source: "admin",
+      description,
+      credits_delta: normalizedDelta,
+      credits_balance_after: nextBalance,
+      reference_id: null
+    }
+  });
+  const updatedUser = await getUserById(userId);
+  return {
+    user: summarizeAdminUser(updatedUser || { ...user, creditsBalance: nextBalance }),
+    creditsDelta: normalizedDelta,
+    currentBalance: nextBalance
   };
 }
 
@@ -4616,6 +4695,25 @@ async function handleAdminUserDelete(req, res) {
   });
 }
 
+async function handleAdminUserCredits(req, res) {
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  const userId = String(body.userId || "").trim();
+  const creditsDelta = body.creditsDelta;
+  const reason = String(body.reason || "").trim();
+  if (!userId) return send(res, 422, { error: "User ID is required." });
+  const result = await adjustAdminUserCredits(userId, creditsDelta, reason, admin.username);
+  send(res, 200, {
+    ok: true,
+    user: result.user,
+    creditsDelta: result.creditsDelta,
+    currentBalance: result.currentBalance,
+    message: `${result.user.email} credits updated successfully.`
+  });
+}
+
 async function handleAdminGuestOrders(req, res, url) {
   if (!requireAdmin(req, res)) return;
   const status = String(url.searchParams.get("status") || "").trim();
@@ -5263,6 +5361,7 @@ http.createServer((req, res) => {
     if (req.method === "GET" && pathname === "/api/admin/users") return handleAdminUsers(req, res, url);
     if (req.method === "GET" && pathname === "/api/admin/users/detail") return handleAdminUserDetail(req, res, url);
     if (req.method === "POST" && pathname === "/api/admin/users/delete") return handleAdminUserDelete(req, res);
+    if (req.method === "POST" && pathname === "/api/admin/users/credits") return handleAdminUserCredits(req, res);
     if (req.method === "GET" && pathname === "/api/admin/feedback") return handleAdminFeedback(req, res, url);
     if (req.method === "POST" && pathname === "/api/admin/feedback/reply") return handleAdminFeedbackReply(req, res);
     if (req.method === "GET" && pathname === "/api/admin/member-plans") return handleAdminMemberPlans(req, res);

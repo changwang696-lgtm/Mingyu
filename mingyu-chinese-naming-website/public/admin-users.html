@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>用户管理后台 | Mingyu</title>
   <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/admin.css?v=20260830-admin-users" />
+  <link rel="stylesheet" href="/admin.css?v=20260831-admin-users-credits" />
 </head>
 <body>
   <main class="admin-shell">
@@ -76,6 +76,27 @@
               <div class="admin-related-list" id="userFeedbackList"></div>
             </section>
 
+            <section class="admin-subpanel">
+              <div class="admin-list-header">
+                <h3>调整 Credits</h3>
+                <span class="admin-muted">正数增加，负数扣减</span>
+              </div>
+              <form id="creditsAdjustForm" class="admin-form">
+                <div class="admin-inline-grid">
+                  <label class="admin-field">
+                    <span>调整数值</span>
+                    <input id="creditsDeltaInput" type="number" step="1" placeholder="例如：10 或 -3" />
+                  </label>
+                  <label class="admin-field">
+                    <span>备注原因</span>
+                    <input id="creditsReasonInput" type="text" maxlength="120" placeholder="例如：客服补偿 / 手动修正" />
+                  </label>
+                </div>
+                <p class="admin-muted admin-helper-text">修改后会同步写入积分流水，便于后续排查。</p>
+                <button class="admin-primary" id="updateCreditsBtn" type="submit" disabled>更新这个用户的 Credits</button>
+              </form>
+            </section>
+
             <section class="admin-subpanel admin-danger-panel">
               <div class="admin-list-header">
                 <h3>永久删除用户</h3>
@@ -95,6 +116,6 @@
       </section>
     </div>
   </main>
-  <script src="/admin-users.js?v=20260830-admin-users"></script>
+  <script src="/admin-users.js?v=20260831-admin-users-credits"></script>
 </body>
 </html>

@@ -237,6 +237,10 @@
   color: #9e392b;
 }
 
+.admin-helper-text {
+  margin: -4px 0 0;
+}
+
 .admin-list-header {
   display: flex;
   justify-content: space-between;

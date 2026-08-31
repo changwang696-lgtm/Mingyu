@@ -37,9 +37,18 @@ function resetUserDetail() {
   state.selectedUser = null;
   $("#userDetailEmpty").hidden = false;
   $("#userDetailBox").hidden = true;
+  $("#creditsDeltaInput").value = "";
+  $("#creditsReasonInput").value = "";
+  $("#updateCreditsBtn").disabled = true;
   $("#deleteConfirmInput").value = "";
   $("#deleteUserBtn").dataset.userId = "";
   $("#deleteUserBtn").disabled = true;
+}
+
+function setCreditsBusy(isBusy) {
+  const button = $("#updateCreditsBtn");
+  button.disabled = isBusy || !state.selectedUser?.user?.id;
+  button.textContent = isBusy ? "正在更新 Credits..." : "更新这个用户的 Credits";
 }
 
 function setDeleteBusy(isBusy) {
@@ -166,6 +175,9 @@ function renderUserDetail(detail) {
   })));
 
   $("#deleteWarningText").textContent = `永久删除后，将清理 ${detail.user.email} 的账号、会话、会员订单、生成记录、大师留言，以及关联旧游客订单。`;
+  $("#creditsDeltaInput").value = "";
+  $("#creditsReasonInput").value = "";
+  setCreditsBusy(false);
   $("#deleteConfirmInput").value = "";
   $("#deleteConfirmInput").placeholder = detail.user.email;
   $("#deleteUserBtn").dataset.userId = detail.user.id;
@@ -237,6 +249,33 @@ async function deleteUser(userId, confirmationEmail) {
   }
 }
 
+async function updateCredits(userId, creditsDelta, reason) {
+  showMessage("正在更新用户 Credits...");
+  setCreditsBusy(true);
+  try {
+    const response = await fetch("/api/admin/users/credits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, creditsDelta, reason })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "更新 Credits 失败。");
+    $("#creditsDeltaInput").value = "";
+    $("#creditsReasonInput").value = "";
+    showMessage(`已更新 ${data.user.email} 的 Credits，当前余额：${data.currentBalance}`);
+    await loadUsers();
+    if (userId) {
+      state.selectedUserId = userId;
+      await loadUserDetail(userId);
+    }
+  } catch (error) {
+    showMessage(error, true);
+    throw error;
+  } finally {
+    setCreditsBusy(false);
+  }
+}
+
 $("#refreshUsersBtn").addEventListener("click", () => {
   loadUsers().catch(error => showMessage(error, true));
 });
@@ -246,6 +285,22 @@ $("#searchInput").addEventListener("keydown", event => {
     event.preventDefault();
     loadUsers().catch(error => showMessage(error, true));
   }
+});
+
+$("#creditsAdjustForm").addEventListener("submit", event => {
+  event.preventDefault();
+  const userId = state.selectedUser?.user?.id;
+  const creditsDelta = Number.parseInt($("#creditsDeltaInput").value, 10);
+  const reason = $("#creditsReasonInput").value.trim();
+  if (!userId) {
+    showMessage("请先从左侧选择一个用户。", true);
+    return;
+  }
+  if (!Number.isFinite(creditsDelta) || creditsDelta === 0) {
+    showMessage("请输入非 0 的整数 Credits 变动值。", true);
+    return;
+  }
+  updateCredits(userId, creditsDelta, reason).catch(error => showMessage(error, true));
 });
 
 $("#deleteUserForm").addEventListener("submit", event => {
