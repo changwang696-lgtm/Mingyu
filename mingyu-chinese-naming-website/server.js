@@ -2111,37 +2111,166 @@ async function buildNamingReportPdfBytes({
   const measurePdfLinesHeight = (lineCount, size, gapAfter = 0) => (lineCount * (size + lineGap)) + gapAfter;
 
   const drawNameOptionCard = option => {
-    const title = `${option.hanzi || ""}  ${option.pinyin || ""}`.trim();
+    const hanzi = String(option.hanzi || "").trim() || "-";
+    const pinyin = String(option.pinyin || "").trim() || "-";
     const meaningText = joinPdfBilingualText(option.meaning || "", option.meaningEn || "");
-    const meaningLines = wrapPdfText(meaningText, font, 10, maxWidth - 24);
-    const cardHeight =
-      14 +
-      (title ? measurePdfLinesHeight(1, 14) : 0) +
-      (option.seal ? measurePdfLinesHeight(1, 10) : 0) +
-      (option.tone ? measurePdfLinesHeight(1, 10) : 0) +
-      measurePdfLinesHeight(meaningLines.length, 10, 10);
+    const hanziLines = wrapPdfText(hanzi, font, 19, maxWidth - 156).slice(0, 2);
+    const pinyinLines = wrapPdfText(pinyin, font, 11, maxWidth - 156).slice(0, 2);
+    const meaningLines = wrapPdfText(meaningText, font, 10.2, maxWidth - 42).slice(0, 7);
+    const toneHeight = option.tone ? 18 : 0;
+    const cardHeight = Math.max(
+      150,
+      28
+      + (hanziLines.length * 24)
+      + (pinyinLines.length * 15)
+      + toneHeight
+      + (meaningLines.length * 13)
+      + 26
+    );
 
     ensureSpace(cardHeight + 8);
+    const cardY = y - cardHeight;
+    const cardX = margin;
+    const cardW = maxWidth;
+    const headerLineY = cardY + cardHeight - 62;
     page.drawRectangle({
-      x: margin,
-      y: y - cardHeight,
-      width: maxWidth,
+      x: cardX,
+      y: cardY,
+      width: cardW,
       height: cardHeight,
       color: colors.panel,
       borderWidth: 1,
       borderColor: colors.line
     });
-    y -= 14;
-    if (title) drawTextLine(title, { size: 14, color: colors.ink, x: margin + 12 });
-    if (option.seal) drawTextLine(`Seal / 印记: ${option.seal}`, { size: 10, color: colors.warm, x: margin + 12 });
-    if (option.tone) drawTextLine(`Tone / 声调: ${option.tone}`, { size: 10, color: colors.warm, x: margin + 12 });
-    drawParagraph(meaningText, {
-      size: 10,
-      color: colors.soft,
-      x: margin + 12,
-      width: maxWidth - 24,
-      gapAfter: 10
+    page.drawRectangle({
+      x: cardX + 8,
+      y: cardY + 8,
+      width: cardW - 16,
+      height: cardHeight - 16,
+      borderWidth: 0.8,
+      borderColor: colors.line,
+      opacity: 0.55
     });
+    page.drawLine({
+      start: { x: cardX + 18, y: headerLineY },
+      end: { x: cardX + cardW - 18, y: headerLineY },
+      thickness: 1,
+      color: colors.line,
+      opacity: 0.55
+    });
+    [
+      { x: cardX + 12, y: cardY + cardHeight - 12, dx: 18, dy: -18 },
+      { x: cardX + cardW - 12, y: cardY + cardHeight - 12, dx: -18, dy: -18 },
+      { x: cardX + 12, y: cardY + 12, dx: 18, dy: 18 },
+      { x: cardX + cardW - 12, y: cardY + 12, dx: -18, dy: 18 }
+    ].forEach(corner => {
+      page.drawLine({
+        start: { x: corner.x, y: corner.y },
+        end: { x: corner.x + corner.dx, y: corner.y },
+        thickness: 0.8,
+        color: colors.line,
+        opacity: 0.4
+      });
+      page.drawLine({
+        start: { x: corner.x, y: corner.y },
+        end: { x: corner.x, y: corner.y + corner.dy },
+        thickness: 0.8,
+        color: colors.line,
+        opacity: 0.4
+      });
+    });
+    page.drawText("NAME OPTION / 候选名", {
+      x: cardX + 18,
+      y: cardY + cardHeight - 24,
+      size: 8.5,
+      font,
+      color: colors.warm
+    });
+    let headingY = cardY + cardHeight - 48;
+    hanziLines.forEach(line => {
+      page.drawText(line, {
+        x: cardX + 18,
+        y: headingY,
+        size: 19,
+        font,
+        color: colors.ink
+      });
+      headingY -= 24;
+    });
+    pinyinLines.forEach(line => {
+      page.drawText(line, {
+        x: cardX + 18,
+        y: headingY + 2,
+        size: 11,
+        font,
+        color: colors.warm
+      });
+      headingY -= 15;
+    });
+    if (option.tone) {
+      page.drawText(`Tone / 声调: ${option.tone}`, {
+        x: cardX + 18,
+        y: headerLineY - 18,
+        size: 9.5,
+        font,
+        color: colors.warm
+      });
+    }
+    if (option.seal) {
+      const sealText = String(option.seal || "").trim();
+      page.drawRectangle({
+        x: cardX + cardW - 86,
+        y: cardY + cardHeight - 64,
+        width: 56,
+        height: 42,
+        color: colors.cinnabar,
+        borderWidth: 1,
+        borderColor: colors.goldLight
+      });
+      page.drawRectangle({
+        x: cardX + cardW - 82,
+        y: cardY + cardHeight - 60,
+        width: 48,
+        height: 34,
+        borderWidth: 0.7,
+        borderColor: colors.goldLight,
+        opacity: 0.6
+      });
+      const sealWidth = font.widthOfTextAtSize(sealText, 15);
+      page.drawText(sealText, {
+        x: cardX + cardW - 58 - (sealWidth / 2),
+        y: cardY + cardHeight - 48,
+        size: 15,
+        font,
+        color: colors.paper
+      });
+    }
+    let meaningY = headerLineY - 42;
+    meaningLines.forEach(line => {
+      page.drawText(line || " ", {
+        x: cardX + 18,
+        y: meaningY,
+        size: 10.2,
+        font,
+        color: colors.soft
+      });
+      meaningY -= 13;
+    });
+    page.drawCircle({
+      x: cardX + cardW - 30,
+      y: cardY + 24,
+      size: 2,
+      color: colors.gold,
+      opacity: 0.35
+    });
+    page.drawCircle({
+      x: cardX + cardW - 46,
+      y: cardY + 32,
+      size: 1.3,
+      color: colors.warm,
+      opacity: 0.28
+    });
+    y = cardY - 12;
   };
 
   const drawCompactNameOptions = options => {
@@ -2958,10 +3087,11 @@ async function buildNamingReportPdfBytes({
   if (isComplete) {
     const zhTitle = "东方智慧自我探索";
     const enTitle = "Self-Exploration Through Eastern Wisdom";
-    const zhTitleSize = 21;
-    const enTitleSize = 12.5;
+    const zhTitleSize = 24;
+    const enTitleSize = 14;
     const zhTitleWidth = font.widthOfTextAtSize(zhTitle, zhTitleSize);
     const enTitleWidth = font.widthOfTextAtSize(enTitle, enTitleSize);
+    y -= 18;
     page.drawText(zhTitle, {
       x: (pageWidth - zhTitleWidth) / 2,
       y,
@@ -2969,7 +3099,7 @@ async function buildNamingReportPdfBytes({
       font,
       color: colors.ink
     });
-    y -= 28;
+    y -= 34;
     page.drawText(enTitle, {
       x: (pageWidth - enTitleWidth) / 2,
       y,
@@ -2977,7 +3107,7 @@ async function buildNamingReportPdfBytes({
       font,
       color: colors.warm
     });
-    y -= 20;
+    y -= 26;
   } else {
     drawSectionTitle("你的元素原型 / Elemental Archetype", "单生肖图标会作为你的分享型 DNA 名片主视觉");
   }
@@ -3002,6 +3132,15 @@ async function buildNamingReportPdfBytes({
 
   if (isComplete) {
     beginNewPage(true);
+    drawMysticCardOrnaments({
+      dark: false,
+      centerY: pageHeight / 2 + 18,
+      centerRadius: 126,
+      showCenterCircles: false,
+      showOrbitDots: false,
+      showShootingStars: true,
+      showBeidou: true
+    });
     drawSectionTitle("候选名字 / Name Options", "每个名字说明都同步输出中文与英文");
     for (const option of Array.isArray(resultData.names) ? resultData.names : []) {
       drawNameOptionCard(option);
