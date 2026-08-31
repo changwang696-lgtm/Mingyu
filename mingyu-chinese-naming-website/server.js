@@ -2834,16 +2834,21 @@ async function buildNamingReportPdfBytes({
     const snapshotTitleEn = "Zodiac Snapshot";
     const identityLine = `${resultData.zodiac?.years || "-"} · ${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`;
     const traitLine = zodiacTraits.join(" · ") || "传统特质待生成";
-    const summaryText = joinPdfBilingualText(
-      resultData.summary || "暂无概览说明。",
-      resultData.summaryEn || "Summary unavailable."
-    );
-    const summaryLines = wrapPdfText(summaryText, font, 10.5, panelWidth - 76).slice(0, 9);
+    const summaryZh = String(resultData.summary || "暂无概览说明。").trim();
+    const summaryEn = String(resultData.summaryEn || "Summary unavailable.").trim();
     const titleZhWidth = font.widthOfTextAtSize(snapshotTitleZh, 22);
     const titleEnWidth = font.widthOfTextAtSize(snapshotTitleEn, 12.5);
     const identityWidth = font.widthOfTextAtSize(identityLine, 17);
     const traitLabel = "人格关键词 / TRAITS";
     const traitLabelWidth = font.widthOfTextAtSize(traitLabel, 9.5);
+    const reflectionBoxX = panelX + 34;
+    const reflectionBoxY = panelY + 34;
+    const reflectionBoxWidth = panelWidth - 68;
+    const reflectionBoxHeight = 168;
+    const reflectionTextX = reflectionBoxX + 18;
+    const reflectionTextWidth = reflectionBoxWidth - 36;
+    const summaryZhLines = wrapPdfText(summaryZh, font, 10.2, reflectionTextWidth).slice(0, 4);
+    const summaryEnLines = wrapPdfText(summaryEn, font, 9.8, reflectionTextWidth).slice(0, 5);
 
     ensureSpace(panelHeight + 20);
     page.drawRectangle({
@@ -2993,39 +2998,71 @@ async function buildNamingReportPdfBytes({
     });
 
     page.drawRectangle({
-      x: panelX + 34,
-      y: panelY + 34,
-      width: panelWidth - 68,
-      height: 164,
+      x: reflectionBoxX,
+      y: reflectionBoxY,
+      width: reflectionBoxWidth,
+      height: reflectionBoxHeight,
       color: rgb(0.99, 0.98, 0.95),
       opacity: 0.78,
       borderWidth: 1,
       borderColor: colors.line
     });
     page.drawLine({
-      start: { x: panelX + 58, y: panelY + 174 },
-      end: { x: panelX + panelWidth - 58, y: panelY + 174 },
+      start: { x: reflectionBoxX + 24, y: reflectionBoxY + reflectionBoxHeight - 24 },
+      end: { x: reflectionBoxX + reflectionBoxWidth - 24, y: reflectionBoxY + reflectionBoxHeight - 24 },
       thickness: 1,
       color: colors.line,
       opacity: 0.45
     });
     page.drawText("东方文化启示 / Eastern Reflection", {
-      x: panelX + 52,
-      y: panelY + 182,
+      x: reflectionBoxX + 18,
+      y: reflectionBoxY + reflectionBoxHeight - 16,
       size: 10,
       font,
       color: colors.warm
     });
-    let summaryY = panelY + 152;
-    summaryLines.forEach(line => {
+    page.drawText("中文解读", {
+      x: reflectionTextX,
+      y: reflectionBoxY + reflectionBoxHeight - 42,
+      size: 8.5,
+      font,
+      color: colors.warm
+    });
+    let summaryY = reflectionBoxY + reflectionBoxHeight - 60;
+    summaryZhLines.forEach(line => {
       page.drawText(line || " ", {
-        x: panelX + 52,
+        x: reflectionTextX,
         y: summaryY,
-        size: 10.5,
+        size: 10.2,
         font,
         color: colors.soft
       });
       summaryY -= 14;
+    });
+    page.drawLine({
+      start: { x: reflectionTextX, y: summaryY - 2 },
+      end: { x: reflectionTextX + reflectionTextWidth, y: summaryY - 2 },
+      thickness: 0.8,
+      color: colors.line,
+      opacity: 0.35
+    });
+    page.drawText("English Reflection", {
+      x: reflectionTextX,
+      y: summaryY - 18,
+      size: 8.5,
+      font,
+      color: colors.warm
+    });
+    let summaryEnY = summaryY - 36;
+    summaryEnLines.forEach(line => {
+      page.drawText(line || " ", {
+        x: reflectionTextX,
+        y: summaryEnY,
+        size: 9.8,
+        font,
+        color: colors.soft
+      });
+      summaryEnY -= 12.5;
     });
     y = panelY - 14;
   };
@@ -3527,14 +3564,6 @@ async function buildNamingReportPdfBytes({
       });
     }
   }
-
-  drawDivider();
-  drawSectionTitle("访问方式 / Access");
-  drawParagraph(accessLines.join("\n"), {
-    size: 10,
-    color: colors.soft,
-    gapAfter: 0
-  });
 
   return Buffer.from(await pdfDoc.save());
 }
