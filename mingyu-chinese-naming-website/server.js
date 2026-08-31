@@ -355,7 +355,8 @@ function buildCardProfile(body) {
   const socialEmail = normalizeEmail(body.cardSocialEmail || body.deliveryEmail || "");
   return {
     socialEmail: validateEmail(socialEmail) ? socialEmail : "",
-    templateId: normalizeCardTemplate(body.cardTemplate)
+    templateId: normalizeCardTemplate(body.cardTemplate),
+    wish: String(body.wish || "").trim()
   };
 }
 
@@ -1672,6 +1673,8 @@ async function buildNamingReportPdfBytes({
   const primaryName = Array.isArray(resultData.names) && resultData.names.length ? resultData.names[0] : {};
   const cardProfile = resultData.cardProfile || {};
   const socialEmail = validateEmail(cardProfile.socialEmail) ? cardProfile.socialEmail : "";
+  const cardWish = String(cardProfile.wish || "").trim();
+  const inputDisplayName = String(resultData.inputName || "-").trim() || "-";
   const elementLabels = { 木: "Wood", 火: "Fire", 土: "Earth", 金: "Metal", 水: "Water" };
   const presentElements = ["木", "火", "土", "金", "水"].filter(element => new Set([culture.stem?.element, culture.branch?.element, culture.hourBranch?.element].filter(Boolean)).has(element));
   const simpleElementZh = presentElements.join(" · ") || "未标注";
@@ -2267,11 +2270,6 @@ async function buildNamingReportPdfBytes({
   };
 
   if (!isComplete) {
-    const frontMeaning = joinPdfBilingualText(
-      primaryName.meaning || resultData.summary || "你的元素 DNA 名片已生成。",
-      primaryName.meaningEn || resultData.summaryEn || "Your elemental DNA card is ready."
-    );
-    const frontMeaningLines = wrapPdfText(frontMeaning, font, 10.5, pageWidth - 120).slice(0, 4);
     const backMeaning = joinPdfBilingualText(
       primaryName.meaning || "该名字用于表达你的气质、节奏与文化联想。",
       primaryName.meaningEn || "This chosen name reflects your tone, rhythm, and cultural identity."
@@ -2310,74 +2308,38 @@ async function buildNamingReportPdfBytes({
       font,
       color: colors.goldLight
     });
-    page.drawText("Front / 正面", {
-      x: pageWidth - margin - 60,
-      y: pageHeight - 56,
-      size: 10,
-      font,
-      color: colors.mutedLight
-    });
-    page.drawText(primaryName.hanzi || resultData.inputName || resultData.zodiac?.animal || "-", {
-      x: margin,
-      y: pageHeight - 126,
-      size: 34,
+    const inputNameSize = Math.max(26, Math.min(38, 42 - Math.max(0, inputDisplayName.length - 8)));
+    const inputNameWidth = font.widthOfTextAtSize(inputDisplayName, inputNameSize);
+    page.drawText(inputDisplayName, {
+      x: (pageWidth - inputNameWidth) / 2,
+      y: pageHeight - 330,
+      size: inputNameSize,
       font,
       color: colors.paper
     });
-    page.drawText(primaryName.pinyin || resultData.zodiac?.animalEn || "-", {
-      x: margin,
-      y: pageHeight - 154,
-      size: 16,
-      font,
-      color: colors.mutedLight
-    });
-    drawCenteredAsset(zodiacImage, 190, 190, 18);
-    page.drawText(`${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"} · ${resultData.zodiac?.years || "-"}`, {
-      x: margin,
-      y: 420,
-      size: 15,
-      font,
-      color: colors.goldLight
-    });
-    page.drawText("ACTIVE ELEMENTS", {
-      x: margin,
-      y: 385,
-      size: 9.5,
-      font,
-      color: colors.mutedLight
-    });
-    page.drawText(`${simpleElementZh} / ${simpleElementEn}`, {
-      x: margin,
-      y: 365,
-      size: 11,
-      font,
-      color: colors.paper
-    });
-    page.drawText("TRAITS", {
-      x: margin,
-      y: 332,
-      size: 9.5,
-      font,
-      color: colors.mutedLight
-    });
-    page.drawText(`${simpleTraitsZh} / ${simpleTraitsEn}`, {
-      x: margin,
-      y: 312,
-      size: 11,
-      font,
-      color: colors.paper
-    });
-    let frontLineY = 270;
-    frontMeaningLines.forEach(line => {
-      page.drawText(line || " ", {
+    if (cardWish) {
+      const wishTitle = "What should your name convey? / 你希望名字传达什么？";
+      const wishLines = wrapPdfText(cardWish, font, 12, maxWidth - 80).slice(0, 4);
+      page.drawText(wishTitle, {
         x: margin,
-        y: frontLineY,
-        size: 10.5,
+        y: pageHeight - 410,
+        size: 10,
         font,
-        color: colors.mutedLight
+        color: colors.goldLight
       });
-      frontLineY -= 14;
-    });
+      let wishY = pageHeight - 438;
+      wishLines.forEach(line => {
+        const lineWidth = font.widthOfTextAtSize(line || " ", 12);
+        page.drawText(line || " ", {
+          x: (pageWidth - lineWidth) / 2,
+          y: wishY,
+          size: 12,
+          font,
+          color: colors.mutedLight
+        });
+        wishY -= 18;
+      });
+    }
     if (socialEmail) {
       page.drawText("SOCIAL EMAIL", {
         x: margin,
@@ -2420,8 +2382,13 @@ async function buildNamingReportPdfBytes({
     });
     y = pageHeight - 58;
     drawTextLine("Mingyu Elemental DNA Card", { size: 17, color: colors.ink });
-    drawTextLine("Back / 反面", { size: 10, color: colors.warm });
     drawDivider(18);
+    drawCenteredAsset(zodiacImage, 146, 146, 16);
+    drawTextLine(`${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"} · ${resultData.zodiac?.years || "-"}`, {
+      size: 15,
+      color: colors.ink
+    });
+    y -= 4;
     drawSectionTitle("主名说明 / Selected Name");
     drawTextLine(`${primaryName.hanzi || "-"} · ${primaryName.pinyin || "-"}`, { size: 19, color: colors.ink });
     if (primaryName.tone) drawTextLine(`Tone / 声调: ${primaryName.tone}`, { size: 10, color: colors.warm });
@@ -2429,14 +2396,18 @@ async function buildNamingReportPdfBytes({
     y -= 6;
     drawDivider(18);
     drawSectionTitle("人格快照 / Identity Snapshot");
-    drawTextLine(`Zodiac / 生肖: ${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, { size: 10.5, color: colors.soft });
-    drawTextLine(`Elements / 五行: ${simpleElementZh} / ${simpleElementEn}`, { size: 10.5, color: colors.soft });
-    drawTextLine(`Traits / 特质: ${simpleTraitsZh} / ${simpleTraitsEn}`, { size: 10.5, color: colors.soft });
+    drawTextLine("ACTIVE ELEMENTS", { size: 10, color: colors.warm });
+    drawTextLine(`${simpleElementZh} / ${simpleElementEn}`, { size: 10.5, color: colors.soft });
+    y -= 2;
+    drawTextLine("TRAITS", { size: 10, color: colors.warm });
+    drawTextLine(`${simpleTraitsZh} / ${simpleTraitsEn}`, { size: 10.5, color: colors.soft });
     if (socialEmail) drawTextLine(`Social email / 社交邮箱: ${socialEmail}`, { size: 10.5, color: colors.soft });
     y -= 6;
     drawDivider(18);
     drawSectionTitle("文化说明 / Cultural Note");
     backNoteLines.forEach(line => drawTextLine(line || " ", { size: 9.5, color: colors.soft }));
+    y -= 6;
+    drawTextLine("Your 5-Phase Personality Blueprint", { size: 11, color: colors.ink });
     y -= 6;
     drawDivider(18);
     drawSectionTitle("访问方式 / Access");
