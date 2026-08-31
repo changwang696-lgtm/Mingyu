@@ -6,7 +6,7 @@
   <meta name="description" content="AI-powered Chinese naming reports rooted in language, symbolism, and traditional culture, with member sign-in, PayPal checkout, and saved order recovery." />
   <title>名屿 Mingyu · Chinese Naming Studio</title>
   <link rel="stylesheet" href="/styles.css?v=20260822-register-fix" />
-  <link rel="stylesheet" href="/theme.css?v=20260830-mobile-hero-fix" />
+  <link rel="stylesheet" href="/theme.css?v=20260831-dna-card-front-back" />
   <link rel="stylesheet" href="/print.css?v=20260822-register-fix" media="print" />
 </head>
 <body>
@@ -70,7 +70,8 @@
       </div>
       <form id="nameForm">
         <label class="wide"><span data-i18n="nameLabel">你现在的姓名</span><input id="name" name="name" required placeholder="e.g. Alex Morgan" autocomplete="name"><small data-i18n="nameHint">支持任何语言，我们会理解读音与文化背景</small></label>
-        <label><span data-i18n="deliveryEmailLabel">交付邮箱</span><input id="deliveryEmail" name="deliveryEmail" required type="email" placeholder="you@example.com" autocomplete="email"><small data-i18n="deliveryEmailHint">用于找回订单、重复打开结果与后续客服协助</small></label>
+        <label><span data-i18n="deliveryEmailLabel">卡片社交邮箱</span><input id="cardSocialEmail" name="cardSocialEmail" type="email" placeholder="you@example.com" autocomplete="email"><small data-i18n="deliveryEmailHint">你是否希望在卡片上留下邮箱？不想留下联系方式请忽略。若留空，卡片不会显示邮箱。</small></label>
+        <input id="cardTemplate" name="cardTemplate" type="hidden" value="dna-classic">
         <fieldset><legend data-i18n="genderLabel">性别表达</legend><div class="segments"><label><input type="radio" name="gender" value="female"><span data-i18n="female">女性</span></label><label><input type="radio" name="gender" value="male"><span data-i18n="male">男性</span></label><label><input type="radio" name="gender" value="neutral" checked><span data-i18n="neutral">中性 / 不限</span></label></div></fieldset>
         <label><span data-i18n="birthLabel">出生日期与时间</span><input id="birth" name="birth" required type="datetime-local"><small data-i18n="birthHint">越准确，文化解读越细致</small></label>
         <label class="wide timezone-field"><span data-i18n="timezoneLabel">出生地时区</span><select id="birthTimeZone" name="birthTimeZone" required><option value="" data-i18n="timezonePlaceholder">请选择出生地对应时区</option><optgroup label="United States & Canada"><option value="America/New_York">Eastern Time · New York / Toronto</option><option value="America/Chicago">Central Time · Chicago / Dallas</option><option value="America/Denver">Mountain Time · Denver</option><option value="America/Phoenix">Arizona Time · Phoenix</option><option value="America/Los_Angeles">Pacific Time · Los Angeles / Vancouver</option></optgroup><optgroup label="Europe"><option value="Europe/London">UK & Ireland · London / Dublin</option><option value="Europe/Paris">Central Europe · Paris / Berlin / Rome</option><option value="Europe/Athens">Eastern Europe · Athens / Helsinki</option><option value="Europe/Istanbul">Türkiye · Istanbul</option></optgroup><optgroup label="Asia"><option value="Asia/Shanghai">China Standard Time · Beijing / Shanghai</option><option value="Asia/Hong_Kong">Hong Kong</option><option value="Asia/Taipei">Taipei</option><option value="Asia/Singapore">Singapore / Kuala Lumpur</option></optgroup></select><small data-i18n="timezoneHint">系统会处理夏令时，并换算为中国标准时间（UTC+8）</small></label>
@@ -151,6 +152,10 @@
             <div id="dnaCardTraits"></div>
           </article>
         </div>
+        <div class="dna-card-contact" id="dnaCardContactWrap" hidden>
+          <small data-i18n="simpleCardContactLabel">SOCIAL EMAIL</small>
+          <strong id="dnaCardContact">you@example.com</strong>
+        </div>
         <p class="dna-card-body" id="dnaCardMeaning"></p>
       </section>
       <section class="zodiac-profile full-only" aria-labelledby="zodiacProfileTitle">
@@ -208,6 +213,6 @@
   <p class="home-status-banner" id="homeStatusBanner" role="status" aria-live="polite" hidden></p>
       <dialog id="payment"><button class="close" aria-label="Close">×</button><p class="eyebrow" id="paymentEyebrow">MINGYU EDITION</p><h2 id="paymentTitle">确认生成简约版</h2><div class="preview-sheet"><span>名屿</span><b>名</b><small>CHINESE NAMING EDITION</small></div><ul id="paymentBenefits"></ul><div id="paypalButtons" hidden></div><div class="paypal-hosted-dialog" id="hostedCheckout" hidden><a class="primary paypal-hosted-link" id="dialogHostedLink" href="#">PayPal Checkout</a></div><button id="confirmPurchase" class="submit"><span id="confirmPurchaseText">支付并生成</span><b>→</b></button><small id="paymentNote" data-i18n="demoNote">支付将由 PayPal 处理；付款成功后，结果会在本站交付。</small><small class="legal-note">By purchasing, you agree to our <a href="/delivery.html" target="_blank" rel="noreferrer">Delivery</a>, <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>, <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>, <a href="/refund.html" target="_blank" rel="noreferrer">Refund Policy</a>, and <a href="/cancellation.html" target="_blank" rel="noreferrer">Cancellation Policy</a>.</small></dialog>
   <div class="loading" id="loading" hidden role="status" aria-live="polite"><div class="loader-seal">名</div><p data-i18n="loading">正在研读你的名字与时辰...</p></div>
-  <script src="/app.js?v=20260831-dna-card-result" ></script>
+  <script src="/app.js?v=20260831-dna-card-front-back" ></script>
 </body>
 </html>

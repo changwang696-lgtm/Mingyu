@@ -30,7 +30,7 @@ const translations = {
     billingLink: "View Delivery & Fulfillment Policy",
     flowTitle: "How payment and delivery work",
     flowBody: "The buyer completes the form, pays through PayPal, returns to Mingyu, and can then view the result, download the PDF, or reopen the order from email.",
-    flowStep1Title: "Fill the form", flowStep1Body: "The buyer enters name details and a delivery email used for order recovery and support.",
+    flowStep1Title: "Fill the form", flowStep1Body: "The buyer enters naming details and can optionally add a social email to show on the card.",
     flowStep2Title: "Save payment record", flowStep2Body: "The site saves the pending service order before redirecting the signed-in member to the official PayPal page.",
     flowStep3Title: "Pay on PayPal", flowStep3Body: "PayPal securely processes the payment. If the buyer cancels, PayPal returns them to the site and the order remains saved.",
     flowStep4Title: "Receive digital delivery", flowStep4Body: "After payment, the site restores the result, offers PDF download, sends an email, and provides an order lookup page.",
@@ -46,8 +46,8 @@ const translations = {
     accountLinkMember: "My account",
     formTitle: "Tell us who you are", formSub: "We store the information required to deliver your paid result, reopen it later, and support you if anything goes wrong. If you prefer, enter only your surname; results remain about 90% as effective.",
     nameLabel: "Your current name", nameHint: "Any language is welcome. We consider pronunciation and context.",
-    deliveryEmailLabel: "Delivery email",
-    deliveryEmailHint: "Used to recover your order, reopen your result, and receive support if anything goes wrong.",
+    deliveryEmailLabel: "Social card email",
+    deliveryEmailHint: "Want to leave an email on the card? Add it here. Leave blank if you do not want contact details shown.",
     genderLabel: "Gender expression", female: "Female", male: "Male", neutral: "Neutral / Any",
     birthLabel: "Date and time of birth", birthHint: "The more accurate, the more nuanced the cultural reading.",
     timezoneLabel: "Birthplace time zone", timezonePlaceholder: "Select the birthplace time zone", timezoneHint: "Daylight saving is applied before conversion to China Standard Time (UTC+8).", wishLabel: "What should your name convey?",
@@ -64,9 +64,9 @@ const translations = {
     reportEyebrow: "PERSONAL EDITION", pdfReadyTitle: "Your complete report is ready",
     pdfReadyBody: "Save the complete result as a polished A4 PDF for printing, gifting or keeping.", savePdf: "Save PDF",
     simpleCardEyebrow: "ELEMENTAL DNA CARD", simpleCardTitle: "Your shareable identity card", simpleCardBadge: "Shareable PDF Included",
-    simpleCardZodiacLabel: "ZODIAC", simpleCardElementLabel: "ACTIVE ELEMENTS", simpleCardTraitsLabel: "TRAITS",
+    simpleCardZodiacLabel: "ZODIAC", simpleCardElementLabel: "ACTIVE ELEMENTS", simpleCardTraitsLabel: "TRAITS", simpleCardContactLabel: "SOCIAL EMAIL",
     simplePdfEyebrow: "DNA CARD · SHAREABLE EDITION", simplePdfReadyTitle: "Your shareable PDF card is ready",
-    simplePdfReadyBody: "Download a clean one-page PDF card with your chosen Chinese name, zodiac icon, and elemental snapshot.", saveCardPdf: "Download Card PDF",
+    simplePdfReadyBody: "Download a polished front-and-back PDF card with one chosen Chinese name, your zodiac icon, and elemental snapshot.", saveCardPdf: "Download Card PDF",
     craftTitle: "An Eastern gift bearing your name to admire", craftSub: "Objects made by artisans, turning your name into a keepsake you can touch.",
     product1: "Custom name seal", product2: "Silk round fan", product3: "Name calligraphy scroll",
     launchTitle: "Current site status",
@@ -115,7 +115,7 @@ const translations = {
     billingLink: "查看交付与履约说明",
     flowTitle: "付款与交付如何完成",
     flowBody: "买家先填写资料，再通过 PayPal 付款，返回名屿后即可查看结果、下载 PDF，或通过邮件重新打开订单。",
-    flowStep1Title: "填写资料", flowStep1Body: "买家填写姓名信息与交付邮箱。这个邮箱用于订单找回、邮件交付和客服支持。",
+    flowStep1Title: "填写资料", flowStep1Body: "填写起名信息，并可选填一个展示在卡片上的社交邮箱。",
     flowStep2Title: "保存支付记录", flowStep2Body: "跳转到 PayPal 之前，网站会先保存一条待支付的服务订单记录。",
     flowStep3Title: "在 PayPal 付款", flowStep3Body: "PayPal 安全处理付款。若买家取消支付，PayPal 会带其返回本站，订单仍然保留。",
     flowStep4Title: "接收数字交付", flowStep4Body: "付款完成后，网站恢复结果、提供 PDF 下载、发送邮件，并支持通过订单找回页再次打开。",
@@ -132,8 +132,8 @@ const translations = {
     formTitle: "告诉我们，你是谁", formSub: "我们会保存本次付款交付、结果恢复与售后支持所需的信息。若有顾虑，可只输入您的姓氏，生成效果仍约有 90%。",
     nameLabel: "你现在的姓名",
     nameHint: "支持任何语言，我们会理解读音与文化背景", genderLabel: "性别表达", female: "女性", male: "男性", neutral: "中性 / 不限",
-    deliveryEmailLabel: "交付邮箱",
-    deliveryEmailHint: "用于找回订单、重新打开结果，以及后续客服协助",
+    deliveryEmailLabel: "卡片社交邮箱",
+    deliveryEmailHint: "你是否在卡片上留下邮箱？不想留下联系方式请忽略。留空后卡片不会显示邮箱。",
     birthLabel: "出生日期与时间", birthHint: "越准确，文化解读越细致", timezoneLabel: "出生地时区", timezonePlaceholder: "请选择出生地对应时区", timezoneHint: "系统会处理夏令时，并换算为中国标准时间（UTC+8）", wishLabel: "你希望名字传达什么？",
     simpleEdition: "简约版", simpleGenerate: "解锁 DNA 名片", simpleNoPdf: "分享型结果 · 含 PDF 下载",
     completeEdition: "完整版", completeGenerate: "完整五行人格蓝图", completeWithPdf: "完整页面 · 可保存 PDF",
@@ -147,9 +147,9 @@ const translations = {
     reportEyebrow: "珍藏版 · PERSONAL EDITION", pdfReadyTitle: "完整报告已经生成",
     pdfReadyBody: "可将当前完整结果保存为精美 A4 PDF，用于珍藏、打印或赠礼。", savePdf: "保存 PDF",
     simpleCardEyebrow: "元素 DNA 名片", simpleCardTitle: "你的可分享人格名片", simpleCardBadge: "含分享型 PDF",
-    simpleCardZodiacLabel: "生肖原型", simpleCardElementLabel: "活跃五行", simpleCardTraitsLabel: "人格关键词",
+    simpleCardZodiacLabel: "生肖原型", simpleCardElementLabel: "活跃五行", simpleCardTraitsLabel: "人格关键词", simpleCardContactLabel: "社交邮箱",
     simplePdfEyebrow: "DNA 名片 · SHAREABLE EDITION", simplePdfReadyTitle: "你的分享型 PDF 名片已生成",
-    simplePdfReadyBody: "可下载一页式 PDF 名片，包含你的中文名、专属生肖图标与五行快照，适合保存与分享。", saveCardPdf: "下载名片 PDF",
+    simplePdfReadyBody: "可下载正反两面的 PDF 名片，包含 1 个中文名、专属生肖图标、五行快照与可选社交邮箱。", saveCardPdf: "下载名片 PDF",
     craftTitle: "一件带着名字的东方礼物欣赏", craftSub: "来自手艺人的小物，为名字留下可以触摸的纪念。",
     product1: "定制姓名印章", product2: "缂丝团扇", product3: "姓名书法卷",
     launchTitle: "当前站点状态",
@@ -494,6 +494,7 @@ function render(data) {
   const simple = activeTier === "simple";
   const animalKey = data.zodiac.animalEn.toLowerCase();
   const usedCredits = data.membership?.consumedCredits;
+  const primaryName = Array.isArray(data.names) && data.names.length ? data.names[0] : null;
   $("#result").classList.toggle("simple-result", simple);
   $("#resultTitle").textContent = simple ? t("simpleResultTitle") : t("resultTitle");
   $("#editionBadge").textContent = usedCredits
@@ -514,12 +515,18 @@ function render(data) {
   renderZodiacProfile(data.traditionalCulture);
   renderCulture(data.traditionalCulture);
   renderSimpleCard(data);
-  $("#nameList").innerHTML = data.names.map((name, index) => `
-    <article class="name-card">
-      <div><small>候选 / NAME 0${index + 1}</small><div class="hanzi">${esc(name.hanzi)}</div><div class="pinyin">${esc(name.pinyin)}</div></div>
-      <div class="name-detail"><p class="bilingual-block">${bilingualText(name.meaning, name.meaningEn)}</p><span class="tone">${esc(name.tone)}</span></div>
-      <div class="seal"><span class="seal-mark" aria-hidden="true">印</span><span class="seal-text">${esc(name.seal)}</span></div>
-    </article>`).join("");
+  $("#nameList").innerHTML = simple
+    ? (primaryName ? `
+      <article class="name-card primary-name-card">
+        <div><small>${lang === "zh" ? "卡片主名 / PRIMARY NAME" : "PRIMARY NAME / 卡片主名"}</small><div class="hanzi">${esc(primaryName.hanzi)}</div><div class="pinyin">${esc(primaryName.pinyin)}</div></div>
+        <div class="name-detail"><p class="bilingual-block">${bilingualText(primaryName.meaning, primaryName.meaningEn)}</p>${primaryName.tone ? `<span class="tone">${esc(primaryName.tone)}</span>` : ""}</div>
+      </article>` : "")
+    : data.names.map((name, index) => `
+      <article class="name-card">
+        <div><small>候选 / NAME 0${index + 1}</small><div class="hanzi">${esc(name.hanzi)}</div><div class="pinyin">${esc(name.pinyin)}</div></div>
+        <div class="name-detail"><p class="bilingual-block">${bilingualText(name.meaning, name.meaningEn)}</p><span class="tone">${esc(name.tone)}</span></div>
+        <div class="seal"><span class="seal-mark" aria-hidden="true">印</span><span class="seal-text">${esc(name.seal)}</span></div>
+      </article>`).join("");
   if ($("#reportEyebrowText")) $("#reportEyebrowText").textContent = simple ? t("simplePdfEyebrow") : t("reportEyebrow");
   if ($("#pdfReadyTitleText")) $("#pdfReadyTitleText").textContent = simple ? t("simplePdfReadyTitle") : t("pdfReadyTitle");
   if ($("#pdfReadyBodyText")) $("#pdfReadyBodyText").textContent = simple ? t("simplePdfReadyBody") : t("pdfReadyBody");
@@ -955,12 +962,17 @@ function renderSimpleCard(data) {
   const elementSnapshot = getElementalSnapshot(data.traditionalCulture || {});
   const zhTraits = Array.isArray(data.zodiac?.traits) ? data.zodiac.traits.slice(0, 3) : [];
   const enTraits = Array.isArray(data.zodiac?.traitsEn) ? data.zodiac.traitsEn.slice(0, 3) : [];
+  const socialEmail = String(data.cardProfile?.socialEmail || "").trim();
   $("#dnaCardName").textContent = firstName.hanzi || data.inputName || data.zodiac?.animal || "-";
   $("#dnaCardPinyin").textContent = firstName.pinyin || data.zodiac?.animalEn || "";
   $("#dnaCardZodiac").innerHTML = bilingualText(`${data.zodiac?.animal || "-"} · ${data.zodiac?.years || "-"}`, `${data.zodiac?.animalEn || "-"} · ${data.zodiac?.years || "-"}`);
   $("#dnaCardElements").innerHTML = bilingualText(elementSnapshot.zh, elementSnapshot.en);
   $("#dnaCardTraits").innerHTML = bilingualText(zhTraits.join(" · ") || "-", enTraits.join(" · ") || "");
   $("#dnaCardMeaning").innerHTML = bilingualText(firstName.meaning || data.summary || "-", firstName.meaningEn || data.summaryEn || "");
+  if ($("#dnaCardContactWrap") && $("#dnaCardContact")) {
+    $("#dnaCardContactWrap").hidden = !socialEmail;
+    $("#dnaCardContact").textContent = socialEmail || "";
+  }
 }
 
 function esc(value) {

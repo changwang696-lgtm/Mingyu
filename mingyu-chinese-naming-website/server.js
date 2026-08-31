@@ -346,6 +346,19 @@ function normalizeTier(tier) {
   return tier === "simple" ? "simple" : "complete";
 }
 
+function normalizeCardTemplate(templateId) {
+  const value = String(templateId || "").trim().toLowerCase();
+  return value || "dna-classic";
+}
+
+function buildCardProfile(body) {
+  const socialEmail = normalizeEmail(body.cardSocialEmail || body.deliveryEmail || "");
+  return {
+    socialEmail: validateEmail(socialEmail) ? socialEmail : "",
+    templateId: normalizeCardTemplate(body.cardTemplate)
+  };
+}
+
 function compactBody(body) {
   return {
     name: String(body.name || "").trim(),
@@ -354,6 +367,8 @@ function compactBody(body) {
     birthTimeZone: String(body.birthTimeZone || "").trim(),
     place: body.place?.trim() || "",
     wish: body.wish?.trim() || "",
+    cardSocialEmail: normalizeEmail(body.cardSocialEmail || body.deliveryEmail || ""),
+    cardTemplate: normalizeCardTemplate(body.cardTemplate),
     tier: normalizeTier(body.tier)
   };
 }
@@ -1654,6 +1669,15 @@ async function buildNamingReportPdfBytes({
   const culture = resultData.traditionalCulture || {};
   const zodiacTraits = Array.isArray(resultData.zodiac?.traits) ? resultData.zodiac.traits : [];
   const profile = culture.zodiacProfile || {};
+  const primaryName = Array.isArray(resultData.names) && resultData.names.length ? resultData.names[0] : {};
+  const cardProfile = resultData.cardProfile || {};
+  const socialEmail = validateEmail(cardProfile.socialEmail) ? cardProfile.socialEmail : "";
+  const elementLabels = { 木: "Wood", 火: "Fire", 土: "Earth", 金: "Metal", 水: "Water" };
+  const presentElements = ["木", "火", "土", "金", "水"].filter(element => new Set([culture.stem?.element, culture.branch?.element, culture.hourBranch?.element].filter(Boolean)).has(element));
+  const simpleElementZh = presentElements.join(" · ") || "未标注";
+  const simpleElementEn = presentElements.map(element => elementLabels[element] || element).join(" · ") || "Not available";
+  const simpleTraitsZh = zodiacTraits.slice(0, 3).join(" · ") || "待生成";
+  const simpleTraitsEn = (Array.isArray(resultData.zodiac?.traitsEn) ? resultData.zodiac.traitsEn : []).slice(0, 3).join(" · ") || "Traits pending";
   const zodiacImage = await embedPdfAsset(pdfDoc, getZodiacAssetRelativePath(resultData));
   const reportPreview = isComplete ? await embedPdfAsset(pdfDoc, "/assets/zodiac/report-overview.jpg") : null;
   const reportHeaderTitle = isComplete ? "Mingyu 5-Phase Personality Blueprint" : "Mingyu Elemental DNA Card";
@@ -2241,6 +2265,184 @@ async function buildNamingReportPdfBytes({
     });
     y = panelY - 18;
   };
+
+  if (!isComplete) {
+    const frontMeaning = joinPdfBilingualText(
+      primaryName.meaning || resultData.summary || "你的元素 DNA 名片已生成。",
+      primaryName.meaningEn || resultData.summaryEn || "Your elemental DNA card is ready."
+    );
+    const frontMeaningLines = wrapPdfText(frontMeaning, font, 10.5, pageWidth - 120).slice(0, 4);
+    const backMeaning = joinPdfBilingualText(
+      primaryName.meaning || "该名字用于表达你的气质、节奏与文化联想。",
+      primaryName.meaningEn || "This chosen name reflects your tone, rhythm, and cultural identity."
+    );
+    const backMeaningLines = wrapPdfText(backMeaning, font, 10.5, maxWidth).slice(0, 5);
+    const backNoteLines = wrapPdfText(
+      joinPdfBilingualText(
+        resultData.culturalNote || "该结果属于文化创意解读，用于个性表达与分享。",
+        resultData.culturalNoteEn || "This result is a cultural identity card designed for expression and sharing."
+      ),
+      font,
+      9.5,
+      maxWidth
+    ).slice(0, 6);
+    const backAccessLines = accessLines.flatMap(line => wrapPdfText(line, font, 8.2, maxWidth)).slice(0, 8);
+
+    page.drawRectangle({
+      x: 0,
+      y: 0,
+      width: pageWidth,
+      height: pageHeight,
+      color: colors.ink
+    });
+    page.drawRectangle({
+      x: 18,
+      y: 18,
+      width: pageWidth - 36,
+      height: pageHeight - 36,
+      borderWidth: 1,
+      borderColor: colors.gold
+    });
+    page.drawText("Mingyu Elemental DNA", {
+      x: margin,
+      y: pageHeight - 56,
+      size: 14,
+      font,
+      color: colors.goldLight
+    });
+    page.drawText("Front / 正面", {
+      x: pageWidth - margin - 60,
+      y: pageHeight - 56,
+      size: 10,
+      font,
+      color: colors.mutedLight
+    });
+    page.drawText(primaryName.hanzi || resultData.inputName || resultData.zodiac?.animal || "-", {
+      x: margin,
+      y: pageHeight - 126,
+      size: 34,
+      font,
+      color: colors.paper
+    });
+    page.drawText(primaryName.pinyin || resultData.zodiac?.animalEn || "-", {
+      x: margin,
+      y: pageHeight - 154,
+      size: 16,
+      font,
+      color: colors.mutedLight
+    });
+    drawCenteredAsset(zodiacImage, 190, 190, 18);
+    page.drawText(`${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"} · ${resultData.zodiac?.years || "-"}`, {
+      x: margin,
+      y: 420,
+      size: 15,
+      font,
+      color: colors.goldLight
+    });
+    page.drawText("ACTIVE ELEMENTS", {
+      x: margin,
+      y: 385,
+      size: 9.5,
+      font,
+      color: colors.mutedLight
+    });
+    page.drawText(`${simpleElementZh} / ${simpleElementEn}`, {
+      x: margin,
+      y: 365,
+      size: 11,
+      font,
+      color: colors.paper
+    });
+    page.drawText("TRAITS", {
+      x: margin,
+      y: 332,
+      size: 9.5,
+      font,
+      color: colors.mutedLight
+    });
+    page.drawText(`${simpleTraitsZh} / ${simpleTraitsEn}`, {
+      x: margin,
+      y: 312,
+      size: 11,
+      font,
+      color: colors.paper
+    });
+    let frontLineY = 270;
+    frontMeaningLines.forEach(line => {
+      page.drawText(line || " ", {
+        x: margin,
+        y: frontLineY,
+        size: 10.5,
+        font,
+        color: colors.mutedLight
+      });
+      frontLineY -= 14;
+    });
+    if (socialEmail) {
+      page.drawText("SOCIAL EMAIL", {
+        x: margin,
+        y: 118,
+        size: 9.5,
+        font,
+        color: colors.mutedLight
+      });
+      page.drawText(socialEmail, {
+        x: margin,
+        y: 98,
+        size: 12,
+        font,
+        color: colors.goldLight
+      });
+    }
+    page.drawText("Your 5-Phase Personality Blueprint", {
+      x: margin,
+      y: 58,
+      size: 11,
+      font,
+      color: colors.paper
+    });
+
+    beginNewPage(false);
+    page.drawRectangle({
+      x: 0,
+      y: 0,
+      width: pageWidth,
+      height: pageHeight,
+      color: colors.panel
+    });
+    page.drawRectangle({
+      x: 18,
+      y: 18,
+      width: pageWidth - 36,
+      height: pageHeight - 36,
+      borderWidth: 1,
+      borderColor: colors.line
+    });
+    y = pageHeight - 58;
+    drawTextLine("Mingyu Elemental DNA Card", { size: 17, color: colors.ink });
+    drawTextLine("Back / 反面", { size: 10, color: colors.warm });
+    drawDivider(18);
+    drawSectionTitle("主名说明 / Selected Name");
+    drawTextLine(`${primaryName.hanzi || "-"} · ${primaryName.pinyin || "-"}`, { size: 19, color: colors.ink });
+    if (primaryName.tone) drawTextLine(`Tone / 声调: ${primaryName.tone}`, { size: 10, color: colors.warm });
+    backMeaningLines.forEach(line => drawTextLine(line || " ", { size: 10.5, color: colors.soft }));
+    y -= 6;
+    drawDivider(18);
+    drawSectionTitle("人格快照 / Identity Snapshot");
+    drawTextLine(`Zodiac / 生肖: ${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, { size: 10.5, color: colors.soft });
+    drawTextLine(`Elements / 五行: ${simpleElementZh} / ${simpleElementEn}`, { size: 10.5, color: colors.soft });
+    drawTextLine(`Traits / 特质: ${simpleTraitsZh} / ${simpleTraitsEn}`, { size: 10.5, color: colors.soft });
+    if (socialEmail) drawTextLine(`Social email / 社交邮箱: ${socialEmail}`, { size: 10.5, color: colors.soft });
+    y -= 6;
+    drawDivider(18);
+    drawSectionTitle("文化说明 / Cultural Note");
+    backNoteLines.forEach(line => drawTextLine(line || " ", { size: 9.5, color: colors.soft }));
+    y -= 6;
+    drawDivider(18);
+    drawSectionTitle("访问方式 / Access");
+    backAccessLines.forEach(line => drawTextLine(line || " ", { size: 8.2, color: colors.soft }));
+    return Buffer.from(await pdfDoc.save());
+  }
 
   page.drawRectangle({
     x: 0,
@@ -2841,15 +3043,16 @@ function validateGenerationBody(body) {
   if (!body.name?.trim() || !body.birth || !body.birthTimeZone) return "Name, birth date and birthplace time zone are required";
   if (Number.isNaN(new Date(body.birth).getTime())) return "Birth date is invalid";
   if (!isValidTimeZone(body.birthTimeZone)) return "Birthplace time zone is invalid";
+  if (body.cardSocialEmail && !validateEmail(body.cardSocialEmail)) return "Card social email is invalid";
   return null;
 }
 
-function validateGuestCheckoutBody(rawBody) {
+function validateGuestCheckoutBody(rawBody, fallbackEmail = "") {
   const body = compactBody(rawBody);
   const validationError = validateGenerationBody(body);
   if (validationError) return validationError;
-  const email = normalizeEmail(rawBody.deliveryEmail || rawBody.email);
-  if (!validateEmail(email)) return "A valid delivery email is required";
+  const email = normalizeEmail(rawBody.cardSocialEmail || rawBody.deliveryEmail || rawBody.email || fallbackEmail);
+  if (!validateEmail(email)) return "A valid account email is required";
   return null;
 }
 
@@ -3183,6 +3386,7 @@ async function buildPaidResult(body) {
   const culture = traditionalCulture(body);
   const result = await requestAiResult(body, culture);
   result.traditionalCulture = culture;
+  result.cardProfile = buildCardProfile(body);
   result.zodiac = {
     ...result.zodiac,
     animal: culture.branch.zodiac,
@@ -3637,6 +3841,7 @@ async function handleGenerate(req, res) {
   try {
     const result = await requestAiResult(body, culture);
     result.traditionalCulture = culture;
+    result.cardProfile = buildCardProfile(body);
     result.zodiac = {
       ...result.zodiac,
       animal: culture.branch.zodiac,
@@ -3672,11 +3877,12 @@ async function handleGuestOrderStart(req, res) {
     if (!user) return send(res, 401, { error: "Please sign in before starting a naming order." });
     const rawBody = await readJsonBody(req, res);
     if (!rawBody) return;
-    const validationError = validateGuestCheckoutBody(rawBody);
+    const validationError = validateGuestCheckoutBody(rawBody, user.email);
     if (validationError) return send(res, 422, { error: validationError });
 
     const formBody = compactBody(rawBody);
-    created = await insertGuestOrder(createGuestOrderRecord(user.id, normalizeEmail(rawBody.deliveryEmail || rawBody.email), formBody));
+    const orderEmail = normalizeEmail(rawBody.cardSocialEmail || rawBody.deliveryEmail || rawBody.email || user.email);
+    created = await insertGuestOrder(createGuestOrderRecord(user.id, orderEmail, formBody));
       const hostedLink = getHostedPayPalLink(created.tier);
       const payPalCheckout = hostedLink
         ? {
