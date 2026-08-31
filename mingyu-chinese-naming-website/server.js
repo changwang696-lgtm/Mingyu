@@ -12,6 +12,7 @@ const dataDir = path.join(__dirname, "data");
 const databaseFile = path.join(dataDir, "membership-db.json");
 const fontCacheDir = path.join(dataDir, "fonts");
 const pdfFontCacheFile = path.join(fontCacheDir, "NotoSansCJKsc-Regular.otf");
+const pdfSealFontCacheFile = path.join(fontCacheDir, "MaShanZheng-Regular.ttf");
 const pdfAssetCache = new Map();
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "";
@@ -1634,6 +1635,18 @@ async function getPdfFontBytes() {
   return buffer;
 }
 
+async function getPdfSealFontBytes() {
+  ensureDirSync(fontCacheDir);
+  if (fs.existsSync(pdfSealFontCacheFile)) return fs.readFileSync(pdfSealFontCacheFile);
+  const bundledSealFont = path.join(__dirname, "assets", "fonts", "MaShanZheng-Regular.ttf");
+  if (fs.existsSync(bundledSealFont)) {
+    const buffer = fs.readFileSync(bundledSealFont);
+    fs.writeFileSync(pdfSealFontCacheFile, buffer);
+    return buffer;
+  }
+  return getPdfFontBytes();
+}
+
 function formatReportDate(value) {
   const date = value ? new Date(value) : new Date();
   if (Number.isNaN(date.getTime())) return nowIso().slice(0, 10);
@@ -1723,6 +1736,12 @@ async function buildNamingReportPdfBytes({
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
   const font = await pdfDoc.embedFont(await getPdfFontBytes(), { subset: false });
+  let sealFont = font;
+  try {
+    sealFont = await pdfDoc.embedFont(await getPdfSealFontBytes(), { subset: false });
+  } catch (error) {
+    sealFont = font;
+  }
   const pageSize = [595.28, 841.89];
   const pageWidth = pageSize[0];
   const pageHeight = pageSize[1];
@@ -2236,12 +2255,12 @@ async function buildNamingReportPdfBytes({
         borderColor: colors.goldLight,
         opacity: 0.6
       });
-      const sealWidth = font.widthOfTextAtSize(sealText, 15);
+      const sealWidth = sealFont.widthOfTextAtSize(sealText, 15);
       page.drawText(sealText, {
         x: cardX + cardW - 58 - (sealWidth / 2),
         y: cardY + cardHeight - 48,
         size: 15,
-        font,
+        font: sealFont,
         color: colors.paper
       });
     }
@@ -2313,12 +2332,12 @@ async function buildNamingReportPdfBytes({
         opacity: 0.45
       });
       const sealFontSize = sealText.length > 1 ? 26 : 34;
-      const sealWidth = font.widthOfTextAtSize(sealText, sealFontSize);
+      const sealWidth = sealFont.widthOfTextAtSize(sealText, sealFontSize);
       page.drawText(sealText, {
         x: x + (sealSize - sealWidth) / 2,
         y: sealY + (sealText.length > 1 ? 28 : 24),
         size: sealFontSize,
-        font,
+        font: sealFont,
         color: colors.paper
       });
       page.drawText(`0${index + 1}`, {
