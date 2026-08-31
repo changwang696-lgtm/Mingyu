@@ -1629,7 +1629,7 @@ function fitPdfImage(asset, maxWidth, maxHeight) {
 
 function getZodiacAssetRelativePath(result) {
   const animalKey = String(result?.zodiac?.animalEn || "").trim().toLowerCase();
-  return animalKey ? `/assets/zodiac/${animalKey}.jpg` : null;
+  return animalKey ? `/assets/zodiac/${animalKey}.png` : null;
 }
 
 async function buildNamingReportPdfBytes({

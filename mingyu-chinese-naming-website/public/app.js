@@ -501,7 +501,7 @@ function render(data) {
     ? `${simple ? "简约版 / Simple Edition" : "完整版 / Complete Edition"} · ${usedCredits} credits`
     : getEditionBadgeText(simple ? "simple" : "complete");
   $("#zodiacGlyph span").textContent = data.zodiac.animal;
-  $("#zodiacImage").src = `/assets/zodiac/${animalKey}.jpg`;
+  $("#zodiacImage").src = `/assets/zodiac/${animalKey}.png`;
   $("#zodiacImage").alt = `${data.zodiac.animal} · ${data.zodiac.animalEn}`;
   $("#zodiacName").textContent = `${data.zodiac.years} · ${data.zodiac.animal} · ${data.zodiac.animalEn}`;
   $("#traits").innerHTML = (Array.isArray(data.zodiac.traits) ? data.zodiac.traits : []).map((item, index) => `
@@ -532,7 +532,7 @@ function render(data) {
   if ($("#pdfReadyBodyText")) $("#pdfReadyBodyText").textContent = simple ? t("simplePdfReadyBody") : t("pdfReadyBody");
   if ($("#savePdf")) $("#savePdf").textContent = simple ? t("saveCardPdf") : t("savePdf");
   if ($("#reportPreviewImage")) {
-    $("#reportPreviewImage").src = simple ? `/assets/zodiac/${animalKey}.jpg` : "/assets/zodiac/report-overview.jpg";
+    $("#reportPreviewImage").src = simple ? `/assets/zodiac/${animalKey}.png` : "/assets/zodiac/report-overview.jpg";
     $("#reportPreviewImage").alt = simple ? `${data.zodiac.animal} ${lang === "zh" ? "名片预览" : "identity card preview"}` : "十二生肖 PDF 报告内页预览";
     $("#reportPreviewImage").classList.toggle("is-zodiac-preview", simple);
   }
