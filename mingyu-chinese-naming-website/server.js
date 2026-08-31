@@ -1682,6 +1682,7 @@ async function buildNamingReportPdfBytes({
   const simpleTraitsZh = zodiacTraits.slice(0, 3).join(" · ") || "待生成";
   const simpleTraitsEn = (Array.isArray(resultData.zodiac?.traitsEn) ? resultData.zodiac.traitsEn : []).slice(0, 3).join(" · ") || "Traits pending";
   const zodiacImage = await embedPdfAsset(pdfDoc, getZodiacAssetRelativePath(resultData));
+  const cardBackdrop = !isComplete ? await embedPdfAsset(pdfDoc, "/assets/zodiac/001.png") : null;
   const reportPreview = isComplete ? await embedPdfAsset(pdfDoc, "/assets/zodiac/report-overview.jpg") : null;
   const reportHeaderTitle = isComplete ? "Mingyu 5-Phase Personality Blueprint" : "Mingyu Elemental DNA Card";
 
@@ -1762,6 +1763,30 @@ async function buildNamingReportPdfBytes({
       borderColor: colors.line
     });
     y -= dimensions.height + gapAfter;
+  };
+
+  const drawCenteredTextBlock = (text, {
+    size = 11,
+    color = colors.soft,
+    topY = y,
+    width = maxWidth,
+    lineSpacing = lineGap
+  } = {}) => {
+    const lines = wrapPdfText(text, font, size, width);
+    let cursorY = topY;
+    lines.forEach(line => {
+      const value = line || " ";
+      const textWidth = font.widthOfTextAtSize(value, size);
+      page.drawText(value, {
+        x: (pageWidth - textWidth) / 2,
+        y: cursorY,
+        size,
+        font,
+        color
+      });
+      cursorY -= size + lineSpacing;
+    });
+    return cursorY;
   };
 
   const measurePdfLinesHeight = (lineCount, size, gapAfter = 0) => (lineCount * (size + lineGap)) + gapAfter;
@@ -2363,35 +2388,87 @@ async function buildNamingReportPdfBytes({
       borderWidth: 1,
       borderColor: colors.line
     });
+    if (cardBackdrop) {
+      const backdropSize = fitPdfImage(cardBackdrop, 300, 300);
+      page.drawImage(cardBackdrop.image, {
+        x: (pageWidth - backdropSize.width) / 2,
+        y: (pageHeight - backdropSize.height) / 2 - 24,
+        width: backdropSize.width,
+        height: backdropSize.height,
+        opacity: 0.12
+      });
+    }
     y = pageHeight - 58;
     drawTextLine("My Oriental Elemental DNA Card", { size: 17, color: colors.ink });
     drawDivider(18);
-    const cardNameSize = 24;
+    const cardNameSize = 30;
     const cardNameWidth = font.widthOfTextAtSize(cardNameLine, cardNameSize);
     page.drawText(cardNameLine, {
       x: (pageWidth - cardNameWidth) / 2,
-      y,
+      y: y - 18,
       size: cardNameSize,
       font,
       color: colors.ink
     });
-    y -= cardNameSize + 10;
+    y -= cardNameSize + 28;
     drawCenteredAsset(zodiacImage, 146, 146, 16);
-    drawTextLine(`${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
+    y = drawCenteredTextBlock(`${resultData.zodiac?.animal || "-"} · ${resultData.zodiac?.animalEn || "-"}`, {
       size: 15,
-      color: colors.ink
+      color: colors.ink,
+      topY: y,
+      width: maxWidth
+    }) - 2;
+    if (primaryName.tone) {
+      y = drawCenteredTextBlock(`Tone / 声调: ${primaryName.tone}`, {
+        size: 10,
+        color: colors.warm,
+        topY: y,
+        width: maxWidth
+      }) - 4;
+    }
+    backMeaningLines.forEach(line => {
+      y = drawCenteredTextBlock(line || " ", {
+        size: 10.5,
+        color: colors.soft,
+        topY: y,
+        width: maxWidth - 34
+      });
     });
-    y -= 4;
-    if (primaryName.tone) drawTextLine(`Tone / 声调: ${primaryName.tone}`, { size: 10, color: colors.warm });
-    backMeaningLines.forEach(line => drawTextLine(line || " ", { size: 10.5, color: colors.soft }));
     y -= 6;
     drawDivider(18);
-    drawTextLine("ACTIVE ELEMENTS", { size: 10, color: colors.warm });
-    drawTextLine(`${simpleElementZh} / ${simpleElementEn}`, { size: 10.5, color: colors.soft });
-    y -= 2;
-    drawTextLine("TRAITS", { size: 10, color: colors.warm });
-    drawTextLine(`${simpleTraitsZh} / ${simpleTraitsEn}`, { size: 10.5, color: colors.soft });
-    if (socialEmail) drawTextLine(`Social email / 社交邮箱: ${socialEmail}`, { size: 10.5, color: colors.soft });
+    y = drawCenteredTextBlock("ACTIVE ELEMENTS", {
+      size: 10,
+      color: colors.warm,
+      topY: y,
+      width: maxWidth
+    }) - 2;
+    y = drawCenteredTextBlock(`${simpleElementZh} / ${simpleElementEn}`, {
+      size: 10.5,
+      color: colors.soft,
+      topY: y,
+      width: maxWidth - 20
+    }) - 4;
+    y = drawCenteredTextBlock("TRAITS", {
+      size: 10,
+      color: colors.warm,
+      topY: y,
+      width: maxWidth
+    }) - 2;
+    y = drawCenteredTextBlock(`${simpleTraitsZh} / ${simpleTraitsEn}`, {
+      size: 10.5,
+      color: colors.soft,
+      topY: y,
+      width: maxWidth - 20
+    });
+    if (socialEmail) {
+      y -= 4;
+      y = drawCenteredTextBlock(`Social email / 社交邮箱: ${socialEmail}`, {
+        size: 10.5,
+        color: colors.soft,
+        topY: y,
+        width: maxWidth - 20
+      });
+    }
     return Buffer.from(await pdfDoc.save());
   }
 
