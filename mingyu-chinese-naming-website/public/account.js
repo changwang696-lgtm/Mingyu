@@ -1,4 +1,5 @@
 const statusBanner = document.querySelector("#statusBanner");
+const googleUnavailableNote = document.querySelector("#googleUnavailableNote");
 const authGrid = document.querySelector("#authGrid");
 const dashboard = document.querySelector("#dashboard");
 const registerForm = document.querySelector("#registerForm");
@@ -56,24 +57,24 @@ let googleButtonsRendered = false;
 let googleInitPromise = null;
 
 const registerFieldLabels = {
-  displayName: "显示名称",
-  email: "邮箱",
-  password: "密码",
-  verificationCode: "邮箱验证码"
+  displayName: "Display name",
+  email: "Email",
+  password: "Password",
+  verificationCode: "Email code"
 };
 
 const planDisplayMap = {
   starter: {
-    title: "入门会员 / Starter Membership",
-    description: "每月 30 credits，适合轻量使用 / 30 credits monthly for light usage"
+    title: "Starter Membership",
+    description: "30 credits monthly for light usage"
   },
   studio: {
-    title: "工作室会员 / Studio Membership",
-    description: "每月 80 credits，适合高频使用 / 80 credits monthly for frequent use"
+    title: "Studio Membership",
+    description: "80 credits monthly for frequent usage"
   },
   "credit-pack-50": {
-    title: "点数包 / Credit Pack",
-    description: "一次性 50 credits，适合按需购买 / One-time 50-credit pack for flexible use"
+    title: "Credit Pack",
+    description: "One-time 50-credit pack for flexible use"
   }
 };
 
@@ -88,9 +89,9 @@ function escapeHtml(value) {
 }
 
 function safeDate(value) {
-  if (!value) return "暂无时间";
+  if (!value) return "No date yet";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "暂无时间" : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? "No date yet" : date.toLocaleString();
 }
 
 function formatMoney(value, currency = "USD") {
@@ -104,12 +105,12 @@ function planDisplay(plan) {
   const descriptionEn = String(plan?.descriptionEn || "").trim();
   if (titleZh || titleEn || descriptionZh || descriptionEn) {
     return {
-      title: [titleZh, titleEn].filter(Boolean).join(" / "),
-      description: [descriptionZh, descriptionEn].filter(Boolean).join(" / ") || `${plan?.credits || 0} credits`
+      title: titleEn || titleZh || "Membership",
+      description: descriptionEn || descriptionZh || `${plan?.credits || 0} credits`
     };
   }
   return planDisplayMap[plan?.id] || {
-    title: `${plan?.name || "会员套餐"} / ${plan?.name || "Plan"}`,
+    title: `${plan?.name || "Membership"}`,
     description: `${plan?.credits || 0} credits`
   };
 }
@@ -120,8 +121,8 @@ function findCatalogPlan(planId) {
 
 function intervalLabel(interval) {
   return interval === "month"
-    ? "会员套餐 / Membership Plan"
-    : "一次性购买 / One-Time Purchase";
+    ? "Membership Plan"
+    : "One-Time Purchase";
 }
 
 function formatPayPalMode(mode) {
@@ -130,11 +131,11 @@ function formatPayPalMode(mode) {
 
 function formatOrderStatus(status) {
   const current = String(status || "").toLowerCase();
-  if (current === "completed") return "已完成 / Completed";
-  if (current === "pending_payment") return "待付款 / Pending Payment";
-  if (current === "cancelled") return "已取消 / Cancelled";
-  if (current === "paid") return "已支付 / Paid";
-  return status ? `${status} / Processing` : "处理中 / Processing";
+  if (current === "completed") return "Completed";
+  if (current === "pending_payment") return "Pending Payment";
+  if (current === "cancelled") return "Cancelled";
+  if (current === "paid") return "Paid";
+  return status ? `${status}` : "Processing";
 }
 
 function normalizeTier(tier) {
@@ -142,13 +143,13 @@ function normalizeTier(tier) {
 }
 
 function reportTierLabel(tier) {
-  return normalizeTier(tier) === "complete" ? "完整版 / Complete" : "简约版 / Simple";
+  return normalizeTier(tier) === "complete" ? "Complete" : "Simple";
 }
 
 function reportTierDescription(tier) {
   return normalizeTier(tier) === "complete"
-    ? "生成全部起名结果 / Full naming report"
-    : "生成名字及生肖 / Names and zodiac";
+    ? "Full naming report"
+    : "Names and zodiac";
 }
 
 function mergeSessionState(data = {}) {
@@ -177,6 +178,27 @@ function setGoogleBlocksVisible(visible) {
   if (loginGoogleBlock) loginGoogleBlock.hidden = !visible;
 }
 
+function isRestrictedGoogleBrowser() {
+  const ua = String(window.navigator.userAgent || "").toLowerCase();
+  return [
+    "micromessenger",
+    "qq/",
+    "weibo",
+    "alipayclient",
+    "fbav",
+    "fban",
+    "instagram"
+  ].some(token => ua.includes(token));
+}
+
+function setGoogleUnavailableNotice(visible, message = "") {
+  if (!googleUnavailableNote) return;
+  googleUnavailableNote.hidden = !visible;
+  if (visible && message) {
+    googleUnavailableNote.innerHTML = message;
+  }
+}
+
 function wait(ms) {
   return new Promise(resolve => window.setTimeout(resolve, ms));
 }
@@ -191,25 +213,25 @@ async function waitForGoogleIdentity(maxAttempts = 20) {
 
 function normalizeGoogleError(message) {
   const text = String(message || "").trim();
-  if (!text) return "Google 登录失败，请稍后重试。";
-  if (/not configured/i.test(text)) return "Google 登录暂未配置完成。";
-  if (/credential is required/i.test(text)) return "没有拿到 Google 登录凭证，请重试。";
-  if (/audience does not match/i.test(text)) return "Google 登录配置中的 Client ID 与当前网站不匹配。";
-  if (/email is not verified/i.test(text)) return "你的 Google 邮箱还没有验证，暂时无法登录。";
-  if (/valid email address/i.test(text)) return "Google 账户没有返回有效邮箱地址。";
-  if (/failed to load/i.test(text)) return "Google 登录组件加载失败，请刷新页面重试。";
+  if (!text) return "Google Sign-In failed. Please try again.";
+  if (/not configured/i.test(text)) return "Google Sign-In is not configured yet.";
+  if (/credential is required/i.test(text)) return "Google did not return a credential. Please try again.";
+  if (/audience does not match/i.test(text)) return "The Google Client ID does not match this site.";
+  if (/email is not verified/i.test(text)) return "Your Google email is not verified yet.";
+  if (/valid email address/i.test(text)) return "Google did not return a valid email address.";
+  if (/failed to load/i.test(text)) return "Google Sign-In failed to load. Please refresh and try again.";
   return text;
 }
 
 async function handleGoogleCredentialResponse(googleResponse) {
   const credential = String(googleResponse?.credential || "").trim();
   if (!credential) {
-    showStatus("没有拿到 Google 登录凭证，请重试。", true);
+    showStatus("Google did not return a credential. Please try again.", true);
     return;
   }
 
   hideStatus();
-  showStatus("正在通过 Google 登录，请稍候... / Signing in with Google...");
+  showStatus("Signing in with Google...");
 
   try {
     const response = await fetch("/api/auth/google", {
@@ -218,14 +240,14 @@ async function handleGoogleCredentialResponse(googleResponse) {
       body: JSON.stringify({ credential })
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Google 登录失败，请稍后重试。");
+    if (!response.ok) throw new Error(data.error || "Google Sign-In failed. Please try again.");
     renderSession({
       loggedIn: true,
       user: data.user,
       catalog: data.catalog,
       googleAuth: data.googleAuth
     });
-    showStatus(data.message || "Google 登录成功。 / Signed in with Google.", false, { autoHideMs: 2200 });
+    showStatus("Signed in with Google.", false, { autoHideMs: 2200 });
     await fetchOverview();
     redirectAfterAuth();
   } catch (error) {
@@ -261,7 +283,10 @@ async function ensureGoogleAuthReady() {
   const enabled = Boolean(googleAuth.enabled && clientId);
 
   setGoogleBlocksVisible(enabled);
-  if (!enabled) return;
+  if (!enabled) {
+    setGoogleUnavailableNotice(false);
+    return;
+  }
   if (googleInitPromise) return googleInitPromise;
 
   googleInitPromise = (async () => {
@@ -282,10 +307,15 @@ async function ensureGoogleAuthReady() {
     if (!googleButtonsRendered) {
       renderGoogleButtons();
     }
+    setGoogleUnavailableNotice(false);
   })()
     .catch(error => {
       setGoogleBlocksVisible(false);
-      showStatus(normalizeGoogleError(error.message), true);
+      const restrictedHint = isRestrictedGoogleBrowser()
+        ? "This browser may block Google services. Use email sign-in or open this page in your system browser."
+        : "Google Sign-In is temporarily unavailable in this browser. Please use email sign-in for now.";
+      setGoogleUnavailableNotice(true, restrictedHint);
+      console.warn("Google Sign-In is unavailable on this page:", normalizeGoogleError(error.message));
     })
     .finally(() => {
       googleInitPromise = null;
@@ -332,14 +362,14 @@ function hideStatus() {
 function renderPayPalPurchaseNote() {
   if (!paypalPurchaseNote) return;
   if (!payPalState.mode) {
-    paypalPurchaseNote.textContent = "正在检查 PayPal 配置... / Checking PayPal configuration...";
+    paypalPurchaseNote.textContent = "Checking PayPal configuration...";
     return;
   }
   if (!payPalState.enabled) {
-    paypalPurchaseNote.textContent = "PayPal 尚未配置，套餐按钮会保持禁用。/ PayPal is not configured yet, so plan purchase buttons stay disabled.";
+    paypalPurchaseNote.textContent = "PayPal is not configured yet, so purchase buttons stay disabled.";
     return;
   }
-  paypalPurchaseNote.textContent = `已接入 ${formatPayPalMode(payPalState.mode)}，点击套餐将跳转到 PayPal 完成付款。/ ${formatPayPalMode(payPalState.mode)} is connected. Selecting a plan will redirect to PayPal checkout.`;
+  paypalPurchaseNote.textContent = `${formatPayPalMode(payPalState.mode)} is connected. Selecting a plan will redirect to PayPal checkout.`;
 }
 
 function getAuthChallengeNodes(formName) {
@@ -365,7 +395,7 @@ function setAuthChallenge(formName, challenge, { clearAnswer = true } = {}) {
   const nodes = getAuthChallengeNodes(formName);
   nodes.setToken(String(challenge?.token || "").trim());
   if (nodes.prompt) {
-    nodes.prompt.textContent = challenge?.prompt || "题目加载失败，请点击换一题。";
+    nodes.prompt.textContent = challenge?.prompt || "The question failed to load. Please refresh it.";
   }
   if (clearAnswer && nodes.answer) {
     nodes.answer.value = "";
@@ -374,7 +404,7 @@ function setAuthChallenge(formName, challenge, { clearAnswer = true } = {}) {
 
 async function refreshAuthChallenge(formName, { focusAnswer = false } = {}) {
   const nodes = getAuthChallengeNodes(formName);
-  if (nodes.prompt) nodes.prompt.textContent = "载入中...";
+  if (nodes.prompt) nodes.prompt.textContent = "Loading...";
   nodes.setToken("");
   try {
     const response = await fetch("/api/auth/challenge");
@@ -418,51 +448,51 @@ function showLoginFieldError(fieldName, message) {
 
 function normalizeAuthError(message) {
   const text = String(message || "").trim();
-  if (!text) return "请求失败，请稍后重试。";
+  if (!text) return "Request failed. Please try again.";
   if (/Too many login attempts/i.test(text)) {
-    return "登录尝试次数过多，请稍后再试。";
+    return "Too many login attempts. Please try again later.";
   }
   if (/Please complete the human verification question/i.test(text)) {
-    return "请先完成人机验证题目。";
+    return "Please complete the human verification question.";
   }
   if (/Please enter a numeric answer for the human verification question/i.test(text)) {
-    return "人机验证答案需要填写数字。";
+    return "The human verification answer must be a number.";
   }
   if (/human verification question has expired/i.test(text)) {
-    return "人机验证题目已过期，我已经帮你换了一题，请重新填写。";
+    return "The human verification question expired. A new one is ready for you.";
   }
   if (/human verification answer is incorrect/i.test(text)) {
-    return "人机验证答案不正确，请重新计算。";
+    return "The human verification answer is incorrect. Please try again.";
   }
   return text;
 }
 
 function normalizeRegisterError(message) {
   const text = normalizeAuthError(message);
-  if (!text) return "注册失败，请稍后重试。";
+  if (!text) return "Registration failed. Please try again.";
   if (/already exists/i.test(text)) {
-    return "这个邮箱已经注册过了，请直接登录，或更换另一个邮箱。";
+    return "This email already has an account. Please sign in or use another email.";
   }
   if (/A valid email address is required/i.test(text)) {
-    return "请输入正确的邮箱地址。";
+    return "Please enter a valid email address.";
   }
   if (/Password must be at least 8 characters/i.test(text)) {
-    return "密码至少需要 8 位字符。";
+    return "Your password must be at least 8 characters.";
   }
   if (/verification code has expired/i.test(text)) {
-    return "验证码已过期，请重新获取。";
+    return "The verification code expired. Please request a new one.";
   }
   if (/verification code was just sent/i.test(text) || /Please wait \d+ seconds/i.test(text)) {
-    return "验证码刚刚发送，请稍候再试。";
+    return "A code was just sent. Please wait a moment before trying again.";
   }
   if (/Too many incorrect verification attempts/i.test(text)) {
-    return "验证码错误次数过多，请重新获取验证码。";
+    return "Too many incorrect code attempts. Please request a new code.";
   }
   if (/Incorrect verification code/i.test(text)) {
-    return text.replace("Incorrect verification code.", "验证码错误。");
+    return text.replace("Incorrect verification code.", "The verification code is incorrect.");
   }
   if (/Failed to send verification email/i.test(text)) {
-    return "验证码发送失败，请稍后重试。";
+    return "We could not send the verification code. Please try again.";
   }
   return text;
 }
@@ -473,29 +503,29 @@ function validateRegisterForm() {
   const verificationCode = getRegisterFieldValue("verificationCode");
   const challengeAnswer = String(registerChallengeAnswer?.value || "").trim();
 
-  if (!email) return showRegisterFieldError("email", "请先填写邮箱地址。");
+  if (!email) return showRegisterFieldError("email", "Please enter your email address.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return showRegisterFieldError("email", "请输入正确的邮箱地址。");
+    return showRegisterFieldError("email", "Please enter a valid email address.");
   }
-  if (!password) return showRegisterFieldError("password", "请先填写密码。");
+  if (!password) return showRegisterFieldError("password", "Please enter a password.");
   if (password.length < 8) {
-    return showRegisterFieldError("password", "密码至少需要 8 位字符。");
+    return showRegisterFieldError("password", "Your password must be at least 8 characters.");
   }
-  if (!registerChallengeToken) return showRegisterFieldError("challengeAnswer", "人机验证题目还没准备好，请点“换一题”后重试。");
+  if (!registerChallengeToken) return showRegisterFieldError("challengeAnswer", "The human verification question is still loading. Please refresh it and try again.");
   if (!challengeAnswer) {
-    showStatus("请先填写人机验证题目的答案。", true);
+    showStatus("Please enter the answer to the human verification question.", true);
     registerChallengeAnswer?.focus();
     return false;
   }
   if (!/^-?\d+$/.test(challengeAnswer)) {
-    showStatus("人机验证答案需要填写数字。", true);
+    showStatus("The human verification answer must be a number.", true);
     registerChallengeAnswer?.focus();
     return false;
   }
   if (registerVerificationPending) {
-    if (!verificationCode) return showRegisterFieldError("verificationCode", "请输入邮箱验证码后再完成注册。");
+    if (!verificationCode) return showRegisterFieldError("verificationCode", "Please enter the email code to finish registration.");
     if (!/^\d{6}$/.test(verificationCode)) {
-      return showRegisterFieldError("verificationCode", "邮箱验证码需要填写 6 位数字。");
+      return showRegisterFieldError("verificationCode", "The email code must contain 6 digits.");
     }
   }
   return true;
@@ -504,12 +534,12 @@ function validateRegisterForm() {
 function normalizeLoginError(message) {
   const text = normalizeAuthError(message);
   if (/Incorrect email or password/i.test(text)) {
-    return "邮箱或密码不正确，请重新输入。";
+    return "The email or password is incorrect.";
   }
   if (/A valid email address is required/i.test(text)) {
-    return "请输入正确的邮箱地址。";
+    return "Please enter a valid email address.";
   }
-  return text || "登录失败，请稍后重试。";
+  return text || "Sign-in failed. Please try again.";
 }
 
 function validateLoginForm() {
@@ -517,22 +547,22 @@ function validateLoginForm() {
   const password = getLoginFieldValue("password");
   const challengeAnswer = String(loginChallengeAnswer?.value || "").trim();
 
-  if (!email) return showLoginFieldError("email", "请先填写登录邮箱。");
+  if (!email) return showLoginFieldError("email", "Please enter your email.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return showLoginFieldError("email", "请输入正确的邮箱地址。");
+    return showLoginFieldError("email", "Please enter a valid email address.");
   }
-  if (!password) return showLoginFieldError("password", "请先填写登录密码。");
+  if (!password) return showLoginFieldError("password", "Please enter your password.");
   if (!loginChallengeToken) {
-    showStatus("人机验证题目还没准备好，请点“换一题”后重试。", true);
+    showStatus("The human verification question is still loading. Please refresh it and try again.", true);
     return false;
   }
   if (!challengeAnswer) {
-    showStatus("请先填写人机验证题目的答案。", true);
+    showStatus("Please enter the answer to the human verification question.", true);
     loginChallengeAnswer?.focus();
     return false;
   }
   if (!/^-?\d+$/.test(challengeAnswer)) {
-    showStatus("人机验证答案需要填写数字。", true);
+    showStatus("The human verification answer must be a number.", true);
     loginChallengeAnswer?.focus();
     return false;
   }
@@ -543,15 +573,15 @@ function updateRegisterActionUi() {
   if (registerSubmitBtn) {
     registerSubmitBtn.disabled = registerSubmitting;
     if (registerSubmitting) {
-      registerSubmitBtn.textContent = registerVerificationPending ? "正在验证邮箱..." : "正在发送验证码...";
+      registerSubmitBtn.textContent = registerVerificationPending ? "Verifying email..." : "Sending code...";
     } else {
-      registerSubmitBtn.textContent = registerVerificationPending ? "验证邮箱并创建账户" : "发送邮箱验证码";
+      registerSubmitBtn.textContent = registerVerificationPending ? "Verify email and create account" : "Send email code";
     }
   }
   if (resendRegisterCodeBtn) {
     if (resendSubmitting) {
       resendRegisterCodeBtn.disabled = true;
-      resendRegisterCodeBtn.textContent = "正在重发...";
+      resendRegisterCodeBtn.textContent = "Resending...";
       return;
     }
   }
@@ -563,7 +593,7 @@ function updateRegisterActionUi() {
 function updateLoginActionUi() {
   if (loginSubmitBtn) {
     loginSubmitBtn.disabled = loginSubmitting;
-    loginSubmitBtn.textContent = loginSubmitting ? "正在登录..." : "登录";
+    loginSubmitBtn.textContent = loginSubmitting ? "Signing in..." : "Sign in";
   }
   if (loginChallengeRefreshBtn) {
     loginChallengeRefreshBtn.disabled = loginSubmitting;
@@ -580,14 +610,14 @@ function updateRegisterCooldownUi() {
   if (!resendRegisterCodeBtn) return;
   if (!registerVerificationPending) {
     resendRegisterCodeBtn.disabled = true;
-    resendRegisterCodeBtn.textContent = "重新发送验证码";
+    resendRegisterCodeBtn.textContent = "Resend code";
     return;
   }
   const remainingSeconds = Math.max(0, Math.ceil((registerCooldownUntil - Date.now()) / 1000));
   resendRegisterCodeBtn.disabled = remainingSeconds > 0;
   resendRegisterCodeBtn.textContent = remainingSeconds > 0
-    ? `${remainingSeconds} 秒后可重发`
-    : "重新发送验证码";
+    ? `Resend in ${remainingSeconds}s`
+    : "Resend code";
   if (remainingSeconds <= 0) stopRegisterCooldownTimer();
 }
 
@@ -600,7 +630,7 @@ function setRegisterVerificationMode(active, { maskedEmail = "", cooldownSeconds
     registerVerificationBlock.hidden = true;
     registerVerificationCode.required = false;
     registerVerificationCode.value = "";
-    registerHelp.innerHTML = "提交后会自动向你的邮箱发送 6 位验证码，输入验证码后即可完成注册并自动登录。<br />A 6-digit email code will be sent automatically. Enter it to finish registration and sign in.";
+    registerHelp.innerHTML = "A 6-digit email code will be sent automatically. Enter it to finish registration and sign in.";
     updateRegisterCooldownUi();
     updateRegisterActionUi();
     return;
@@ -610,8 +640,8 @@ function setRegisterVerificationMode(active, { maskedEmail = "", cooldownSeconds
   registerVerificationBlock.hidden = false;
   registerVerificationCode.required = true;
   registerHelp.innerHTML = registerVerificationMaskedEmail
-    ? `验证码已发送至 ${registerVerificationMaskedEmail}，请在 10 分钟内完成验证。<br />The code was sent to ${escapeHtml(registerVerificationMaskedEmail)}. Please verify within 10 minutes.`
-    : "验证码已发送，请输入邮箱中的 6 位验证码完成注册。<br />The code has been sent. Enter the 6 digits from your email to finish registration.";
+    ? `The code was sent to ${escapeHtml(registerVerificationMaskedEmail)}. Please verify within 10 minutes.`
+    : "The code has been sent. Enter the 6 digits from your email to finish registration.";
   registerCooldownUntil = cooldownSeconds > 0 ? Date.now() + cooldownSeconds * 1000 : 0;
   updateRegisterCooldownUi();
   updateRegisterActionUi();
@@ -623,10 +653,10 @@ function setRegisterVerificationMode(active, { maskedEmail = "", cooldownSeconds
 }
 
 function renderCatalog(catalog) {
-  if (!catalog?.plans) return;
+  if (!catalog?.plans || !planGrid) return;
   if (welcomePolicyText) {
     const welcomeCredits = Math.max(0, Number.parseInt(catalog.welcomeCredits ?? 0, 10) || 0);
-    welcomePolicyText.innerHTML = `新注册账户默认获得 ${welcomeCredits} credits，可立即测试会员生成流程；后续可继续购买会员套餐或一次性 credits 包。<br />New accounts receive ${welcomeCredits} welcome credits so you can try the member flow immediately before purchasing a membership or one-time credit pack.`;
+    welcomePolicyText.innerHTML = `New accounts receive ${welcomeCredits} welcome credits so you can try the member flow before purchasing a membership or a one-time credit pack.`;
   }
   planGrid.innerHTML = catalog.plans.map(plan => `
     <article class="plan-card">
@@ -634,7 +664,7 @@ function renderCatalog(catalog) {
       <strong>${escapeHtml(planDisplay(plan).title)}</strong>
       <div>${escapeHtml(plan.price)}</div>
       <p>${escapeHtml(planDisplay(plan).description)}</p>
-      <div class="item-meta">包含 ${plan.credits} credits / Includes ${plan.credits} credits</div>
+      <div class="item-meta">Includes ${plan.credits} credits</div>
       <button
         type="button"
         class="plan-purchase"
@@ -642,12 +672,12 @@ function renderCatalog(catalog) {
         ${!sessionState.loggedIn || purchasePendingPlanId === plan.id || !payPalState.enabled ? "disabled" : ""}
       >
         ${!sessionState.loggedIn
-          ? "请先登录 / Sign In First"
+          ? "Sign in first"
           : !payPalState.enabled
-            ? "PayPal 未配置 / PayPal Unavailable"
+            ? "PayPal unavailable"
             : purchasePendingPlanId === plan.id
-              ? "正在跳转 PayPal... / Redirecting..."
-              : "使用 PayPal 购买 / Pay with PayPal"}
+              ? "Redirecting..."
+              : "Pay with PayPal"}
       </button>
     </article>
   `).join("");
@@ -655,9 +685,10 @@ function renderCatalog(catalog) {
 }
 
 function renderLedger(entries) {
+  if (!ledgerList) return;
   if (!entries?.length) {
     const welcomeCredits = Math.max(0, Number.parseInt(sessionState.catalog?.welcomeCredits ?? 0, 10) || 0);
-    ledgerList.innerHTML = `<div class="empty-state">暂时还没有点数变动记录。注册成功后会先获得 ${welcomeCredits} welcome credits，之后每次会员生成或购买入账都会显示在这里。<br />No credit activity yet. Your ${welcomeCredits} welcome credits and future purchases or usage will appear here.</div>`;
+    ledgerList.innerHTML = `<div class="empty-state">No credit activity yet. Your ${welcomeCredits} welcome credits and future purchases or usage will appear here.</div>`;
     return;
   }
 
@@ -665,14 +696,15 @@ function renderLedger(entries) {
     <article class="ledger-item">
       <small>${new Date(entry.createdAt).toLocaleString()}</small>
       <strong>${entry.description}</strong>
-      <div class="item-meta">${entry.creditsDelta > 0 ? "+" : ""}${entry.creditsDelta} credits · 当前余额 / Balance ${entry.creditsBalanceAfter}</div>
+      <div class="item-meta">${entry.creditsDelta > 0 ? "+" : ""}${entry.creditsDelta} credits · Balance ${entry.creditsBalanceAfter}</div>
     </article>
   `).join("");
 }
 
 function renderReports(reports) {
+  if (!reportList) return;
   if (!reports?.length) {
-    reportList.innerHTML = `<div class="empty-state">暂时还没有历史生成记录。登录后完成会员生成，这里会分别显示简约版与完整版清单。<br />No report history yet. After generating with member credits, simple and complete reports will appear here.</div>`;
+    reportList.innerHTML = `<div class="empty-state">No report history yet. After generating with member credits, simple and complete reports will appear here.</div>`;
     return;
   }
 
@@ -689,10 +721,10 @@ function renderReports(reports) {
         <small>${safeDate(report.createdAt)} · ${reportTierLabel(report.tier)}</small>
         <strong>${escapeHtml(report.inputName)}</strong>
         <div class="item-meta">${reportTierDescription(report.tier)}${report.zodiac ? ` · ${escapeHtml(report.zodiac)}` : ""}</div>
-        <p>${previewNames || "已生成结果，点击下方可查看详情。 / Result ready, use the links below to view details."}</p>
+        <p>${previewNames || "Result ready. Use the links below to open the details."}</p>
         <div class="item-actions">
-          <a class="text-link" href="${report.resultUrl}">打开结果 / View Result</a>
-          ${canDownloadPdf ? `<a class="text-link" href="${report.pdfUrl}">下载 PDF / Download PDF</a>` : ""}
+          <a class="text-link" href="${report.resultUrl}">Open Result</a>
+          ${canDownloadPdf ? `<a class="text-link" href="${report.pdfUrl}">Download PDF</a>` : ""}
         </div>
       </article>
     `;
@@ -711,14 +743,15 @@ function renderReports(reports) {
   `;
 
   reportList.innerHTML = [
-    renderReportSection("简约版 / Simple", "生成名字及生肖 / Names and zodiac", simpleReports, "还没有简约版历史生成记录。 / No simple report history yet."),
-    renderReportSection("完整版 / Complete", "生成全部起名结果，可直接下载 PDF / Full naming result with PDF download", completeReports, "还没有完整版历史生成记录。 / No complete report history yet.")
+    renderReportSection("Simple", "Names and zodiac", simpleReports, "No simple report history yet."),
+    renderReportSection("Complete", "Full naming result with PDF download", completeReports, "No complete report history yet.")
   ].join("");
 }
 
 function renderMemberOrders(orders) {
+  if (!memberOrderList) return;
   if (!orders?.length) {
-    memberOrderList.innerHTML = `<div class="empty-state">还没有会员或 credits 购买记录。完成一次 PayPal 付款后，对应订单会显示在这里。<br />No membership or credit orders yet. Paid PayPal orders will appear here.</div>`;
+    memberOrderList.innerHTML = `<div class="empty-state">No membership or credit pack orders yet. Paid PayPal purchases will appear here.</div>`;
     return;
   }
 
@@ -728,28 +761,29 @@ function renderMemberOrders(orders) {
       <strong>${escapeHtml(planDisplay(findCatalogPlan(order.itemId) || { id: order.itemId || order.membershipPlanId || (order.itemType === "credit_pack" ? "credit-pack-50" : ""), name: order.itemName, credits: order.creditsDelta }).title)}</strong>
       <div class="item-meta">${formatMoney(order.amount, order.currency)} · +${order.creditsDelta} credits</div>
       <p>${order.status === "completed"
-        ? (order.membershipRenewalAt ? `续期时间 / Renewal: ${new Date(order.membershipRenewalAt).toLocaleDateString()}` : "一次性 credits 购买已完成。 / One-time credit purchase completed.")
-        : "等待 PayPal 确认付款。 / Waiting for PayPal confirmation."}</p>
+        ? (order.membershipRenewalAt ? `Renewal: ${new Date(order.membershipRenewalAt).toLocaleDateString()}` : "One-time credit purchase completed.")
+        : "Waiting for PayPal confirmation."}</p>
     </article>
   `).join("");
 }
 
 function renderServiceOrders(orders) {
+  if (!serviceOrderList) return;
   if (!orders?.length) {
-    serviceOrderList.innerHTML = `<div class="empty-state">还没有单次付费起名订单。若你在首页购买一次性起名服务，订单与 PDF 入口会显示在这里。<br />No one-time naming orders yet. Orders and PDF links from the homepage will appear here.</div>`;
+    serviceOrderList.innerHTML = `<div class="empty-state">No one-time naming orders yet. Orders and PDF links from the homepage will appear here.</div>`;
     return;
   }
 
   serviceOrderList.innerHTML = orders.map(order => `
     <article class="report-item">
-      <small>${safeDate(order.createdAt)} · ${escapeHtml(formatOrderStatus(order.status))} · 支付状态 / Payment ${escapeHtml(order.paymentStatus || "pending")}</small>
+      <small>${safeDate(order.createdAt)} · ${escapeHtml(formatOrderStatus(order.status))} · Payment ${escapeHtml(order.paymentStatus || "pending")}</small>
       <strong>${escapeHtml(order.inputName || order.id)}</strong>
       <div class="item-meta">${escapeHtml(order.tier)} · ${formatMoney(order.paymentAmount || order.priceValue, order.paymentCurrency || "USD")}</div>
-      <p>订单号 / Order ID: ${escapeHtml(order.id)}</p>
+      <p>Order ID: ${escapeHtml(order.id)}</p>
       <div class="item-actions">
-        ${order.deliveryUrl ? `<a class="text-link" href="${order.deliveryUrl}">打开结果 / View Result</a>` : ""}
+        ${order.deliveryUrl ? `<a class="text-link" href="${order.deliveryUrl}">Open Result</a>` : ""}
         ${order.pdfUrl ? `<a class="text-link" href="${order.pdfUrl}">Download PDF</a>` : ""}
-        ${!order.deliveryUrl && order.successUrl ? `<a class="text-link" href="${order.successUrl}">继续支付回跳 / Resume Payment</a>` : ""}
+        ${!order.deliveryUrl && order.successUrl ? `<a class="text-link" href="${order.successUrl}">Resume Payment</a>` : ""}
       </div>
     </article>
   `).join("");
@@ -767,15 +801,15 @@ function renderSession(data) {
 
   authGrid.hidden = true;
   dashboard.hidden = false;
-  memberName.textContent = `${nextState.user.displayName || "会员"} / Member`;
+  memberName.textContent = nextState.user.displayName || "Member";
   memberEmail.textContent = nextState.user.email;
   memberCredits.textContent = String(nextState.user.creditsBalance);
   memberPlan.textContent = nextState.user.membership?.planName
-    ? `${nextState.user.membership.planName} / Active Plan`
-    : "当前未开通会员 / No Active Membership";
+    ? `${nextState.user.membership.planName}`
+    : "No active membership";
   memberRenewal.innerHTML = nextState.user.membership?.renewalAt
-    ? `续期时间：${new Date(nextState.user.membership.renewalAt).toLocaleDateString()}<br />Renewal date: ${new Date(nextState.user.membership.renewalAt).toLocaleDateString()}`
-    : "当前没有待续期计划。<br />No renewal is scheduled yet.";
+    ? `Renewal date: ${new Date(nextState.user.membership.renewalAt).toLocaleDateString()}`
+    : "No renewal is scheduled yet.";
 }
 
 async function fetchPayPalState() {
@@ -800,7 +834,7 @@ async function fetchSession() {
 async function fetchOverview() {
   const response = await fetch("/api/member/overview");
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "暂时无法加载会员中心数据。");
+  if (!response.ok) throw new Error(data.error || "Unable to load your member account right now.");
   renderSession({ loggedIn: true, user: data.user, catalog: data.catalog });
   renderLedger(data.ledger);
   renderReports(data.reports);
@@ -818,7 +852,7 @@ registerForm.addEventListener("submit", async event => {
   formData.challengeToken = registerChallengeToken;
   registerSubmitting = true;
   updateRegisterActionUi();
-  showStatus(registerVerificationPending ? "正在验证邮箱，请稍候... / Verifying email..." : "正在发送邮箱验证码，请稍候... / Sending email code...");
+  showStatus(registerVerificationPending ? "Verifying email..." : "Sending email code...");
 
   try {
     const response = await fetch("/api/auth/register", {
@@ -835,7 +869,7 @@ registerForm.addEventListener("submit", async event => {
           cooldownSeconds: data.cooldownSeconds || 0
         });
       }
-      throw new Error(normalizeRegisterError(data.error || "注册失败，请稍后重试。"));
+      throw new Error(normalizeRegisterError(data.error || "Registration failed. Please try again."));
     }
 
     if (data.verificationRequired) {
@@ -843,14 +877,14 @@ registerForm.addEventListener("submit", async event => {
         maskedEmail: data.maskedEmail || maskEmail(formData.email || ""),
         cooldownSeconds: data.cooldownSeconds || 0
       });
-      showStatus(data.message || "验证码已发送，请检查邮箱。 / Verification code sent. Please check your inbox.", false, { autoHideMs: 2200 });
+      showStatus("Verification code sent. Please check your inbox.", false, { autoHideMs: 2200 });
       return;
     }
 
     form.reset();
     setAuthChallenge("register", data?.authChallenge);
     setRegisterVerificationMode(false);
-    showStatus(data.message || "注册成功。 / Registration completed.", false, { autoHideMs: 2200 });
+    showStatus("Registration completed.", false, { autoHideMs: 2200 });
     await fetchOverview();
     redirectAfterAuth();
   } catch (error) {
@@ -871,7 +905,7 @@ loginForm.addEventListener("submit", async event => {
   formData.challengeToken = loginChallengeToken;
   loginSubmitting = true;
   updateLoginActionUi();
-  showStatus("正在登录，请稍候... / Signing in...");
+  showStatus("Signing in...");
   try {
     const response = await fetch("/api/auth/login", {
       method: "POST",
@@ -880,9 +914,9 @@ loginForm.addEventListener("submit", async event => {
     });
     const data = await response.json();
     if (data?.authChallenge) setAuthChallenge("login", data.authChallenge);
-    if (!response.ok) throw new Error(data.error || "登录失败，请稍后重试。");
+    if (!response.ok) throw new Error(data.error || "Sign-in failed. Please try again.");
     form.reset();
-    showStatus(data.message || "登录成功。 / Signed in successfully.", false, { autoHideMs: 2200 });
+    showStatus("Signed in successfully.", false, { autoHideMs: 2200 });
     await fetchOverview();
     redirectAfterAuth();
   } catch (error) {
@@ -902,19 +936,19 @@ logoutBtn.addEventListener("click", async () => {
   renderMemberOrders([]);
   renderServiceOrders([]);
   await fetchSession();
-  showStatus("已退出登录。 / Signed out.", false, { autoHideMs: 2200 });
+  showStatus("Signed out.", false, { autoHideMs: 2200 });
 });
 
 resendRegisterCodeBtn.addEventListener("click", async () => {
   if (!registerVerificationPending) return;
   hideStatus();
   if (!registerChallengeToken) {
-    showStatus("人机验证题目还没准备好，请点“换一题”后重试。", true);
+    showStatus("The human verification question is still loading. Please refresh it and try again.", true);
     return;
   }
   const challengeAnswer = String(registerChallengeAnswer?.value || "").trim();
   if (!challengeAnswer) {
-    showStatus("重新发送验证码前，请先填写人机验证答案。", true);
+    showStatus("Please answer the human verification question before resending the code.", true);
     registerChallengeAnswer?.focus();
     return;
   }
@@ -923,7 +957,7 @@ resendRegisterCodeBtn.addEventListener("click", async () => {
   formData.verificationCode = "";
   resendSubmitting = true;
   updateRegisterActionUi();
-  showStatus("正在重新发送验证码，请稍候... / Resending code...");
+  showStatus("Resending code...");
   try {
     const response = await fetch("/api/auth/register", {
       method: "POST",
@@ -932,12 +966,12 @@ resendRegisterCodeBtn.addEventListener("click", async () => {
     });
     const data = await response.json();
     if (data?.authChallenge) setAuthChallenge("register", data.authChallenge);
-    if (!response.ok) throw new Error(data.error || "验证码发送失败，请稍后重试。");
+    if (!response.ok) throw new Error(data.error || "Unable to resend the verification code. Please try again.");
     setRegisterVerificationMode(true, {
       maskedEmail: data.maskedEmail || registerVerificationMaskedEmail || maskEmail(formData.email || ""),
       cooldownSeconds: data.cooldownSeconds || 0
     });
-    showStatus(data.message || "验证码已重新发送。 / Verification code resent.", false, { autoHideMs: 2200 });
+    showStatus("Verification code resent.", false, { autoHideMs: 2200 });
   } catch (error) {
     showStatus(normalizeRegisterError(error.message), true);
     await refreshAuthChallenge("register");
@@ -960,18 +994,18 @@ planGrid.addEventListener("click", async event => {
   const button = event.target.closest("[data-plan-id]");
   if (!button) return;
   if (!sessionState.loggedIn) {
-    showStatus("请先登录，再购买会员或 credits。 / Please sign in before purchasing.", true);
+    showStatus("Please sign in before purchasing.", true);
     return;
   }
   if (!payPalState.enabled) {
-    showStatus("PayPal 尚未配置完成，当前无法购买套餐。 / PayPal is not configured yet, so plan purchase is unavailable.", true);
+    showStatus("PayPal is not configured yet, so purchase is unavailable.", true);
     return;
   }
 
   const planId = String(button.dataset.planId || "");
   purchasePendingPlanId = planId;
   renderCatalog(sessionState.catalog);
-  showStatus("正在跳转到 PayPal... / Redirecting to PayPal...");
+  showStatus("Redirecting to PayPal...");
 
   try {
     const response = await fetch("/api/member/purchase/start", {
@@ -980,7 +1014,7 @@ planGrid.addEventListener("click", async event => {
       body: JSON.stringify({ planId })
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "无法发起购买，请稍后重试。");
+    if (!response.ok) throw new Error(data.error || "Unable to start the purchase right now.");
     window.location.assign(data.approvalUrl);
   } catch (error) {
     purchasePendingPlanId = null;
@@ -996,22 +1030,22 @@ async function handleReturnedMemberPurchase() {
   const cancelled = params.get("cancelled") === "1";
 
   if (cancelled) {
-    showStatus("PayPal 付款已取消，你可以稍后重新发起购买。 / PayPal checkout was cancelled.", true);
+    showStatus("PayPal checkout was cancelled.", true);
     history.replaceState({}, "", "/account.html");
     return;
   }
   if (!memberOrderId) return;
 
-  showStatus("正在确认你的 PayPal 付款... / Confirming your PayPal payment...");
+  showStatus("Confirming your PayPal payment...");
   const response = await fetch("/api/member/purchase/capture", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ memberOrderId, payPalOrderId })
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "暂时无法确认这笔 PayPal 付款。");
+  if (!response.ok) throw new Error(data.error || "Unable to confirm this PayPal payment right now.");
 
-  showStatus("购买已完成，credits 已入账。 / Purchase completed and credits added.", false, { autoHideMs: 2200 });
+  showStatus("Purchase completed and credits added.", false, { autoHideMs: 2200 });
   history.replaceState({}, "", "/account.html");
   await fetchOverview();
 }
@@ -1042,7 +1076,7 @@ Promise.allSettled([fetchPayPalState(), fetchSession()])
     setRegisterVerificationMode(false);
     updateRegisterActionUi();
     updateLoginActionUi();
-    showStatus(error?.message || "暂时无法加载会员中心。", true);
+    showStatus(error?.message || "Unable to load the member account right now.", true);
   });
 
 function maskEmail(email) {
