@@ -1,6 +1,10 @@
 const statusBanner = document.querySelector("#statusBanner");
 const googleUnavailableNote = document.querySelector("#googleUnavailableNote");
 const authGrid = document.querySelector("#authGrid");
+const authModal = document.querySelector("#authModal");
+const authModalBackdrop = document.querySelector("#authModalBackdrop");
+const authModalClose = document.querySelector("#authModalClose");
+const authOpenButtons = document.querySelectorAll("[data-open-auth]");
 const dashboard = document.querySelector("#dashboard");
 const registerForm = document.querySelector("#registerForm");
 const loginForm = document.querySelector("#loginForm");
@@ -38,6 +42,7 @@ const planGrid = document.querySelector("#planGrid");
 const paypalPurchaseNote = document.querySelector("#paypalPurchaseNote");
 const welcomePolicyText = document.querySelector("#welcomePolicyText");
 const nextPath = new URLSearchParams(window.location.search).get("next") || "/";
+const requestedAuthTarget = getRequestedAuthTarget();
 let sessionState = {
   loggedIn: false,
   user: null,
@@ -193,6 +198,58 @@ function setAuthTab(target) {
   if (loginTabBtn) {
     loginTabBtn.classList.toggle("is-active", !showRegister);
     loginTabBtn.setAttribute("aria-selected", showRegister ? "false" : "true");
+  }
+}
+
+function getRequestedAuthTarget() {
+  const params = new URLSearchParams(window.location.search);
+  const authParam = String(params.get("auth") || "").trim().toLowerCase();
+  if (authParam === "login" || authParam === "register") return authParam;
+  const hash = String(window.location.hash || "").trim().toLowerCase();
+  if (hash === "#loginform") return "login";
+  if (hash === "#registerform") return "register";
+  return "";
+}
+
+function clearRequestedAuthInUrl() {
+  const url = new URL(window.location.href);
+  let shouldReplace = false;
+  if (url.searchParams.has("auth")) {
+    url.searchParams.delete("auth");
+    shouldReplace = true;
+  }
+  if (url.hash === "#loginForm" || url.hash === "#registerForm") {
+    url.hash = "";
+    shouldReplace = true;
+  }
+  if (shouldReplace) {
+    history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+}
+
+function focusAuthField(target) {
+  const field = target === "login"
+    ? loginForm?.querySelector('input[name="email"]')
+    : registerForm?.querySelector('input[name="displayName"], input[name="email"]');
+  window.setTimeout(() => field?.focus(), 30);
+}
+
+function openAuthModal(target = "register", options = {}) {
+  if (!authModal) return;
+  setAuthTab(target);
+  authModal.hidden = false;
+  document.body.classList.add("auth-modal-open");
+  if (options.focusField !== false) {
+    focusAuthField(target);
+  }
+}
+
+function closeAuthModal(options = {}) {
+  if (!authModal || authModal.hidden) return;
+  authModal.hidden = true;
+  document.body.classList.remove("auth-modal-open");
+  if (options.clearUrl !== false) {
+    clearRequestedAuthInUrl();
   }
 }
 
@@ -817,6 +874,7 @@ function renderSession(data) {
     return;
   }
 
+  closeAuthModal({ clearUrl: true });
   authGrid.hidden = true;
   dashboard.hidden = false;
   memberName.textContent = nextState.user.displayName || "Member";
@@ -902,6 +960,7 @@ registerForm.addEventListener("submit", async event => {
     form.reset();
     setAuthChallenge("register", data?.authChallenge);
     setRegisterVerificationMode(false);
+    closeAuthModal({ clearUrl: true });
     showStatus("Registration completed.", false, { autoHideMs: 2200 });
     await fetchOverview();
     redirectAfterAuth();
@@ -934,6 +993,7 @@ loginForm.addEventListener("submit", async event => {
     if (data?.authChallenge) setAuthChallenge("login", data.authChallenge);
     if (!response.ok) throw new Error(data.error || "Sign-in failed. Please try again.");
     form.reset();
+    closeAuthModal({ clearUrl: true });
     showStatus("Signed in successfully.", false, { autoHideMs: 2200 });
     await fetchOverview();
     redirectAfterAuth();
@@ -1016,6 +1076,26 @@ loginTabBtn?.addEventListener("click", () => {
   setAuthTab("login");
 });
 
+authOpenButtons.forEach(button => {
+  button.addEventListener("click", () => {
+    openAuthModal(button.dataset.openAuth || "register");
+  });
+});
+
+authModalBackdrop?.addEventListener("click", () => {
+  closeAuthModal();
+});
+
+authModalClose?.addEventListener("click", () => {
+  closeAuthModal();
+});
+
+window.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !authModal?.hidden) {
+    closeAuthModal();
+  }
+});
+
 planGrid.addEventListener("click", async event => {
   const button = event.target.closest("[data-plan-id]");
   if (!button) return;
@@ -1078,7 +1158,7 @@ async function handleReturnedMemberPurchase() {
 
 Promise.allSettled([fetchPayPalState(), fetchSession()])
   .then(data => {
-    setAuthTab("register");
+    setAuthTab(requestedAuthTarget || "register");
     setRegisterVerificationMode(false);
     updateRegisterActionUi();
     updateLoginActionUi();
@@ -1087,6 +1167,9 @@ Promise.allSettled([fetchPayPalState(), fetchSession()])
     setAuthChallenge("login", sessionData?.authChallenge);
     if (sessionData?.loggedIn) {
       return fetchOverview().then(() => handleReturnedMemberPurchase());
+    }
+    if (requestedAuthTarget) {
+      openAuthModal(requestedAuthTarget);
     }
     renderCatalog(sessionData?.catalog || sessionState.catalog);
     renderLedger([]);

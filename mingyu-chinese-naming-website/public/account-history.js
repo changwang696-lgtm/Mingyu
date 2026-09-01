@@ -121,7 +121,7 @@ async function fetchSession() {
   const data = await response.json();
   if (!data?.loggedIn) {
     const next = encodeURIComponent(window.location.pathname);
-    window.location.assign(`/account.html?next=${next}`);
+    window.location.assign(`/account.html?auth=login&next=${next}`);
     return null;
   }
   return data;

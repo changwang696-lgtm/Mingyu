@@ -284,11 +284,13 @@ function updateMemberExperience() {
 
   if (sessionState.loggedIn && sessionState.user) {
     accountLink.textContent = translations[lang].accountLinkMember;
+    accountLink.href = "/account.html";
     memberStripText.textContent = t("memberStripLoggedInBody", {
       name: sessionState.user.displayName || sessionState.user.email,
       credits: String(sessionState.user.creditsBalance)
     });
     memberStripLink.textContent = translations[lang].memberStripLoggedIn;
+    memberStripLink.href = "/account.html";
     simplePrice.textContent = creditCosts.simple === 1 ? "1 credit" : `${creditCosts.simple} credits`;
     completePrice.textContent = creditCosts.complete === 1 ? "1 credit" : `${creditCosts.complete} credits`;
     simpleCaption.textContent = translations[lang].simpleCreditCaption;
@@ -304,8 +306,10 @@ function updateMemberExperience() {
     if (feedbackEmail) feedbackEmail.value = sessionState.user.email || "";
   } else {
     accountLink.textContent = translations[lang].accountLinkGuest;
+    accountLink.href = "/account.html?auth=login";
     memberStripText.textContent = translations[lang].memberStripGuestBody;
     memberStripLink.textContent = translations[lang].memberStripGuest;
+    memberStripLink.href = "/account.html?auth=register";
     simplePrice.textContent = creditCosts.simple === 1 ? "1 credit" : `${creditCosts.simple} credits`;
     completePrice.textContent = creditCosts.complete === 1 ? "1 credit" : `${creditCosts.complete} credits`;
     simpleCaption.textContent = translations[lang].simpleNoPdf;
@@ -419,7 +423,7 @@ $("#nameForm").addEventListener("submit", async event => {
     try {
       sessionStorage.setItem(pendingServiceIntentKey, JSON.stringify({ tier: pendingTier }));
     } catch {}
-    window.location.assign(`/account.html?next=${encodeURIComponent("/")}`);
+    window.location.assign(`/account.html?auth=login&next=${encodeURIComponent("/")}`);
     return;
   }
   const form = event.currentTarget;
@@ -1072,7 +1076,7 @@ $("#feedbackTrigger")?.addEventListener("click", () => {
   if (!sessionState.loggedIn) {
     showHomeStatus(lang === "zh" ? "请先注册或登录会员后再留言" : "Please sign in before leaving a note", true);
     setTimeout(() => {
-      window.location.assign(`/account.html?next=${encodeURIComponent("/")}`);
+      window.location.assign(`/account.html?auth=login&next=${encodeURIComponent("/")}`);
     }, 500);
     return;
   }

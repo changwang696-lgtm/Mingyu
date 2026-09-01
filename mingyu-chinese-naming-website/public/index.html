@@ -14,7 +14,7 @@
               <a class="brand" href="#top"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
               <nav><a href="#ritual" data-i18n="navNaming">起名</a><a href="#story" data-i18n="navCulture">生肖文化</a><a href="#craft" data-i18n="navCraft">东方好物</a></nav>
     <div class="topbar-actions">
-      <a class="account-link" id="accountLink" data-staged-feature="membership" href="/account.html" data-i18n="accountLinkGuest">注册 / 登录</a>
+      <a class="account-link" id="accountLink" data-staged-feature="membership" href="/account.html?auth=login" data-i18n="accountLinkGuest">注册 / 登录</a>
       <button class="lang" id="langBtn" aria-label="Switch language">EN</button>
     </div>
   </header>
@@ -58,15 +58,15 @@
     <section class="ritual" id="ritual">
       <div class="form-heading"><p class="section-no">贰 / 02</p><h2 data-i18n="formTitle">告诉我们，你是谁</h2><p data-i18n="formSub">我们会保存本次付款交付、结果恢复与售后支持所需的信息。若有顾虑，可只输入您的姓氏，生成效果仍约有 90%。</p></div>
       <div class="auth-entry" aria-label="Member access">
-        <a class="auth-entry-link primary-auth" href="/account.html#registerForm">立即注册</a>
-        <a class="auth-entry-link secondary-auth" href="/account.html#loginForm">会员登录</a>
+        <a class="auth-entry-link primary-auth" href="/account.html?auth=register">立即注册</a>
+        <a class="auth-entry-link secondary-auth" href="/account.html?auth=login">会员登录</a>
       </div>
       <div class="member-strip" id="memberStrip" data-staged-feature="membership">
         <div>
           <small data-i18n="memberStripEyebrow">MEMBER ACCESS</small>
           <p id="memberStripText">登录后可使用欢迎 credits 直接生成结果，并在会员中心查看余额与历史记录。</p>
         </div>
-        <a class="member-strip-link" id="memberStripLink" href="/account.html" data-i18n="memberStripGuest">前往注册 / 登录</a>
+        <a class="member-strip-link" id="memberStripLink" href="/account.html?auth=register" data-i18n="memberStripGuest">前往注册 / 登录</a>
       </div>
       <form id="nameForm">
         <label class="wide"><span data-i18n="nameLabel">你现在的姓名</span><input id="name" name="name" required placeholder="e.g. Alex Morgan" autocomplete="name"><small data-i18n="nameHint">支持任何语言，我们会理解读音与文化背景</small></label>
@@ -213,6 +213,6 @@
   <p class="home-status-banner" id="homeStatusBanner" role="status" aria-live="polite" hidden></p>
       <dialog id="payment"><button class="close" aria-label="Close">×</button><p class="eyebrow" id="paymentEyebrow">MINGYU EDITION</p><h2 id="paymentTitle">确认生成简约版</h2><div class="preview-sheet"><span>名屿</span><b>名</b><small>CHINESE NAMING EDITION</small></div><ul id="paymentBenefits"></ul><div id="paypalButtons" hidden></div><div class="paypal-hosted-dialog" id="hostedCheckout" hidden><a class="primary paypal-hosted-link" id="dialogHostedLink" href="#">PayPal Checkout</a></div><button id="confirmPurchase" class="submit"><span id="confirmPurchaseText">支付并生成</span><b>→</b></button><small id="paymentNote" data-i18n="demoNote">支付将由 PayPal 处理；付款成功后，结果会在本站交付。</small><small class="legal-note">By purchasing, you agree to our <a href="/delivery.html" target="_blank" rel="noreferrer">Delivery</a>, <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>, <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>, <a href="/refund.html" target="_blank" rel="noreferrer">Refund Policy</a>, and <a href="/cancellation.html" target="_blank" rel="noreferrer">Cancellation Policy</a>.</small></dialog>
   <div class="loading" id="loading" hidden role="status" aria-live="polite"><div class="loader-seal">名</div><p data-i18n="loading">正在研读你的名字与时辰...</p></div>
-  <script src="/app.js?v=20260831-zodiac-png" ></script>
+  <script src="/app.js?v=20260901-auth-entry-modal" ></script>
 </body>
 </html>
