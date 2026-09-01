@@ -17,21 +17,19 @@
       </nav>
     </header>
 
-    <section class="hero">
-      <p class="eyebrow">MEMBER ACCOUNT</p>
-      <h1>Your credits, orders, and next steps in one place.</h1>
-      <p>Sign in to manage credits, review orders, and continue your naming journey without digging through a crowded dashboard.</p>
-      <div class="hero-note">
-        <strong>Welcome credits</strong>
-        <span id="welcomePolicyText">New accounts receive 3 welcome credits so you can try the member flow before purchasing a membership or a one-time credit pack.</span>
+    <section class="hero hero-layout">
+      <div class="hero-copy">
+        <p class="eyebrow">会员账户</p>
+        <h1>您的积分、订单和后续步骤一目了然。</h1>
+        <p>登录即可管理积分、查看订单，并继续您的命名之旅，无需在拥挤的控制面板中翻找。</p>
+        <div class="hero-note">
+          <strong>欢迎致谢</strong>
+          <span id="welcomePolicyText">新用户注册即可获得 3 个欢迎积分，以便在购买会员资格或一次性积分包之前体验会员流程。</span>
+        </div>
       </div>
-    </section>
 
-    <p class="status-banner" id="statusBanner" role="status" aria-live="polite" hidden></p>
-    <p class="browser-note" id="googleUnavailableNote" hidden>Google Sign-In may be unavailable in this browser. Use email sign-in or open this page in your system browser.</p>
-
-    <section class="auth-grid" id="authGrid">
-      <article class="auth-card auth-card-compact">
+      <div class="auth-grid" id="authGrid">
+        <article class="auth-card auth-card-compact">
         <p class="eyebrow">ACCOUNT ACCESS</p>
         <h2>Sign in or create your account</h2>
         <p class="card-intro">Use one compact panel to enter, purchase, and continue your saved work.</p>
@@ -105,11 +103,15 @@
             <div class="google-button-host" id="loginGoogleButton"></div>
           </div>
         </div>
-      </article>
+        </article>
+      </div>
     </section>
 
+    <p class="status-banner" id="statusBanner" role="status" aria-live="polite" hidden></p>
+    <p class="browser-note" id="googleUnavailableNote" hidden>Google Sign-In may be unavailable in this browser. Use email sign-in or open this page in your system browser.</p>
+
     <section class="dashboard" id="dashboard" hidden>
-      <div class="summary-grid summary-grid-wide">
+      <div class="summary-grid summary-grid-wide summary-grid-mini">
         <article class="summary-card">
           <small>ACCOUNT</small>
           <h2 id="memberName">Member</h2>
