@@ -1,5 +1,5 @@
 const defaultSettings = {
-  welcomeCredits: 3,
+  welcomeCredits: 2,
   servicePricing: {
     simple: { value: "2.99", label: "Simple Edition" },
     complete: { value: "9.90", label: "Complete Edition" }

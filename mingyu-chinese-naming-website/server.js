@@ -127,14 +127,14 @@ function sanitizeServicePricing(pricing = {}, fallback = getDefaultServicePricin
 
 function getDefaultSiteSettings() {
   return {
-    welcomeCredits: 3,
+    welcomeCredits: 2,
     servicePricing: getDefaultServicePricing()
   };
 }
 
 function sanitizeSiteSettings(settings = {}, fallback = getDefaultSiteSettings()) {
   return {
-    welcomeCredits: Math.max(0, Number.parseInt(settings.welcomeCredits ?? fallback.welcomeCredits ?? 3, 10) || 0),
+    welcomeCredits: Math.max(0, Number.parseInt(settings.welcomeCredits ?? fallback.welcomeCredits ?? 2, 10) || 0),
     servicePricing: sanitizeServicePricing(settings.servicePricing, fallback.servicePricing)
   };
 }
@@ -3633,8 +3633,8 @@ async function buildNamingReportPdfBytes({
       color: colors.warm
     });
     y -= 18;
-    drawParagraph("这是一份围绕名字、生肖原型与东方文化意象展开的完整人格探索报告。候选名字将从下一页开始呈现。", {
-      size: 10.5,
+    drawParagraph("This is a complete personality exploration report centered on your name, zodiac archetype, and Eastern cultural symbolism. Candidate names begin on the next page.", {
+      size: 9.5,
       color: colors.soft,
       x: margin + 26,
       width: maxWidth - 52,
