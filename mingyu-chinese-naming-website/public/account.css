@@ -107,6 +107,16 @@ a { color: inherit; }
   min-width: 0;
 }
 
+.hero-layout .auth-grid {
+  width: 100%;
+  margin: 0;
+  justify-content: stretch;
+}
+
+.hero-layout .auth-card {
+  width: 100%;
+}
+
 .eyebrow {
   margin: 0 0 10px;
   color: var(--gold-light);
@@ -588,6 +598,10 @@ button:disabled {
 @media (max-width: 1100px) {
   .hero-layout {
     grid-template-columns: 1fr;
+  }
+
+  .hero-layout .auth-grid {
+    width: 100%;
   }
 
   .summary-grid {
