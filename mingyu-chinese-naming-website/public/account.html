@@ -31,75 +31,79 @@
     <p class="browser-note" id="googleUnavailableNote" hidden>Google Sign-In may be unavailable in this browser. Use email sign-in or open this page in your system browser.</p>
 
     <section class="auth-grid" id="authGrid">
-      <article class="auth-card">
-        <p class="eyebrow">CREATE ACCOUNT</p>
-        <h2>Start your member account</h2>
-        <p class="card-intro">Create your account once, then use credits, save reports, and reopen orders at any time.</p>
-        <form id="registerForm" novalidate>
-          <label>
-            <span>Display name</span>
-            <input name="displayName" placeholder="Mingyu Member" />
-          </label>
-          <label>
-            <span>Email</span>
-            <input name="email" type="email" required placeholder="you@example.com" autocomplete="email" />
-          </label>
-          <label>
-            <span>Password</span>
-            <input name="password" type="password" required minlength="8" placeholder="At least 8 characters" autocomplete="new-password" />
-          </label>
-          <div class="challenge-block">
-            <div class="challenge-head">
-              <span>Human check</span>
-              <button type="button" class="secondary challenge-refresh" id="registerChallengeRefreshBtn">Refresh</button>
-            </div>
-            <div class="challenge-prompt" id="registerChallengePrompt">Loading...</div>
-            <input name="challengeAnswer" id="registerChallengeAnswer" inputmode="numeric" placeholder="Enter the answer" autocomplete="off" />
-          </div>
-          <p class="inline-note auth-note" id="registerHelp">A 6-digit email code will be sent automatically. Enter it to finish registration and sign in.</p>
-          <div class="verification-block" id="registerVerificationBlock" hidden>
-            <label>
-              <span>Email code</span>
-              <input name="verificationCode" id="registerVerificationCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="Enter 6 digits" autocomplete="one-time-code" />
-            </label>
-            <div class="verification-actions">
-              <button type="button" class="secondary" id="resendRegisterCodeBtn">Resend code</button>
-            </div>
-          </div>
-          <button type="submit" id="registerSubmitBtn">Send email code</button>
-        </form>
-        <div class="oauth-block" id="registerGoogleBlock" hidden>
-          <p class="inline-note">Or continue with Google</p>
-          <div class="google-button-host" id="registerGoogleButton"></div>
+      <article class="auth-card auth-card-compact">
+        <p class="eyebrow">ACCOUNT ACCESS</p>
+        <h2>Sign in or create your account</h2>
+        <p class="card-intro">Use one compact panel to enter, purchase, and continue your saved work.</p>
+        <div class="auth-tabs" role="tablist" aria-label="Account access">
+          <button type="button" class="auth-tab is-active" id="registerTabBtn" data-auth-target="register" role="tab" aria-selected="true">Create Account</button>
+          <button type="button" class="auth-tab" id="loginTabBtn" data-auth-target="login" role="tab" aria-selected="false">Sign In</button>
         </div>
-      </article>
 
-      <article class="auth-card">
-        <p class="eyebrow">SIGN IN</p>
-        <h2>Return to your account</h2>
-        <p class="card-intro">Review your credits, continue a purchase, or reopen saved reports from one cleaner dashboard.</p>
-        <form id="loginForm" novalidate>
-          <label>
-            <span>Email</span>
-            <input name="email" type="email" required placeholder="you@example.com" autocomplete="email" />
-          </label>
-          <label>
-            <span>Password</span>
-            <input name="password" type="password" required placeholder="Enter your password" autocomplete="current-password" />
-          </label>
-          <div class="challenge-block">
-            <div class="challenge-head">
-              <span>Human check</span>
-              <button type="button" class="secondary challenge-refresh" id="loginChallengeRefreshBtn">Refresh</button>
+        <div class="auth-pane" id="registerPane">
+          <form id="registerForm" novalidate>
+            <label>
+              <span>Display name</span>
+              <input name="displayName" placeholder="Mingyu Member" />
+            </label>
+            <label>
+              <span>Email</span>
+              <input name="email" type="email" required placeholder="you@example.com" autocomplete="email" />
+            </label>
+            <label>
+              <span>Password</span>
+              <input name="password" type="password" required minlength="8" placeholder="At least 8 characters" autocomplete="new-password" />
+            </label>
+            <div class="challenge-block">
+              <div class="challenge-head">
+                <span>Human check</span>
+                <button type="button" class="secondary challenge-refresh" id="registerChallengeRefreshBtn">Refresh</button>
+              </div>
+              <div class="challenge-prompt" id="registerChallengePrompt">Loading...</div>
+              <input name="challengeAnswer" id="registerChallengeAnswer" inputmode="numeric" placeholder="Enter the answer" autocomplete="off" />
             </div>
-            <div class="challenge-prompt" id="loginChallengePrompt">Loading...</div>
-            <input name="challengeAnswer" id="loginChallengeAnswer" inputmode="numeric" placeholder="Enter the answer" autocomplete="off" />
+            <p class="inline-note auth-note" id="registerHelp">A 6-digit email code will be sent automatically. Enter it to finish registration and sign in.</p>
+            <div class="verification-block" id="registerVerificationBlock" hidden>
+              <label>
+                <span>Email code</span>
+                <input name="verificationCode" id="registerVerificationCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="Enter 6 digits" autocomplete="one-time-code" />
+              </label>
+              <div class="verification-actions">
+                <button type="button" class="secondary" id="resendRegisterCodeBtn">Resend code</button>
+              </div>
+            </div>
+            <button type="submit" id="registerSubmitBtn">Send email code</button>
+          </form>
+          <div class="oauth-block" id="registerGoogleBlock" hidden>
+            <p class="inline-note">Or continue with Google</p>
+            <div class="google-button-host" id="registerGoogleButton"></div>
           </div>
-          <button type="submit">Sign in</button>
-        </form>
-        <div class="oauth-block" id="loginGoogleBlock" hidden>
-          <p class="inline-note">Sign in with Google. Your first visit will create the account automatically.</p>
-          <div class="google-button-host" id="loginGoogleButton"></div>
+        </div>
+
+        <div class="auth-pane" id="loginPane" hidden>
+          <form id="loginForm" novalidate>
+            <label>
+              <span>Email</span>
+              <input name="email" type="email" required placeholder="you@example.com" autocomplete="email" />
+            </label>
+            <label>
+              <span>Password</span>
+              <input name="password" type="password" required placeholder="Enter your password" autocomplete="current-password" />
+            </label>
+            <div class="challenge-block">
+              <div class="challenge-head">
+                <span>Human check</span>
+                <button type="button" class="secondary challenge-refresh" id="loginChallengeRefreshBtn">Refresh</button>
+              </div>
+              <div class="challenge-prompt" id="loginChallengePrompt">Loading...</div>
+              <input name="challengeAnswer" id="loginChallengeAnswer" inputmode="numeric" placeholder="Enter the answer" autocomplete="off" />
+            </div>
+            <button type="submit">Sign in</button>
+          </form>
+          <div class="oauth-block" id="loginGoogleBlock" hidden>
+            <p class="inline-note">Sign in with Google. Your first visit will create the account automatically.</p>
+            <div class="google-button-host" id="loginGoogleButton"></div>
+          </div>
         </div>
       </article>
     </section>

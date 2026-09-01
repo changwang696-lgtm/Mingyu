@@ -14,12 +14,16 @@ const registerSubmitBtn = document.querySelector("#registerSubmitBtn");
 const resendRegisterCodeBtn = document.querySelector("#resendRegisterCodeBtn");
 const registerGoogleBlock = document.querySelector("#registerGoogleBlock");
 const registerGoogleButton = document.querySelector("#registerGoogleButton");
+const registerPane = document.querySelector("#registerPane");
+const registerTabBtn = document.querySelector("#registerTabBtn");
 const loginChallengePrompt = document.querySelector("#loginChallengePrompt");
 const loginChallengeAnswer = document.querySelector("#loginChallengeAnswer");
 const loginChallengeRefreshBtn = document.querySelector("#loginChallengeRefreshBtn");
 const loginSubmitBtn = loginForm?.querySelector('button[type="submit"]');
 const loginGoogleBlock = document.querySelector("#loginGoogleBlock");
 const loginGoogleButton = document.querySelector("#loginGoogleButton");
+const loginPane = document.querySelector("#loginPane");
+const loginTabBtn = document.querySelector("#loginTabBtn");
 const logoutBtn = document.querySelector("#logoutBtn");
 const memberName = document.querySelector("#memberName");
 const memberEmail = document.querySelector("#memberEmail");
@@ -176,6 +180,20 @@ function getGoogleButtonWidth(host) {
 function setGoogleBlocksVisible(visible) {
   if (registerGoogleBlock) registerGoogleBlock.hidden = !visible;
   if (loginGoogleBlock) loginGoogleBlock.hidden = !visible;
+}
+
+function setAuthTab(target) {
+  const showRegister = target !== "login";
+  if (registerPane) registerPane.hidden = !showRegister;
+  if (loginPane) loginPane.hidden = showRegister;
+  if (registerTabBtn) {
+    registerTabBtn.classList.toggle("is-active", showRegister);
+    registerTabBtn.setAttribute("aria-selected", showRegister ? "true" : "false");
+  }
+  if (loginTabBtn) {
+    loginTabBtn.classList.toggle("is-active", !showRegister);
+    loginTabBtn.setAttribute("aria-selected", showRegister ? "false" : "true");
+  }
 }
 
 function isRestrictedGoogleBrowser() {
@@ -990,6 +1008,14 @@ loginChallengeRefreshBtn?.addEventListener("click", () => {
   refreshAuthChallenge("login", { focusAnswer: true });
 });
 
+registerTabBtn?.addEventListener("click", () => {
+  setAuthTab("register");
+});
+
+loginTabBtn?.addEventListener("click", () => {
+  setAuthTab("login");
+});
+
 planGrid.addEventListener("click", async event => {
   const button = event.target.closest("[data-plan-id]");
   if (!button) return;
@@ -1052,6 +1078,7 @@ async function handleReturnedMemberPurchase() {
 
 Promise.allSettled([fetchPayPalState(), fetchSession()])
   .then(data => {
+    setAuthTab("register");
     setRegisterVerificationMode(false);
     updateRegisterActionUi();
     updateLoginActionUi();

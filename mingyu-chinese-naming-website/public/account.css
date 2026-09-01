@@ -195,7 +195,8 @@ a { color: inherit; }
 }
 
 .auth-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 720px);
+  justify-content: center;
   margin-bottom: 28px;
 }
 
@@ -206,6 +207,15 @@ a { color: inherit; }
 .page-panel {
   padding: 26px;
   border-radius: 24px;
+}
+
+.auth-card-compact {
+  padding-top: 22px;
+}
+
+.auth-card-compact h2 {
+  margin-bottom: 8px;
+  font-size: 32px;
 }
 
 .card-intro,
@@ -292,6 +302,33 @@ a { color: inherit; }
   margin-top: 18px;
   padding-top: 18px;
   border-top: 1px solid rgba(16, 38, 61, 0.09);
+}
+
+.auth-tabs {
+  display: inline-flex;
+  gap: 10px;
+  padding: 6px;
+  margin: 4px 0 18px;
+  border-radius: 999px;
+  background: rgba(16, 38, 61, 0.06);
+}
+
+.auth-tab {
+  min-height: 40px;
+  padding: 0 18px;
+  border: 0;
+  color: var(--ink);
+  background: transparent;
+}
+
+.auth-tab.is-active {
+  color: var(--paper);
+  background: var(--cinnabar);
+}
+
+.auth-pane {
+  display: grid;
+  gap: 12px;
 }
 
 .google-button-host {
@@ -554,6 +591,10 @@ button:disabled {
     font-size: 42px;
   }
 
+  .auth-card-compact h2 {
+    font-size: 28px;
+  }
+
   .auth-card,
   .summary-card,
   .panel,
@@ -577,6 +618,16 @@ button:disabled {
 
   .summary-actions > *,
   .verification-actions > * {
+    width: 100%;
+  }
+
+  .auth-tabs {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .auth-tab {
     width: 100%;
   }
 }
