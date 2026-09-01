@@ -398,9 +398,9 @@ body.auth-modal-open {
 .oauth-block {
   display: grid;
   gap: 12px;
-  margin-top: 18px;
-  padding-top: 18px;
-  border-top: 1px solid rgba(16, 38, 61, 0.09);
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(16, 38, 61, 0.09);
 }
 
 .auth-tabs {

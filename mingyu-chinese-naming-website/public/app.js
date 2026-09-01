@@ -170,7 +170,7 @@ const translations = {
   }
 };
 
-let lang = "zh";
+let lang = "en";
 let latest = null;
 let activeTier = "complete";
 let pendingTier = "simple";
@@ -326,7 +326,7 @@ function updateMemberExperience() {
   }
   if (paypalSimpleLabel) paypalSimpleLabel.textContent = `${getEditionLabel("simple")} · ${getServicePriceText("simple")}`;
   if (paypalCompleteLabel) paypalCompleteLabel.textContent = `${getEditionLabel("complete")} · ${getServicePriceText("complete")}`;
-  if ($("#paypalInline")) $("#paypalInline").hidden = !sessionState.loggedIn;
+  if ($("#paypalInline")) $("#paypalInline").hidden = true;
 }
 
 function applyLanguage() {
@@ -387,6 +387,21 @@ function resolveSubmittedTier(event) {
   return lastRequestedTier;
 }
 
+function hideInlineCheckout() {
+  if ($("#paypalInline")) $("#paypalInline").hidden = true;
+}
+
+function showInlineCheckoutFallback() {
+  const inlineCheckout = $("#paypalInline");
+  if (!inlineCheckout || !sessionState.loggedIn || !paypalConfig.enabled) return false;
+  inlineCheckout.hidden = false;
+  renderInlinePayPalButtons().catch(error => {
+    console.error("PayPal inline checkout initialization failed:", error);
+    inlineCheckout.hidden = true;
+  });
+  return true;
+}
+
 function openPaymentDialogWithFallback() {
   updatePaymentDialog();
   try {
@@ -403,7 +418,7 @@ function openPaymentDialogWithFallback() {
     console.warn("Payment dialog open failed:", error);
   }
   const inlineCheckout = $("#paypalInline");
-  if (paypalConfig.enabled && inlineCheckout && !inlineCheckout.hidden) {
+  if (paypalConfig.enabled && inlineCheckout && showInlineCheckoutFallback()) {
     $("#formMessage").textContent = lang === "zh"
       ? "当前手机浏览器无法打开付款弹窗，请直接使用下方 PayPal 按钮完成付款。"
       : "This mobile browser could not open the payment dialog. Please use the PayPal buttons below instead.";
@@ -807,7 +822,6 @@ async function renderInlinePayPalButtons() {
   if (inlinePayPalRendered) return;
   if (!$("#paypalInline")) return;
   const paypal = await loadPayPalSdk();
-  $("#paypalInline").hidden = false;
 
   const renderOne = async (selector, tier) => {
     await paypal.Buttons({
@@ -835,25 +849,7 @@ async function renderInlinePayPalButtons() {
 }
 
 function renderHostedCheckoutLinks() {
-  if (!$("#paypalInline")) return;
-  if (!sessionState.loggedIn) {
-    $("#paypalInline").hidden = true;
-    return;
-  }
-      const hasHostedCheckout = Boolean(hostedPayPalLinks.simple || hostedPayPalLinks.complete);
-      if (!hasHostedCheckout && !paypalConfig.enabled) {
-    $("#paypalInline").hidden = true;
-    return;
-  }
-  $("#paypalInline").hidden = false;
-      if (hostedPayPalLinks.simple) bindHostedCheckoutLink("#hostedSimpleLink", "simple");
-      if (hostedPayPalLinks.complete) bindHostedCheckoutLink("#hostedCompleteLink", "complete");
-  if (!hasHostedCheckout && paypalConfig.enabled) {
-    renderInlinePayPalButtons().catch(error => {
-      console.error("PayPal inline checkout initialization failed:", error);
-      $("#paypalInline").hidden = true;
-    });
-  }
+  hideInlineCheckout();
 }
 
 async function restoreGuestOrderResultFromUrl() {
