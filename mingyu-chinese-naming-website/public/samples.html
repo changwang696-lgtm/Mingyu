@@ -1,68 +1,70 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>样品 / Samples | Mingyu</title>
+  <title>Samples | Mingyu</title>
   <link rel="icon" type="image/png" href="/assets/zodiac/favicon.png" />
   <link rel="stylesheet" href="/styles.css?v=20260822-register-fix" />
-  <link rel="stylesheet" href="/samples.css?v=20260902-samples" />
+  <link rel="stylesheet" href="/samples.css?v=20260902-samples-single-language-fix" />
 </head>
 <body class="samples-page">
   <header class="topbar sample-topbar">
     <a class="brand" href="/"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
     <nav>
-      <a href="/#ritual">起名 / Naming</a>
-      <a href="/#story">生肖文化 / Zodiac</a>
-      <a href="/#craft">东方好物 / Craft</a>
-      <a href="/samples.html" aria-current="page">样品 / Samples</a>
+      <a href="/#ritual" data-i18n="navNaming">Naming</a>
+      <a href="/#story" data-i18n="navCulture">Zodiac Culture</a>
+      <a href="/#craft" data-i18n="navCraft">Crafts</a>
+      <a href="/samples.html" aria-current="page" data-i18n="navSamples">Samples</a>
     </nav>
     <div class="topbar-actions">
-      <a class="account-link" href="/account.html?auth=login">注册 / 登录 · Sign In</a>
+      <a class="account-link" href="/account.html?auth=login" data-i18n="accountLinkGuest">Sign in</a>
+      <button class="lang" id="langBtn" aria-label="Switch language">中文</button>
     </div>
   </header>
 
   <main class="samples-shell">
     <section class="samples-hero">
-      <p class="eyebrow">MINGYU SAMPLES · 样品展示</p>
-      <h1>看看一张真正有气质的东方智慧作品，长什么样。<span>See what a refined piece of Eastern wisdom design can really look like.</span></h1>
-      <p>上方先看两张精选样品卡片，下方继续展开完整报告大图，帮助你更快判断成品质感是否就是你想要的方向。<span>Start with two featured sample cards above, then continue to the full report image below to quickly judge whether the finish and atmosphere match what you want.</span></p>
+      <p class="eyebrow" data-i18n="heroEyebrow">MINGYU SAMPLES</p>
+      <h1 data-i18n="heroTitle">See what a refined piece of Eastern wisdom design can really look like.</h1>
+      <p data-i18n="heroBody">Start with two featured sample cards above, then continue to the full report image below to quickly judge whether the finish and atmosphere match what you want.</p>
     </section>
 
     <section class="samples-grid" aria-label="Sample cards">
       <article class="sample-card">
         <div class="sample-card-media sample-card-media-split">
-          <img src="/assets/zodiac/kp1.jpg" alt="东方智慧卡片样品正面" />
-          <img src="/assets/zodiac/kp2.jpg" alt="东方智慧卡片样品背面" />
+          <img id="sampleCardImageFront" src="/assets/zodiac/kp1.jpg" alt="Sample front of an Eastern wisdom card" />
+          <img id="sampleCardImageBack" src="/assets/zodiac/kp2.jpg" alt="Sample back of an Eastern wisdom card" />
         </div>
         <div class="sample-card-copy">
-          <p class="section-no">样品卡片 / Sample Card 01</p>
-          <h2>一张让我骄傲的东方智慧卡片<span>A card of Eastern wisdom I am proud to show.</span></h2>
-          <a class="primary" href="/#ritual"><span>我也想做 / I Want One Too</span><b>→</b></a>
+          <p class="section-no" data-i18n="cardLabel">SAMPLE CARD / 01</p>
+          <h2 data-i18n="cardTitle">A card of Eastern wisdom I am proud to show.</h2>
+          <a class="primary" href="/#ritual"><span data-i18n="cta">I Want One Too</span><b>→</b></a>
         </div>
       </article>
 
       <article class="sample-card">
         <div class="sample-card-media">
-          <img src="/assets/zodiac/kp3.jpg" alt="东方五行人格解码报告样品封面" />
+          <img id="sampleReportCover" src="/assets/zodiac/kp3.jpg" alt="Sample cover of an Eastern Five-Phases personality report" />
         </div>
         <div class="sample-card-copy">
-          <p class="section-no">样品报告 / Sample Report 02</p>
-          <h2>古老东方五行灵感的人格解码报告<span>A personality decoding report inspired by the ancient Eastern Five Phases.</span></h2>
-          <a class="primary" href="/#ritual"><span>我也想做 / I Want One Too</span><b>→</b></a>
+          <p class="section-no" data-i18n="reportLabel">SAMPLE REPORT / 02</p>
+          <h2 data-i18n="reportTitle">A personality decoding report inspired by the ancient Eastern Five Phases.</h2>
+          <a class="primary" href="/#ritual"><span data-i18n="cta">I Want One Too</span><b>→</b></a>
         </div>
       </article>
     </section>
 
     <section class="sample-showcase" aria-labelledby="sampleShowcaseTitle">
       <div class="sample-showcase-head">
-        <p class="section-no">完整展开 / Full Preview 03</p>
-        <h2 id="sampleShowcaseTitle">下方是完整展开的大图预览<span>The full-size expanded preview appears below.</span></h2>
+        <p class="section-no" data-i18n="showcaseLabel">FULL PREVIEW / 03</p>
+        <h2 id="sampleShowcaseTitle" data-i18n="showcaseTitle">The full-size expanded preview appears below.</h2>
       </div>
       <div class="sample-showcase-frame">
-        <img src="/assets/zodiac/kp3.jpg" alt="东方五行人格解码报告完整展示图" />
+        <img id="sampleReportFull" src="/assets/zodiac/kp3.jpg" alt="Full preview of the Eastern Five-Phases personality report" />
       </div>
     </section>
   </main>
+  <script src="/samples.js?v=20260902-single-language-fix"></script>
 </body>
 </html>
