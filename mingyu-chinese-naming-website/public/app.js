@@ -1,6 +1,6 @@
 const translations = {
   en: {
-    navPlans: "Packages", navNaming: "Naming", navCulture: "Zodiac Culture", navCraft: "Crafts", navSamples: "Samples", accountLinkGuest: "Sign in",
+    navPlans: "Packages", navNaming: "Naming", navCulture: "Zodiac Culture", navCraft: "Crafts", navSamples: "Samples", navSamplesMobile: "Samples", accountLinkGuest: "Sign in",
     eyebrow: "Rooted in ancient Chinese five-elements wisdom", heroA: "Your Elemental DNA -", heroB: "The 5-Phase Personality Blueprint",
     heroBody: "This is not fortune-telling. It is an elemental personality decoding report inspired by ancient Chinese five-elements thought, built from your birth time, identity, and the deeper structure behind your name.",
     begin: "Unlock Your DNA - Start the Journey", introTitle: "This is not a name translation. This is your Elemental DNA profile.",
@@ -86,7 +86,7 @@ const translations = {
     guestOrderRecovered: "Your saved order result has been restored."
   },
   zh: {
-    navPlans: "服务与交付", navNaming: "起名", navCulture: "生肖文化", navCraft: "东方好物", navSamples: "样品", accountLinkGuest: "注册 / 登录", eyebrow: "源自古老东方五行智慧",
+    navPlans: "服务与交付", navNaming: "起名", navCulture: "生肖文化", navCraft: "东方好物", navSamples: "Samples", navSamplesMobile: "样品", accountLinkGuest: "注册 / 登录", eyebrow: "源自古老东方五行智慧",
     heroA: "你的元素DNA——", heroB: "五行人格蓝图", heroBody: "这不是传统占卜，而是一份以古老东方五行为灵感的人格解码报告。我们会从你的出生时刻、身份与名字线索中，读出更深层的性格结构与自我认知。",
     begin: "解锁你的DNA - 开始探索", introTitle: "这不是翻译名字，这是你的元素DNA档案。",
     introBody: "你的中文名不只是一个标签，它更像由声音、形态与意义编织而成的代码。我们解码你出生时刻与身份中的五种元素力量，帮助你看见更真实的自己。",
