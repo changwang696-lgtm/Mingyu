@@ -4181,8 +4181,47 @@ function listUserReports(user) {
     .map(summarizeMemberReport);
 }
 
+const securityHeaders = {
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+  "Content-Security-Policy": [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "frame-ancestors 'self'",
+    "object-src 'none'",
+    "script-src 'self' 'unsafe-inline' https://accounts.google.com https://www.paypal.com https://www.paypalobjects.com",
+    "style-src 'self' 'unsafe-inline' https:",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data: https:",
+    "connect-src 'self' https://www.paypal.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://accounts.google.com https://oauth2.googleapis.com",
+    "frame-src 'self' https://accounts.google.com https://*.google.com https://www.paypal.com https://www.sandbox.paypal.com https://*.paypal.com https://*.paypalobjects.com",
+    "form-action 'self' https://www.paypal.com https://www.sandbox.paypal.com",
+    "upgrade-insecure-requests"
+  ].join("; "),
+  "X-Frame-Options": "SAMEORIGIN",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": [
+    "accelerometer=()",
+    "autoplay=()",
+    "camera=()",
+    "display-capture=()",
+    "fullscreen=(self)",
+    "geolocation=()",
+    "gyroscope=()",
+    "hid=()",
+    "microphone=()",
+    "payment=()",
+    "publickey-credentials-get=()",
+    "usb=()"
+  ].join(", ")
+};
+
 function send(res, status, data, type = "application/json; charset=utf-8", extraHeaders = {}) {
-  res.writeHead(status, { "Content-Type": type, "X-Content-Type-Options": "nosniff", ...extraHeaders });
+  res.writeHead(status, {
+    "Content-Type": type,
+    "X-Content-Type-Options": "nosniff",
+    ...securityHeaders,
+    ...extraHeaders
+  });
   res.end(type.startsWith("application/json") ? JSON.stringify(data) : data);
 }
 
