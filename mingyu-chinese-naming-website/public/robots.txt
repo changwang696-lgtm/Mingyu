@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /account.html
+Disallow: /account-ledger.html
+Disallow: /account-reports.html
+Disallow: /order-lookup.html
+Disallow: /checkout-success.html
+Disallow: /admin-login.html
+Disallow: /admin-orders.html
+Disallow: /admin-users.html
+Disallow: /admin-plans.html
+Disallow: /admin-feedback.html
+
+Sitemap: https://chinesenamepro.com/sitemap.xml
