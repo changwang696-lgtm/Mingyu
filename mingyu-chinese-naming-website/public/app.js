@@ -1,6 +1,6 @@
 const translations = {
   en: {
-    navPlans: "Packages", navNaming: "Naming", navCulture: "Zodiac Culture", navCraft: "Crafts", navSamples: "Samples", navSamplesMobile: "Samples", accountLinkGuest: "Sign in",
+    navPlans: "Packages", navNaming: "Naming", navCulture: "Subscribe", navCraft: "Crafts", navSamples: "Samples", navSamplesMobile: "Samples", accountLinkGuest: "Sign in",
     eyebrow: "Rooted in ancient Chinese five-elements wisdom", heroA: "Your Elemental DNA -", heroB: "The 5-Phase Personality Blueprint",
     heroBody: "This is not fortune-telling. It is an elemental personality decoding report inspired by ancient Chinese five-elements thought, built from your birth time, identity, and the deeper structure behind your name.",
     begin: "Unlock Your DNA - Start the Journey", introTitle: "This is not a name translation. This is your Elemental DNA profile.",
@@ -37,7 +37,7 @@ const translations = {
     memberStripEyebrow: "MEMBER ACCESS",
     memberStripGuest: "Create account / Sign in",
     memberStripLoggedIn: "Open member center",
-    memberStripGuestBody: "Sign in to receive welcome credits, generate with your balance, and keep a saved history in your account.",
+    memberStripGuestBody: "Register to receive 1 welcome credit, unlock one Simple Edition DNA card, and keep a saved history in your account.",
     memberStripLoggedInBody: "Signed in as {name}. You have {credits} credits available and can generate directly with member balance.",
     simpleCreditCaption: "Use 1 credit for your DNA card",
     completeCreditCaption: "Use 3 credits when signed in",
@@ -70,7 +70,7 @@ const translations = {
     craftTitle: "An Eastern gift bearing your name to admire", craftSub: "Objects made by artisans, turning your name into a keepsake you can touch.",
     product1: "Custom name seal", product2: "Silk round fan", product3: "Name calligraphy scroll",
     launchTitle: "Current site status",
-    launchBody: "The site now uses a member-first flow: sign in first, then use welcome credits, buy plans, or complete one-time naming payment through PayPal.",
+    launchBody: "The site now uses a member-first flow: register first, use your 1 welcome credit for a Simple Edition DNA card, then buy more credits or plans when needed.",
     demoNote: "Payment is handled by PayPal. Your result will be delivered on this site after successful payment.", loading: "Reading the sound, meaning and moment of your name...",
          paypalInlineTitle: "Pay with PayPal directly",
          paypalInlineBody: "Use PayPal directly to pay and generate your result.",
@@ -83,10 +83,19 @@ const translations = {
              guestOrderSavedBody: "Order {orderId} is ready. Complete payment on PayPal, then return to the saved order page to continue delivery. If you close the page, you can still recover it later by email and order ID.",
     findOrderLink: "Find my service order",
     guestOrderCreateFailed: "We could not prepare your payment record. Please try again.",
-    guestOrderRecovered: "Your saved order result has been restored."
+    guestOrderRecovered: "Your saved order result has been restored.",
+    welcomeCreditEyebrow: "NEW MEMBER GIFT",
+    welcomeCreditTitle: "Register now and get 1 free credit.",
+    welcomeCreditBody: "Use it to unlock one Simple Edition DNA card with a shareable result and PDF included.",
+    welcomeCreditCta: "Register and Get Free Service",
+    welcomeCreditLater: "Maybe later",
+    welcomeCreditCardType: "SIMPLE EDITION",
+    welcomeCreditCardTitle: "Unlock DNA card",
+    welcomeCreditCardBody: "Shareable result · PDF included",
+    welcomeCreditCardPrice: "1 credit"
   },
   zh: {
-    navPlans: "服务与交付", navNaming: "起名", navCulture: "生肖文化", navCraft: "东方好物", navSamples: "Samples", navSamplesMobile: "样品", accountLinkGuest: "注册 / 登录", eyebrow: "源自古老东方五行智慧",
+    navPlans: "服务与交付", navNaming: "起名", navCulture: "订阅", navCraft: "东方好物", navSamples: "Samples", navSamplesMobile: "样品", accountLinkGuest: "注册 / 登录", eyebrow: "源自古老东方五行智慧",
     heroA: "你的元素DNA——", heroB: "五行人格蓝图", heroBody: "这不是传统占卜，而是一份以古老东方五行为灵感的人格解码报告。我们会从你的出生时刻、身份与名字线索中，读出更深层的性格结构与自我认知。",
     begin: "解锁你的DNA - 开始探索", introTitle: "这不是翻译名字，这是你的元素DNA档案。",
     introBody: "你的中文名不只是一个标签，它更像由声音、形态与意义编织而成的代码。我们解码你出生时刻与身份中的五种元素力量，帮助你看见更真实的自己。",
@@ -122,7 +131,7 @@ const translations = {
     memberStripEyebrow: "会员入口",
     memberStripGuest: "前往注册 / 登录",
     memberStripLoggedIn: "打开会员中心",
-    memberStripGuestBody: "登录后可获得欢迎 credits，直接用余额生成结果，并在会员中心查看历史记录。",
+    memberStripGuestBody: "注册后可获得 1 个欢迎 credit，免费解锁一次简约版 DNA 名片，并在会员中心查看历史记录。",
     memberStripLoggedInBody: "已登录为 {name}，当前剩余 {credits} credits，可直接使用会员余额生成结果。",
     simpleCreditCaption: "登录后可使用 1 credit 解锁 DNA 名片",
     completeCreditCaption: "登录后可使用 3 credits",
@@ -153,7 +162,7 @@ const translations = {
     craftTitle: "一件带着名字的东方礼物欣赏", craftSub: "来自手艺人的小物，为名字留下可以触摸的纪念。",
     product1: "定制姓名印章", product2: "缂丝团扇", product3: "姓名书法卷",
     launchTitle: "当前站点状态",
-    launchBody: "当前站点已切换为会员优先流程：先注册或登录，再使用 welcome credits、购买套餐，或通过 PayPal 完成单次起名服务支付。",
+    launchBody: "当前站点已切换为会员优先流程：先注册领取 1 个欢迎 credit，免费体验一次简约版 DNA 名片，再按需购买更多 credits 或套餐。",
     demoNote: "支付将由 PayPal 处理；付款成功后，结果会在本站交付。", loading: "正在研读你的名字与时辰...",
          paypalInlineTitle: "使用 PayPal 直接付款",
          paypalInlineBody: "可直接使用 PayPal 支付并生成结果。",
@@ -166,7 +175,16 @@ const translations = {
              guestOrderSavedBody: "订单号 {orderId} 已创建。请在 PayPal 完成付款后返回本站继续交付；若关闭页面，也可以稍后通过邮箱和订单号找回。",
     findOrderLink: "找回我的服务订单",
     guestOrderCreateFailed: "创建支付记录失败，请稍后重试。",
-    guestOrderRecovered: "已为你恢复已保存的订单结果。"
+    guestOrderRecovered: "已为你恢复已保存的订单结果。",
+    welcomeCreditEyebrow: "新会员礼遇",
+    welcomeCreditTitle: "注册会员，即送 1 credit。",
+    welcomeCreditBody: "可免费解锁一次简约版 DNA 名片服务，包含可分享结果与 PDF 下载。",
+    welcomeCreditCta: "注册并领取免费服务",
+    welcomeCreditLater: "稍后再说",
+    welcomeCreditCardType: "简约版",
+    welcomeCreditCardTitle: "解锁 DNA 名片",
+    welcomeCreditCardBody: "分享型结果 · 含 PDF 下载",
+    welcomeCreditCardPrice: "1 credit"
   }
 };
 
@@ -192,6 +210,8 @@ let lastRequestedTier = "simple";
 const $ = selector => document.querySelector(selector);
 const dialog = $("#payment");
 const feedbackDialog = $("#feedbackDialog");
+const welcomeCreditDialog = $("#welcomeCreditDialog");
+const welcomeCreditSeenKey = "mingyu_welcome_credit_prompt_seen";
 const creditCosts = { simple: 1, complete: 3 };
 let homeStatusTimer = null;
 const defaultServicePricing = {
@@ -248,6 +268,49 @@ function showFlowError(message) {
   const text = String(message || "").trim() || (lang === "zh" ? "当前操作失败，请稍后重试。" : "This action failed. Please try again.");
   if ($("#formMessage")) $("#formMessage").textContent = text;
   showHomeStatus(text, true);
+}
+
+function markWelcomeCreditPromptSeen() {
+  try {
+    localStorage.setItem(welcomeCreditSeenKey, "1");
+  } catch {
+    // Storage can be blocked in private contexts; the dialog can still work for this visit.
+  }
+}
+
+function hasSeenWelcomeCreditPrompt() {
+  try {
+    return localStorage.getItem(welcomeCreditSeenKey) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function openWelcomeCreditPrompt() {
+  if (!welcomeCreditDialog || sessionState.loggedIn || hasSeenWelcomeCreditPrompt()) return;
+  window.setTimeout(() => {
+    if (sessionState.loggedIn || hasSeenWelcomeCreditPrompt()) return;
+    try {
+      welcomeCreditDialog.showModal();
+    } catch {
+      welcomeCreditDialog.setAttribute("open", "open");
+    }
+  }, 650);
+}
+
+function closeWelcomeCreditPrompt() {
+  markWelcomeCreditPromptSeen();
+  if (!welcomeCreditDialog) return;
+  if (welcomeCreditDialog.open && welcomeCreditDialog.close) {
+    welcomeCreditDialog.close();
+    return;
+  }
+  welcomeCreditDialog.removeAttribute("open");
+}
+
+function startWelcomeCreditRegistration() {
+  markWelcomeCreditPromptSeen();
+  sessionStorage.setItem(pendingServiceIntentKey, JSON.stringify({ tier: "simple" }));
 }
 
 function t(key, replacements = {}) {
@@ -1063,9 +1126,18 @@ refreshSession().then(() => {
   } catch {
     sessionStorage.removeItem(pendingServiceIntentKey);
   }
+  openWelcomeCreditPrompt();
 });
 restoreGuestOrderResultFromUrl();
 restoreMemberReportFromUrl();
+
+$("#welcomeCreditClose")?.addEventListener("click", closeWelcomeCreditPrompt);
+$("#welcomeCreditLater")?.addEventListener("click", closeWelcomeCreditPrompt);
+$("#welcomeCreditRegister")?.addEventListener("click", startWelcomeCreditRegistration);
+welcomeCreditDialog?.addEventListener("close", markWelcomeCreditPromptSeen);
+welcomeCreditDialog?.addEventListener("click", event => {
+  if (event.target === welcomeCreditDialog) closeWelcomeCreditPrompt();
+});
 
 $("#feedbackTrigger")?.addEventListener("click", () => {
   if (!feedbackDialog) return;

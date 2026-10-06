@@ -400,8 +400,8 @@ async function ensureGoogleAuthReady() {
 }
 
 function redirectAfterAuth() {
-  if (!sessionStorage.getItem("mingyu_pending_service_intent")) return;
   const safePath = nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/";
+  if (!sessionStorage.getItem("mingyu_pending_service_intent") && safePath === "/") return;
   window.location.assign(safePath);
 }
 
@@ -731,7 +731,8 @@ function renderCatalog(catalog) {
   if (!catalog?.plans || !planGrid) return;
   if (welcomePolicyText) {
     const welcomeCredits = Math.max(0, Number.parseInt(catalog.welcomeCredits ?? 0, 10) || 0);
-    welcomePolicyText.innerHTML = `New accounts receive ${welcomeCredits} welcome credits so you can try the member flow before purchasing a membership or a one-time credit pack.`;
+    const creditLabel = welcomeCredits === 1 ? "credit" : "credits";
+    welcomePolicyText.innerHTML = `New accounts receive ${welcomeCredits} welcome ${creditLabel} so you can try one Simple Edition service before purchasing a membership or a one-time credit pack.`;
   }
   planGrid.innerHTML = catalog.plans.map(plan => `
     <article class="plan-card">

@@ -2,7 +2,7 @@ const translations = {
   en: {
     title: "Samples | Mingyu",
     navNaming: "Naming",
-    navCulture: "Zodiac Culture",
+    navCulture: "Subscribe",
     navCraft: "Crafts",
     navSamples: "Samples",
     accountLinkGuest: "Sign in",
@@ -20,7 +20,7 @@ const translations = {
   zh: {
     title: "样品 | Mingyu",
     navNaming: "起名",
-    navCulture: "生肖文化",
+    navCulture: "订阅",
     navCraft: "东方好物",
     navSamples: "样品",
     accountLinkGuest: "注册 / 登录",

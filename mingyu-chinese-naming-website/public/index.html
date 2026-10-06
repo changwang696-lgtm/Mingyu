@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://chinesenamepro.com/assets/zodiac/report-overview.jpg" />
   <link rel="icon" type="image/png" href="/assets/zodiac/favicon.png" />
   <link rel="stylesheet" href="/styles.css?v=20260822-register-fix" />
-  <link rel="stylesheet" href="/theme.css?v=20260831-dna-card-front-back" />
+  <link rel="stylesheet" href="/theme.css?v=20261006-welcome-credit-modal" />
   <link rel="stylesheet" href="/print.css?v=20260822-register-fix" media="print" />
   <script type="application/ld+json">
     {
@@ -62,7 +62,7 @@
 <body>
             <header class="topbar">
               <a class="brand" href="#top"><span class="brand-mark">名</span><span>名屿 <small>MINGYU</small></span></a>
-              <nav><a href="#ritual" data-i18n="navNaming">起名</a><a href="#story" data-i18n="navCulture">生肖文化</a><a href="#craft" data-i18n="navCraft">东方好物</a><a href="/samples.html" data-i18n="navSamples">样品</a></nav>
+              <nav><a href="#ritual" data-i18n="navNaming">起名</a><a href="/subscription.html" data-i18n="navCulture">订阅</a><a href="#craft" data-i18n="navCraft">东方好物</a><a href="/samples.html" data-i18n="navSamples">样品</a></nav>
     <div class="topbar-actions">
       <a class="mobile-samples-link" href="/samples.html" data-i18n="navSamplesMobile">Samples</a>
       <a class="account-link" id="accountLink" data-staged-feature="membership" href="/account.html?auth=login" data-i18n="accountLinkGuest">注册 / 登录</a>
@@ -260,10 +260,30 @@
     <small>© 2026 Mingyu Naming Studio</small>
   </footer>
 
+      <dialog id="welcomeCreditDialog" class="welcome-credit-dialog" aria-labelledby="welcomeCreditTitle">
+        <button class="close welcome-credit-close" id="welcomeCreditClose" type="button" aria-label="Close">×</button>
+        <div class="welcome-credit-layout">
+          <div class="welcome-credit-copy">
+            <p class="eyebrow" data-i18n="welcomeCreditEyebrow">NEW MEMBER GIFT</p>
+            <h2 id="welcomeCreditTitle" data-i18n="welcomeCreditTitle">Register now and get 1 free credit.</h2>
+            <p data-i18n="welcomeCreditBody">Use it to unlock one Simple Edition DNA card with a shareable result and PDF included.</p>
+            <div class="welcome-credit-actions">
+              <a class="primary" id="welcomeCreditRegister" href="/account.html?auth=register&next=%2F"><span data-i18n="welcomeCreditCta">Register and Get Free Service</span><b>→</b></a>
+              <button class="text-button" id="welcomeCreditLater" type="button" data-i18n="welcomeCreditLater">Maybe later</button>
+            </div>
+          </div>
+          <div class="welcome-credit-card" aria-hidden="true">
+            <small data-i18n="welcomeCreditCardType">SIMPLE EDITION</small>
+            <strong data-i18n="welcomeCreditCardTitle">Unlock DNA card</strong>
+            <span data-i18n="welcomeCreditCardBody">Shareable result · PDF included</span>
+            <b data-i18n="welcomeCreditCardPrice">1 credit</b>
+          </div>
+        </div>
+      </dialog>
       <dialog id="feedbackDialog" class="feedback-dialog"><button class="close" aria-label="Close">×</button><p class="eyebrow">MASTER NOTE · 大师留言</p><h2>会员建议通道<br /><small>Please leave your suggestion</small></h2><p class="feedback-intro">仅注册会员可留言，我们会优先通过你的会员邮箱回复。<br />Only signed-in members can leave a note. We will reply to your member email.</p><form id="feedbackForm" class="feedback-form" novalidate><label><span>会员邮箱 / Member email</span><input id="feedbackEmail" name="email" type="email" autocomplete="email" readonly /></label><label><span>留言内容 / Message</span><textarea id="feedbackMessage" name="message" rows="5" maxlength="2000" placeholder="请留下你的建议、问题，或希望我们协助你的内容 / Share your suggestion or what you need help with"></textarea></label><p class="feedback-status" id="feedbackStatus" role="status" aria-live="polite"></p><button class="submit" id="feedbackSubmitBtn" type="submit"><span>提交留言 / Send</span><b>→</b></button></form></dialog>
   <p class="home-status-banner" id="homeStatusBanner" role="status" aria-live="polite" hidden></p>
       <dialog id="payment"><button class="close" aria-label="Close">×</button><p class="eyebrow" id="paymentEyebrow">MINGYU EDITION</p><h2 id="paymentTitle">确认生成简约版</h2><div class="preview-sheet"><span>名屿</span><b>名</b><small>CHINESE NAMING EDITION</small></div><ul id="paymentBenefits"></ul><div id="paypalButtons" hidden></div><div class="paypal-hosted-dialog" id="hostedCheckout" hidden><a class="primary paypal-hosted-link" id="dialogHostedLink" href="#">PayPal Checkout</a></div><button id="confirmPurchase" class="submit"><span id="confirmPurchaseText">支付并生成</span><b>→</b></button><small id="paymentNote" data-i18n="demoNote">支付将由 PayPal 处理；付款成功后，结果会在本站交付。</small><small class="legal-note">By purchasing, you agree to our <a href="/delivery.html" target="_blank" rel="noreferrer">Delivery</a>, <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>, <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>, <a href="/refund.html" target="_blank" rel="noreferrer">Refund Policy</a>, and <a href="/cancellation.html" target="_blank" rel="noreferrer">Cancellation Policy</a>.</small></dialog>
   <div class="loading" id="loading" hidden role="status" aria-live="polite"><div class="loader-seal">名</div><p data-i18n="loading">正在研读你的名字与时辰...</p></div>
-  <script src="/app.js?v=20260901-default-en" ></script>
+  <script src="/app.js?v=20261006-welcome-credit-modal" ></script>
 </body>
 </html>
